@@ -145,16 +145,39 @@ bool AVSViewer::isValidCut(int start, int end)
       continue;
     }
     cutElems = elem.split("-");
-    pos = cutElems.at(0).toInt(); //start
-    if (start > pos && pos < end) {
+    //CUT-START
+    pos = cutElems.at(0).toInt();
+    if ((start >= pos && pos <= end)) {
       this->send(tr("Ignored %1-%2 since it overlaps with %3.").arg(start).arg(end).arg(elem));
       return false;
     }
+    pos--;
+    if ((start >= pos && pos <= end)) {
+      this->send(tr("Ignored %1-%2 need more distrance from.").arg(start).arg(end).arg(elem));
+      return false;
+    }
+    pos += 2;
+    if ((start >= pos && pos <= end)) {
+      this->send(tr("Ignored %1-%2 need more distrance from.").arg(start).arg(end).arg(elem));
+      return false;
+    }
+    //CUT-END
     pos = cutElems.at(1).toInt(); //end
-    if (start > pos && pos < end) {
+    if ((start >= pos && pos <= end)) {
       this->send(tr("Ignored %1-%2 since it overlaps with %3.").arg(start).arg(end).arg(elem));
       return false;
     }
+    pos--;
+    if ((start >= pos && pos <= end)) {
+      this->send(tr("Ignored %1-%2 need more distrance from.").arg(start).arg(end).arg(elem));
+      return false;
+    }
+    pos += 2;
+    if ((start >= pos && pos <= end)) {
+      this->send(tr("Ignored %1-%2 need more distrance from.").arg(start).arg(end).arg(elem));
+      return false;
+    }
+
   }
   return true;
 }
@@ -360,7 +383,7 @@ void AVSViewer::init(int start)
 
   try {
     QString inputPath = QApplication::applicationDirPath();
-    QLibrary avsDLL("\""+inputPath+QDir::separator()+"avisynth.dll\"");
+    QLibrary avsDLL("\"" + inputPath + QDir::separator() + "avisynth.dll\"");
     if (!avsDLL.isLoaded() && !avsDLL.load()) { //load avisynth.dll if it's not already loaded and abort if it couldn't be loaded
       QString error = avsDLL.errorString();
       if (!error.isEmpty()) {

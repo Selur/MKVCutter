@@ -92,8 +92,8 @@ bool MkvCutter::createAVS()
   m_tempAvs = QDir::toNativeSeparators(temp);
 
   QStringList script;
-  QString inputPath = QApplication::applicationDirPath()+QDir::separator();
-  script << "LoadPlugin(\""+QDir::toNativeSeparators(inputPath+"ffms2.dll")+"\")";
+  QString inputPath = QApplication::applicationDirPath() + QDir::separator();
+  script << "LoadPlugin(\"" + QDir::toNativeSeparators(inputPath + "ffms2.dll") + "\")";
   QString call = "FFVideoSource(\"" + m_currentInput + "\"";
   call += ", ";
   call += "cachefile=\"" + m_indexFile + "\"";
@@ -149,6 +149,7 @@ void MkvCutter::avsViewerFinished(int state)
   }
   QMessageBox::information(this, "CutList", m_cuts.join("\r\n"));
   QMessageBox::information(this, "KeyframesList", m_keyframes.join("\r\n"));
+
   //TODO: Check output handle cutlists:
   // generate mkvmerge calls to split content
   // generate x264 call to reencode the first few frames that are needed video

@@ -33,7 +33,6 @@ AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport
   this->send(tmp);
 
   delete ui.openAvsPushButton;
-  this->init();
 }
 
 AVSViewer::~AVSViewer()
@@ -49,8 +48,9 @@ void AVSViewer::send(QString message)
   emit sendInfos(message);
 }
 
-int AVSViewer::invokeImportInternal(const char *inputFile)
+int AVSViewer::invokeImportInternal()
 {
+  const char *inputFile = m_currentInput.toUtf8();
   try {
     m_res = m_env->Invoke("Import", inputFile); //import current input to environment
   } catch (AvisynthError &err) { //catch AvisynthErrors
@@ -63,10 +63,10 @@ int AVSViewer::invokeImportInternal(const char *inputFile)
   return 0;
 }
 
-int AVSViewer::import(const char *inputFile)
+int AVSViewer::import()
 {
   __try {
-    if (invokeImportInternal(inputFile) != 0) {
+    if (invokeImportInternal() != 0) {
       return -1;
     }
   }
@@ -132,6 +132,7 @@ void AVSViewer::on_setCutEndPushButton_clicked()
 
 bool AVSViewer::isValidCut(int start, int end)
 {
+  emit sendInfos(tr("isValidCut(%1, %2").arg(start).arg(end));
   if (start == end) {
     this->send(tr("Ignored start and end need to differ!").arg(start).arg(end));
     return false;
@@ -358,18 +359,97 @@ int saveTextTo(QString text, QString to)
   return -1;
 }
 
+int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
+{
+  QFile file(input);
+  if (!file.open(QIODevice::ReadOnly)) {
+    this->send(tr("Could read content of %1!").arg(input));
+    emit
+    finished(-12);
+    return -1;
+  }
+  QString content = file.readAll(), ffms2Line, newContent;
+  file.close();
+  if (!content.contains("FFInfo()")) {
+    bool ffmpegSource = false;
+    bool ffms2Avs = false;
+    foreach(QString line, content.split("\n"))
+    {
+      if (line.contains("FFMpegSource2(", Qt::CaseInsensitive)
+          || line.contains("FFVideoSource(", Qt::CaseInsensitive)) {
+        ffmpegSource = true;
+      }
+      if (line.contains("ffms2.dll", Qt::CaseInsensitive)) {
+        ffms2Line = line;
+        ffms2Line = ffms2Line.remove(0, ffms2Line.indexOf("\"") + 1);
+        ffms2Line = ffms2Line.remove(ffms2Line.indexOf("\""), ffms2Line.size());
+        ffms2Line = getDirectory(ffms2Line);
+        ffms2Line += QDir::separator();
+        ffms2Line += "FFMS2.avsi";
+        ffms2Line = QDir::toNativeSeparators(ffms2Line);
+      }
+      if (line.contains("FFMS2.avs", Qt::CaseInsensitive)) {
+        ffms2Avs = true;
+      }
+    }
+    ui.ffinfoCheckBox->setEnabled(ffmpegSource);
+    if (ui.ffinfoCheckBox->isChecked()) {
+      int index = content.indexOf("distributor()", Qt::CaseInsensitive);
+      if (index != -1) {
+        newContent = content;
+        newContent = newContent.remove(index, newContent.size()).trimmed();
+        if (!ffms2Avs && !ffms2Line.isEmpty()) {
+          newContent += "\n";
+          newContent += "Import(\"" + ffms2Line + "\")";
+        }
+        newContent += "\n";
+        newContent += "SetMTMode(5)";
+        newContent += "\n";
+        newContent += "FFInfo()";
+        newContent += "\n";
+        newContent += "distributor()";
+        newContent += "\n";
+        newContent += "return last";
+      } else if (!ffms2Avs && !ffms2Line.isEmpty()) {
+        newContent = content;
+        if (content.contains("SetModeMT(")) {
+          newContent += "\n";
+          newContent += "SeMTMode(5)";
+        }
+        newContent += "\n";
+        newContent += "Import(\"" + ffms2Line + "\")";
+        newContent += "\n";
+        newContent += "FFInfo()";
+      } else {
+        invokeFFInfo = true;
+      }
+    }
+  }
+
+  if (!newContent.isEmpty()) {
+    QString directory = getDirectory(m_currentInput);
+    QString name = getFileName(m_currentInput);
+    m_avsModified = QDir::toNativeSeparators(directory + QDir::separator() + name + "_tmp.avs");
+    if (saveTextTo(newContent, m_avsModified) == 0) {
+      input = m_avsModified;
+    }
+  } else {
+    m_avsModified = QString();
+  }
+  return 0;
+}
+
 /**
  * initilazing an avisynth environment for the current input file
  **/
 void AVSViewer::init(int start)
 {
+  emit sendInfos(tr("initializing the avisynth script environment,.."));
   this->send(tr("init %1").arg(start));
   if (start < 0) {
     start = 0;
   }
-  m_current = -1; //seletzt den aktuellen FrameIndex zurück
-  emit
-  sendInfos(tr("initializing the avisynth script environment,.."));
+  m_current = -1; //setzt den aktuellen FrameIndex zurück
   if (m_currentInput.isEmpty()) {
     this->send(tr("Current input is empty,.."));
     emit
@@ -381,9 +461,9 @@ void AVSViewer::init(int start)
     return;
   }
 
+  this->sendInfos(tr("Loading avisynth.dll"));
   try {
-    QString inputPath = QApplication::applicationDirPath();
-    QLibrary avsDLL("\"" + inputPath + QDir::separator() + "avisynth.dll\"");
+    QLibrary avsDLL("avisynth.dll");
     if (!avsDLL.isLoaded() && !avsDLL.load()) { //load avisynth.dll if it's not already loaded and abort if it couldn't be loaded
       QString error = avsDLL.errorString();
       if (!error.isEmpty()) {
@@ -391,7 +471,9 @@ void AVSViewer::init(int start)
         emit
         finished(-2);
         return;
-      }emit
+      }
+
+      emit
       sendInfos(tr("Could not load avisynth.dll!"));
       emit finished(-3);
     }
@@ -412,98 +494,31 @@ void AVSViewer::init(int start)
 
     emit
     sendInfos(tr("created an IScriptEnvironment,.."));
+    this->send(tr("looking for avisynth version,.."));
     try {
-      this->send(tr("looking for avisynth version,.."));
       AVSValue as_version;
       as_version = m_env->Invoke("VersionString", AVSValue(&as_version, 0)); //get current version info
       m_version = as_version.AsString(); //save current version for later use
-      this->send(tr("current avisynth version: %1").arg(m_version));
     } catch (...) {
       this->send(tr("Could get the current version,.."));
       emit
       finished(-5);
       return;
     }
-    QString newContent, input = m_currentInput;
+    this->send(tr("current avisynth version: %1").arg(m_version));
+    QString input = m_currentInput;
     bool invokeFFInfo = false;
-    QFile file(input);
-    bool ffmpegSource = false;
-    if (file.open(QIODevice::ReadOnly)) {
-      QString content = file.readAll(), ffms2Line;
-      file.close();
-      if (!content.contains("FFInfo()")) {
-        bool ffms2Avs = false;
-        foreach(QString line, content.split("\n"))
-        {
-          if (line.contains("FFMpegSource2(", Qt::CaseInsensitive)
-              || line.contains("FFVideoSource(", Qt::CaseInsensitive)) {
-            ffmpegSource = true;
-          }
-          if (line.contains("ffms2.dll", Qt::CaseInsensitive)) {
-            ffms2Line = line;
-            ffms2Line = ffms2Line.remove(0, ffms2Line.indexOf("\"") + 1);
-            ffms2Line = ffms2Line.remove(ffms2Line.indexOf("\""), ffms2Line.size());
-            ffms2Line = getDirectory(ffms2Line);
-            ffms2Line += QDir::separator();
-            ffms2Line += "FFMS2.avsi";
-            ffms2Line = QDir::toNativeSeparators(ffms2Line);
-          }
-          if (line.contains("FFMS2.avs", Qt::CaseInsensitive)) {
-            ffms2Avs = true;
-          }
-        }
-        ui.ffinfoCheckBox->setEnabled(ffmpegSource);
-        ffmpegSource = ui.ffinfoCheckBox->isChecked();
-        if (ffmpegSource) {
-          int index = content.indexOf("distributor()", Qt::CaseInsensitive);
-          if (index != -1) {
-            newContent = content;
-            newContent = newContent.remove(index, newContent.size()).trimmed();
-            if (!ffms2Avs && !ffms2Line.isEmpty()) {
-              newContent += "\n";
-              newContent += "Import(\"" + ffms2Line + "\")";
-            }
-            newContent += "\n";
-            newContent += "SetMTMode(5)";
-            newContent += "\n";
-            newContent += "FFInfo()";
-            newContent += "\n";
-            newContent += "distributor()";
-            newContent += "\n";
-            newContent += "return last";
-          } else if (!ffms2Avs && !ffms2Line.isEmpty()) {
-            newContent = content;
-            newContent = newContent.remove(index, newContent.size()).trimmed();
-            if (content.contains("SetModeMT(")) {
-              newContent += "\n";
-              newContent += "SeMTMode(5)";
-            }
-            newContent += "\n";
-            newContent += "Import(\"" + ffms2Line + "\")";
-            newContent += "\n";
-            newContent += "FFInfo()";
-          } else {
-            invokeFFInfo = true;
-          }
-        }
-      }
-    }
-    if (!newContent.isEmpty()) {
-      QString directory = getDirectory(m_currentInput);
-      QString name = getFileName(m_currentInput);
-      m_avsModified = QDir::toNativeSeparators(directory + QDir::separator() + name + "_tmp.avs");
-      if (saveTextTo(newContent, m_avsModified) == 0) {
-        input = m_avsModified;
-      }
+    if (this->handleFFInfo(input, invokeFFInfo) != 0) {
+      return;
     }
 
-    const char* infile = input.toUtf8(); //convert input name to char*
     emit
-    sendInfos(tr("Importing %1 into environment,..").arg(infile));
-    if (import(infile) != 0) {
+    sendInfos(tr("Importing %1 into environment,..").arg(input));
+    if (import() != 0) {
       emit finished(-6);
       return;
     }
+
     if (!m_res.Defined()) {
       QString error = tr("Couldn't import:") + " " + input;
       error += "\r\n";
@@ -517,8 +532,6 @@ void AVSViewer::init(int start)
 
     emit
     sendInfos(tr("Script seems be a valid,.."));
-    emit
-    sendInfos(" " + tr("initializating a clip,.."));
     m_clip = m_res.AsClip(); //get clip
     emit
     sendInfos(" " + tr("grabbing clip infos,.."));
@@ -587,8 +600,8 @@ void AVSViewer::init(int start)
     ui.showLabel->setFixedSize(m_inf.width, m_inf.height);
     emit
     sendInfos(" " + tr("showing first frame,.."));
-    this->showFrame(start); //show first frame
     ui.showLabel->setMaximumSize(32767, 32767);
+    this->showFrame(start); //show first frame
   } catch (AvisynthError &err) { //catch AvisynthErrors
     this->send("-> " + tr("Avisynth error: %1").arg(err.msg));
   } catch (...) { //catch everything else
@@ -630,14 +643,14 @@ void AVSViewer::showFrame(int i)
       image = image.scaled(width, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     }
     ui.showLabel->setText(QString());
+    emit
+    sendInfos(tr("show frame %1").arg(i));
     m_currentImage = image.mirrored();
     ui.showLabel->setPixmap(QPixmap::fromImage(m_currentImage)); //flip image, otherwise it is show heads down
-    emit
-    sendInfos(tr("showing frame: %1").arg(i));
-    //ui.showLabel->show(); // show the frame
     m_current = i; //set m_current to i
+    emit
+    sendInfos(tr("set Slider position to %1").arg(m_current));
     ui.frameHorizontalSlider->setSliderPosition(m_current); // adjust the slider position
-    this->send(QObject::tr("showing frame number: %1 of %2").arg(m_current).arg(m_frameCount)); //adjust title bar
   } catch (...) {
     this->send(" " + tr("couldn't show frame,..."));
   }

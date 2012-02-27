@@ -38,12 +38,13 @@ class AVSViewer : public QWidget
     bool m_cutSupport;
     void showFrame(int frame);
     void init(int start = 0);
-    int import(const char *inputFile);
+    int import();
+    int invokeImportInternal();
     int invoke(const char *function);
     int invokeInternal(const char *function);
-    int invokeImportInternal(const char *inputFile);
     void killEnv();
     void send(QString message);
+    int handleFFInfo(QString &input, bool &invokeFFInfo);
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);

@@ -3,6 +3,7 @@
 #include <QFileDialog>
 #include <QTextStream>
 #include <QTextCodec>
+#include <QScrollbar>
 #include <iostream>
 using namespace std;
 
@@ -116,6 +117,7 @@ void MkvCutter::mkvAnalysefinished()
     this->reset();
     return;
   }
+  ui.infoLabel->setText(tr("Indexing input file,.."));
   m_ffindexCaller->index(m_currentInput, m_indexFile);
 }
 
@@ -126,6 +128,7 @@ void MkvCutter::ffIndexerFinished(int exitstate)
     this->reset();
     return;
   }
+  ui.infoLabel->setText(tr("Indexing input file finished,.."));
   delete m_viewer;
   m_viewer = new AVSViewer(this, m_tempAvs, 1, true);
   this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
@@ -133,6 +136,8 @@ void MkvCutter::ffIndexerFinished(int exitstate)
   this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   ui.avsViewerVerticalLayout->insertWidget(0, m_viewer);
   ui.mainStackedWidget->setCurrentIndex(1);
+  ui.infoLabel->setText(tr("- Cut View -"));
+  m_viewer->init();
 }
 
 void MkvCutter::avsViewerFinished(int state)
@@ -147,6 +152,7 @@ void MkvCutter::avsViewerFinished(int state)
     this->reset();
     return;
   }
+  ui.infoLabel->setText(tr("Cut-View finished,.."));
   QMessageBox::information(this, "CutList", m_cuts.join("\r\n"));
   QMessageBox::information(this, "KeyframesList", m_keyframes.join("\r\n"));
 
@@ -178,6 +184,8 @@ void MkvCutter::enableGui(bool enable)
 void MkvCutter::addInfo(QString infos)
 {
   ui.infoTextBrowser->append(infos);
+  int bottom = ui.infoTextBrowser->verticalScrollBar()->maximum();
+  ui.infoTextBrowser->verticalScrollBar()->setValue(bottom);
   cout << qPrintable(infos) << endl;
 }
 

@@ -48,9 +48,8 @@ void AVSViewer::send(QString message)
   emit sendInfos(message);
 }
 
-int AVSViewer::invokeImportInternal()
+int AVSViewer::invokeImportInternal(const char *inputFile)
 {
-  const char *inputFile = m_currentInput.toUtf8();
   try {
     m_res = m_env->Invoke("Import", inputFile); //import current input to environment
   } catch (AvisynthError &err) { //catch AvisynthErrors
@@ -63,10 +62,10 @@ int AVSViewer::invokeImportInternal()
   return 0;
 }
 
-int AVSViewer::import()
+int AVSViewer::import(const char* input)
 {
   __try {
-    if (invokeImportInternal() != 0) {
+    if (invokeImportInternal(input) != 0) {
       return -1;
     }
   }
@@ -132,7 +131,7 @@ void AVSViewer::on_setCutEndPushButton_clicked()
 
 bool AVSViewer::isValidCut(int start, int end)
 {
-  emit sendInfos(tr("isValidCut(%1, %2").arg(start).arg(end));
+  emit sendInfos(tr("isValidCut(%1, %2)").arg(start).arg(end));
   if (start == end) {
     this->send(tr("Ignored start and end need to differ!").arg(start).arg(end));
     return false;
@@ -142,43 +141,49 @@ bool AVSViewer::isValidCut(int start, int end)
   QStringList cutElems;
   for (int i = 0, c = ui.cutListWidget->count(); i < c; ++i) {
     elem = ui.cutListWidget->item(i)->text();
+    elem = elem.trimmed();
     if (elem.isEmpty()) {
       continue;
     }
     cutElems = elem.split("-");
     //CUT-START
     pos = cutElems.at(0).toInt();
-    if ((start >= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 since it overlaps with %3.").arg(start).arg(end).arg(elem));
+    if ((start <= pos && pos <= end)) {
+      this->send(tr("Position: %1").arg(pos));
+      this->send(tr("Ignored %1-%2 since it overlaps with %3. (start)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos--;
-    if ((start >= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 need more distrance from.").arg(start).arg(end).arg(elem));
+    if ((start <= pos && pos <= end)) {
+      this->send(tr("Position: %1").arg(pos));
+      this->send(tr("Ignored %1-%2 need more distrance from. (start-1)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos += 2;
-    if ((start >= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 need more distrance from.").arg(start).arg(end).arg(elem));
+    if ((start <= pos && pos <= end)) {
+      this->send(tr("Position: %1").arg(pos));
+      this->send(tr("Ignored %1-%2 need more distrance from. (start+1)").arg(start).arg(end).arg(elem));
       return false;
     }
     //CUT-END
     pos = cutElems.at(1).toInt(); //end
-    if ((start >= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 since it overlaps with %3.").arg(start).arg(end).arg(elem));
+    if ((start <= pos && pos <= end)) {
+      this->send(tr("Position: %1").arg(pos));
+      this->send(tr("Ignored %1-%2 since it overlaps with %3. (end)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos--;
-    if ((start >= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 need more distrance from.").arg(start).arg(end).arg(elem));
+    if ((start <= pos && pos <= end)) {
+      this->send(tr("Position: %1").arg(pos));
+      this->send(tr("Ignored %1-%2 need more distrance from. (end-1)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos += 2;
-    if ((start >= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 need more distrance from.").arg(start).arg(end).arg(elem));
+    if ((start <= pos && pos <= end)) {
+      this->send(tr("Position: %1").arg(pos));
+      this->send(tr("Ignored %1-%2 need more distrance from. (end+1)").arg(start).arg(end).arg(elem));
       return false;
     }
-
   }
   return true;
 }
@@ -197,7 +202,16 @@ void AVSViewer::on_addCutPushButton_clicked()
     if (!isValidCut(start, end)) {
       return;
     }
-    QString cut = QString::number(start) + "-" + QString::number(end);
+    int max = QString::number(ui.frameHorizontalSlider->maximum()).size();
+    QString startPos = QString::number(start);
+    while (startPos.size() < max) {
+        startPos = "0" + startPos;
+    }
+    QString endPos = QString::number(end);
+    while (endPos.size() < max) {
+        endPos = "0" + endPos;
+    }
+    QString cut = startPos + "-" + endPos;
     emit
     sendInfos(tr("add cut item: %1").arg(cut));
     ui.cutListWidget->addItem(cut);
@@ -361,14 +375,16 @@ int saveTextTo(QString text, QString to)
 
 int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
 {
+  //this->send(tr("handleFFInfo(%1, %2)").arg(input).arg(invokeFFInfo));
   QFile file(input);
   if (!file.open(QIODevice::ReadOnly)) {
-    this->send(tr("Could read content of %1!").arg(input));
+    this->send(tr("Couldn't read content of %1!").arg(input));
     emit
     finished(-12);
     return -1;
   }
   QString content = file.readAll(), ffms2Line, newContent;
+  //this->send(tr("Content:\r\n%1").arg(content));
   file.close();
   if (!content.contains("FFInfo()")) {
     bool ffmpegSource = false;
@@ -393,36 +409,41 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
       }
     }
     ui.ffinfoCheckBox->setEnabled(ffmpegSource);
-    if (ui.ffinfoCheckBox->isChecked()) {
-      int index = content.indexOf("distributor()", Qt::CaseInsensitive);
-      if (index != -1) {
-        newContent = content;
-        newContent = newContent.remove(index, newContent.size()).trimmed();
-        if (!ffms2Avs && !ffms2Line.isEmpty()) {
-          newContent += "\n";
-          newContent += "Import(\"" + ffms2Line + "\")";
-        }
-        newContent += "\n";
-        newContent += "SetMTMode(5)";
-        newContent += "\n";
-        newContent += "FFInfo()";
-        newContent += "\n";
-        newContent += "distributor()";
-        newContent += "\n";
-        newContent += "return last";
-      } else if (!ffms2Avs && !ffms2Line.isEmpty()) {
-        newContent = content;
-        if (content.contains("SetModeMT(")) {
-          newContent += "\n";
-          newContent += "SeMTMode(5)";
-        }
+    if (!ui.ffinfoCheckBox->isChecked()) {
+        return 0;
+    }
+    //emit sendInfos(tr("FFInfoCheckBox is activated,.."));
+    int index = content.indexOf("distributor()", Qt::CaseInsensitive);
+    if (index != -1) {
+      //emit sendInfos(tr("building temp avs script file with distributor present,.."));
+      newContent = content.trimmed();
+      newContent = newContent.remove(index, newContent.size()).trimmed();
+      if (!ffms2Avs && !ffms2Line.isEmpty()) {
         newContent += "\n";
         newContent += "Import(\"" + ffms2Line + "\")";
-        newContent += "\n";
-        newContent += "FFInfo()";
-      } else {
-        invokeFFInfo = true;
       }
+      newContent += "\n";
+      newContent += "SetMTMode(5)";
+      newContent += "\n";
+      newContent += "FFInfo()";
+      newContent += "\n";
+      newContent += "distributor()";
+      newContent += "\n";
+      newContent += "return last";
+    } else if (!ffms2Avs && !ffms2Line.isEmpty()) {
+      //emit sendInfos(tr("building temp avs script file,.."));
+      newContent = content.trimmed();
+      if (content.contains("SetModeMT(")) {
+        newContent += "\n";
+        newContent += "SeMTMode(5)";
+      }
+      newContent += "\n";
+      newContent += "Import(\"" + ffms2Line + "\")";
+      newContent += "\n";
+      newContent += "FFInfo()";
+    } else {
+      //emit sendInfos(tr("enabling invoke FFInfo,.."));
+      invokeFFInfo = true;
     }
   }
 
@@ -431,9 +452,13 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
     QString name = getFileName(m_currentInput);
     m_avsModified = QDir::toNativeSeparators(directory + QDir::separator() + name + "_tmp.avs");
     if (saveTextTo(newContent, m_avsModified) == 0) {
+      emit sendInfos(tr("Saved temp avs file to %1").arg(m_avsModified));
       input = m_avsModified;
+      //emit sendInfos(tr("Content:\r\n%1").arg(newContent));
     }
   } else {
+    //emit sendInfos(tr("No need for temporal avs file,.."));
+    QFile::remove(m_avsModified);
     m_avsModified = QString();
   }
   return 0;
@@ -514,7 +539,8 @@ void AVSViewer::init(int start)
 
     emit
     sendInfos(tr("Importing %1 into environment,..").arg(input));
-    if (import() != 0) {
+    const char *inputFile = input.toUtf8();
+    if (import(inputFile) != 0) {
       emit finished(-6);
       return;
     }
@@ -530,8 +556,6 @@ void AVSViewer::init(int start)
       return;
     }
 
-    emit
-    sendInfos(tr("Script seems be a valid,.."));
     m_clip = m_res.AsClip(); //get clip
     emit
     sendInfos(" " + tr("grabbing clip infos,.."));
@@ -643,13 +667,11 @@ void AVSViewer::showFrame(int i)
       image = image.scaled(width, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     }
     ui.showLabel->setText(QString());
-    emit
-    sendInfos(tr("show frame %1").arg(i));
+    //emit sendInfos(tr("show frame %1").arg(i));
     m_currentImage = image.mirrored();
     ui.showLabel->setPixmap(QPixmap::fromImage(m_currentImage)); //flip image, otherwise it is show heads down
     m_current = i; //set m_current to i
-    emit
-    sendInfos(tr("set Slider position to %1").arg(m_current));
+    //emit sendInfos(tr("set Slider position to %1").arg(m_current));
     ui.frameHorizontalSlider->setSliderPosition(m_current); // adjust the slider position
   } catch (...) {
     this->send(" " + tr("couldn't show frame,..."));

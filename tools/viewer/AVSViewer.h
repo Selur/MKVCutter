@@ -24,6 +24,7 @@ class AVSViewer : public QWidget
     AVSViewer(QWidget *parent = 0, QString path = QString(), double mult = 0, bool cutSupport =
                   false);
     ~AVSViewer();
+    void init(int start = 0);
 
   private:
     Ui::AVSViewerClass ui;
@@ -37,9 +38,8 @@ class AVSViewer : public QWidget
     QImage m_currentImage;
     bool m_cutSupport;
     void showFrame(int frame);
-    void init(int start = 0);
-    int import();
-    int invokeImportInternal();
+    int import(const char *input);
+    int invokeImportInternal(const char *input);
     int invoke(const char *function);
     int invokeInternal(const char *function);
     void killEnv();

@@ -30,6 +30,7 @@ class MkvCutter : public QWidget
     void reset();
     bool createAVS();
     int saveTextTo(QString text, QString to);
+    void buildCutList();
 
   private slots:
     void on_openSourcePushButton_clicked();

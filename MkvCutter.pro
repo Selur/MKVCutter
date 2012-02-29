@@ -14,7 +14,9 @@ HEADERS += tools/MkvSplitCaller.h \
     tools/analyzer/MkvInfoSourceAnalyser.h \
     mkvcutter.h \
     Globals.h \
-    tools/analyzer/MediaInfoAnalyser.h
+    tools/analyzer/MediaInfoAnalyser.h \
+    tools/MkvMerger.h \
+    tools/X264Caller.h
 SOURCES += Globals.cpp \
     tools/MkvSplitCaller.cpp \
     tools/FFIndexCaller.cpp \
@@ -25,7 +27,9 @@ SOURCES += Globals.cpp \
     tools/analyzer/MkvInfoSourceAnalyser.cpp \
     main.cpp \
     mkvcutter.cpp \
-    tools/analyzer/MediaInfoAnalyser.cpp
+    tools/analyzer/MediaInfoAnalyser.cpp \
+    tools/MkvMerger.cpp \
+    tools/X264Caller.cpp
 FORMS += tools/viewer/AVSViewer.ui \
     mkvcutter.ui
 RESOURCES += 

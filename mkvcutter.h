@@ -12,6 +12,8 @@
 #include "tools/viewer/AVSViewer.h"
 #include "tools/FFindexCaller.h"
 #include "tools/MkvSplitCaller.h"
+#include "tools/X264Caller.h"
+#include "tools/MkvMerger.h"
 #include "ui_mkvcutter.h"
 
 struct cutTyp1;
@@ -30,7 +32,7 @@ class MkvCutter : public QWidget
     bool m_avcCabac;
     int m_avcRefFrames, m_enabled, m_frameCount;
     QStringList m_keyframes, m_cuts, m_splitFiles, m_tempReencodeAvs, m_videoEncodingCalls;
-    QStringList m_audioEncodingCalls;
+    QStringList m_audioEncodingCalls, m_reencodedVideoFiles;
     double m_fps;
     QHash <QString, QString> m_trimming;
     QHash <int, QString> m_keyTimes;
@@ -41,6 +43,8 @@ class MkvCutter : public QWidget
     AVSViewer *m_viewer;
     FFIndexCaller *m_ffindexCaller;
     MkvSplitCaller *m_mkvSplitCaller;
+    MkvMerger *m_mkvMerger;
+    X264Caller *m_x264;
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
     void reset();
@@ -51,6 +55,7 @@ class MkvCutter : public QWidget
     void createReencodeCall(QString avisynthFile);
     void createAvisynthSkript(QString filename, QString trim);
     void startReencoding();
+    void cleanUpAndMerge();
 
   private slots:
     void on_openSourcePushButton_clicked();
@@ -77,6 +82,10 @@ class MkvCutter : public QWidget
     void setAvcRefFrames(int frames);
     void mediaInfoFinished(int exitstate);
     void setAudioFormat(QString format);
+    void mkvMergerProgress(int percent);
+    void mkvMergerFinished(int exitstate);
+    void x264Progress(int percent);
+    void x264Finished(int exitstate);
 
 };
 

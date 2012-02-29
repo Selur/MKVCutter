@@ -25,9 +25,15 @@ void MkvSplitCaller::handleMkvmergeOutput()
 {
   QString out = m_process->readAllStandardOutput().data();
   if (!out.isEmpty()) {
-      emit sendInfos("MkvMerge out: " + out.trimmed());
+      //emit sendInfos("MkvMerge out: " + out.trimmed());
       QStringList lines  = out.split("\n");
       foreach(QString line, lines) {
+          if (line.startsWith("Progress:")) {
+              line = line.remove(0, 10);
+              line = line.remove("%").trimmed();
+              emit progress(line.toInt());
+              continue;
+          }
           if (!line.startsWith("The file '")) {
               continue;
           }
@@ -91,6 +97,9 @@ QString MkvSplitCaller::buildCall()
   QString output = m_outputFolder + QDir::separator() + Globals::getWholeFileName(m_output);
   call += " -o \"" + QDir::toNativeSeparators(output) + "\"";
   call += " --split timecodes:" + m_splitPart;
+  //TODO: remove one audio&co can be handled
+  call += " --no-audio --no-subtitles --no-buttons --no-track-tags";
+  call += " --no-chapters --no-attachments --no-global-tags";
   call += " \""+m_input+"\"";
   return call;
 }

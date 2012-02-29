@@ -374,7 +374,6 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
 void AVSViewer::init(int start)
 {
   emit sendInfos(tr("initializing the avisynth script environment,.."));
-  this->send(tr("init %1").arg(start));
   if (start < 0) {
     start = 0;
   }

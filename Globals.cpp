@@ -130,7 +130,7 @@ QString Globals::intSetToTimes(QSet<int> keyframes, double fps)
   qSort(list);
   QString keyString;
   foreach(int key, list) {
-    keyString += milliSecondsToHMS(int(key * fps * 1000 + 0.5)) + ",";
+    keyString += milliSecondsToHMS(int(key / fps * 1000.0 + 0.5)) + ",";
   }
   if (!list.isEmpty()) {
     keyString.remove(keyString.size() - 2, 2);

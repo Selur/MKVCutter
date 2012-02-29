@@ -44,6 +44,54 @@ QString Globals::intSetToString(QSet<int> keyframes)
   return keyString;
 }
 
+QString Globals::milliSecondsToHMS(int milli)
+{
+  if (milli < 0) {
+    return "00:00:00";
+  }
+  QString ret;
+  int hrs = milli / 3600000;
+  if (hrs > 24) {
+    hrs %= 25;
+  }
+  if (hrs == 0) {
+    ret = "00";
+  } else if (hrs < 10) {
+    ret = "0" + QString::number(hrs);
+  } else {
+    ret = QString::number(hrs);
+  }
+  ret += ":";
+  milli -= hrs * 3600000;
+
+  int min = milli / 60000;
+  if (min == 0) {
+    ret += "00";
+  } else if (min < 10) {
+    ret += "0" + QString::number(min);
+  } else {
+    ret += QString::number(min);
+  }
+  ret += ":";
+  milli -= min * 60000;
+
+  int sec = milli / 1000;
+  if (sec == 0) {
+    ret += "00";
+  } else if (sec < 10) {
+    ret += "0" + QString::number(sec);
+  } else {
+    ret += QString::number(sec);
+  }
+  milli -= sec * 1000;
+  QString smilli = QString::number(milli);
+  while (smilli.size() < 3) {
+    smilli = "0" + smilli;
+  }
+  ret += "." + smilli;
+  return ret;
+}
+
 QString Globals::secondsToHMS(double seconds)
 {
   if (seconds == 0) {
@@ -82,7 +130,7 @@ QString Globals::intSetToTimes(QSet<int> keyframes, double fps)
   qSort(list);
   QString keyString;
   foreach(int key, list) {
-    keyString += secondsToHMS(key * fps) + ",";
+    keyString += milliSecondsToHMS(int(key * fps * 1000 + 0.5)) + ",";
   }
   if (!list.isEmpty()) {
     keyString.remove(keyString.size() - 2, 2);

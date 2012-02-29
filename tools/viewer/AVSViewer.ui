@@ -29,7 +29,7 @@
    <property name="margin">
     <number>0</number>
    </property>
-   <item row="0" column="0">
+   <item row="0" column="0" rowspan="2">
     <widget class="ImageLabel" name="showLabel">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -105,7 +105,7 @@
          <property name="sizeHint" stdset="0">
           <size>
            <width>10</width>
-           <height>344</height>
+           <height>0</height>
           </size>
          </property>
         </spacer>
@@ -150,6 +150,9 @@
    </item>
    <item row="3" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>4</number>
+     </property>
      <item>
       <widget class="QPushButton" name="openAvsPushButton">
        <property name="sizePolicy">
@@ -170,8 +173,8 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>13</width>
-         <height>13</height>
+         <width>0</width>
+         <height>10</height>
         </size>
        </property>
       </spacer>
@@ -228,8 +231,8 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>13</width>
-         <height>24</height>
+         <width>0</width>
+         <height>10</height>
         </size>
        </property>
       </spacer>

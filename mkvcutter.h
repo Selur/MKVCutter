@@ -8,6 +8,7 @@
 #include <QHash>
 
 #include "tools/analyzer/MkvInfoSourceAnalyser.h"
+#include "tools/analyzer/MediaInfoAnalyser.h"
 #include "tools/viewer/AVSViewer.h"
 #include "tools/FFindexCaller.h"
 #include "tools/MkvSplitCaller.h"
@@ -25,13 +26,18 @@ class MkvCutter : public QWidget
   private:
     Ui::MkvCutterClass ui;
     QString m_currentInput, m_tempAvs, m_indexFile, m_currentOutput, m_tempFolder;
-    int m_enabled, m_frameCount;
-    QStringList m_keyframes, m_cuts;
+    QString m_avcProfileLevel, m_audioFormat;
+    bool m_avcCabac;
+    int m_avcRefFrames, m_enabled, m_frameCount;
+    QStringList m_keyframes, m_cuts, m_splitFiles, m_tempReencodeAvs, m_videoEncodingCalls;
+    QStringList m_audioEncodingCalls;
     double m_fps;
     QHash <QString, QString> m_trimming;
+    QHash <int, QString> m_keyTimes;
     QList<cutTyp1> m_cutList;
     QSet<int> m_mkvmergeIntSplitList;
     MkvInfoSourceAnalyser *m_mkvinfoAnalyser;
+    MediaInfoAnalyser *m_mediaInfoAnalyser;
     AVSViewer *m_viewer;
     FFIndexCaller *m_ffindexCaller;
     MkvSplitCaller *m_mkvSplitCaller;
@@ -40,7 +46,11 @@ class MkvCutter : public QWidget
     void reset();
     bool createAVS();
     void buildCutList();
+    QString keyFrameTimes();
     void buildAndCallMkvMerge();
+    void createReencodeCall(QString avisynthFile);
+    void createAvisynthSkript(QString filename, QString trim);
+    void startReencoding();
 
   private slots:
     void on_openSourcePushButton_clicked();
@@ -60,6 +70,14 @@ class MkvCutter : public QWidget
     void setFPS(double framerate);
     void mkvSplitFinished(int exitstate);
     void mkvsplitProgress(int percent);
+    void setSplitFiles(QStringList splitFiles);
+    void createAudioCutCall(QString filename, QString trim);
+    void setAvcProfileLevel(QString pl);
+    void setAvcCabac(bool cabac);
+    void setAvcRefFrames(int frames);
+    void mediaInfoFinished(int exitstate);
+    void setAudioFormat(QString format);
+
 };
 
 #endif // MKVCUTTER_H

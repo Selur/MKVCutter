@@ -12,7 +12,7 @@
 
 MkvSplitCaller::MkvSplitCaller(QObject *parent) :
     QObject(parent), m_process(NULL), m_input(QString()), m_output(QString()),
-        m_splitPart(QString()), m_outputFolder(QString())
+    m_splitPart(QString()), m_outputFolder(QString()), m_tempFiles()
 {
 
 }
@@ -24,10 +24,22 @@ MkvSplitCaller::~MkvSplitCaller()
 void MkvSplitCaller::handleMkvmergeOutput()
 {
   QString out = m_process->readAllStandardOutput().data();
-  emit
-  sendInfos("MkvMerge out: " + out);
+  if (!out.isEmpty()) {
+      emit sendInfos("MkvMerge out: " + out.trimmed());
+      QStringList lines  = out.split("\n");
+      foreach(QString line, lines) {
+          if (!line.startsWith("The file '")) {
+              continue;
+          }
+          line = line.remove(0, line.indexOf("'")+1);
+          line = line.remove(line.indexOf("'"), line.size());
+          m_tempFiles << line;
+      }
+  }
   QString err = m_process->readAllStandardOutput().data();
-  emit sendInfos("MkvMerge err: " + err);
+  if (!err.isEmpty()) {
+      emit sendInfos("MkvMerge err: " + err.trimmed());
+  }
 }
 
 void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
@@ -38,6 +50,7 @@ void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitSta
     finished(-1);
     return;
   }
+  emit splitFiles(m_tempFiles);
   emit finished(0);
 }
 
@@ -54,7 +67,6 @@ void MkvSplitCaller::start(QString inputFile, QString outputFile, QString splitP
 void MkvSplitCaller::call(QString call)
 {
   this->sendInfos("MKVmerge call: "+call);
-  return;
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
@@ -79,5 +91,6 @@ QString MkvSplitCaller::buildCall()
   QString output = m_outputFolder + QDir::separator() + Globals::getWholeFileName(m_output);
   call += " -o \"" + QDir::toNativeSeparators(output) + "\"";
   call += " --split timecodes:" + m_splitPart;
+  call += " \""+m_input+"\"";
   return call;
 }

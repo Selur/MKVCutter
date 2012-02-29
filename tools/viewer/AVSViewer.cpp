@@ -120,6 +120,7 @@ void AVSViewer::on_setCutStartPushButton_clicked()
   }
   //emit sendInfos(tr("set cut-start to: %1").arg(m_current));
   ui.frameHorizontalSlider->setStart(m_current);
+  ui.frameHorizontalSlider->setFocus();
 }
 void AVSViewer::on_setCutEndPushButton_clicked()
 {
@@ -128,6 +129,7 @@ void AVSViewer::on_setCutEndPushButton_clicked()
   }
   //emit sendInfos(tr("set cut-end to: %1").arg(m_current));
   ui.frameHorizontalSlider->setEnd(m_current);
+  ui.frameHorizontalSlider->setFocus();
 }
 
 bool AVSViewer::isValidCut(int start, int end)
@@ -259,6 +261,7 @@ void AVSViewer::on_commitPushButton_clicked()
     }
     emit cuts(cutList);
   }
+  ui.showLabel->resize(0,0);
   emit finished(0);
 }
 

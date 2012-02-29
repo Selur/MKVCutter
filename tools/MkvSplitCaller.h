@@ -22,6 +22,7 @@ class MkvSplitCaller : public QObject
   private:
     QProcess *m_process;
     QString m_input, m_output, m_splitPart, m_outputFolder;
+    QStringList m_tempFiles;
     void call(QString call);
     QString buildCall();
 
@@ -35,6 +36,7 @@ class MkvSplitCaller : public QObject
      void sendInfos(QString infos);
      void progress(int position);
      void finished(int state);
+     void splitFiles(QStringList splitFiles);
 };
 
 #endif /* MKVSPLITCALLER_H_ */

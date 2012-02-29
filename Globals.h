@@ -30,6 +30,7 @@ namespace Globals
   QString cutTyp1ListToString(QList<cutTyp> elems);
   QString intSetToString(QSet<int> keyframes);
   QString secondsToHMS(double seconds);
+  QString milliSecondsToHMS(int milli);
   QString intSetToTimes(QSet<int> keyframes, double fps);
   QString removeQuotes(QString input);
   QString getWholeFileName(const QString input);

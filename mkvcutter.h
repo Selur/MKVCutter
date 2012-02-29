@@ -3,12 +3,16 @@
 
 #include <QWidget>
 #include <QString>
+#include <QHash>
 #include <QStringList>
+#include <QHash>
 
 #include "tools/analyzer/MkvInfoSourceAnalyser.h"
 #include "tools/viewer/AVSViewer.h"
 #include "tools/FFindexCaller.h"
 #include "ui_mkvcutter.h"
+
+struct cutTyp1;
 
 class MkvCutter : public QWidget
 {
@@ -19,9 +23,13 @@ class MkvCutter : public QWidget
 
   private:
     Ui::MkvCutterClass ui;
-    QString m_currentInput, m_tempAvs, m_indexFile;
+    QString m_currentInput, m_tempAvs, m_indexFile, m_currentOutput, m_tempFolder;
     int m_enabled, m_frameCount;
     QStringList m_keyframes, m_cuts;
+    double m_fps;
+    QHash <QString, QString> m_trimming;
+    QList<cutTyp1> m_cutList;
+    QSet<int> m_mkvmergeIntSplitList;
     MkvInfoSourceAnalyser *m_mkvinfoAnalyser;
     AVSViewer *m_viewer;
     FFIndexCaller *m_ffindexCaller;
@@ -31,9 +39,13 @@ class MkvCutter : public QWidget
     bool createAVS();
     int saveTextTo(QString text, QString to);
     void buildCutList();
+    void buildAndCallMkvMerge();
 
   private slots:
     void on_openSourcePushButton_clicked();
+    void on_outputPushButton_clicked();
+    void on_tempPushButton_clicked();
+    void on_nextPushButton_clicked();
     void enableGui(bool enable);
     void addInfo(QString infos);
     void setKeyFrames(QStringList list);
@@ -44,6 +56,7 @@ class MkvCutter : public QWidget
     void avsViewerFinished(int state);
     void setCutList(QStringList cuts);
     void ffindexProgress(int percent);
+    void setFPS(double framerate);
 };
 
 #endif // MKVCUTTER_H

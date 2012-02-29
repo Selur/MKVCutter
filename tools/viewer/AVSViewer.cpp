@@ -116,22 +116,22 @@ void AVSViewer::on_setCutStartPushButton_clicked()
 {
   if (!m_cutSupport) {
     return;
-  }emit
-  sendInfos(tr("set cut-start to: %1").arg(m_current));
+  }
+  //emit sendInfos(tr("set cut-start to: %1").arg(m_current));
   ui.frameHorizontalSlider->setStart(m_current);
 }
 void AVSViewer::on_setCutEndPushButton_clicked()
 {
   if (!m_cutSupport) {
     return;
-  }emit
-  sendInfos(tr("set cut-end to: %1").arg(m_current));
+  }
+  //emit sendInfos(tr("set cut-end to: %1").arg(m_current));
   ui.frameHorizontalSlider->setEnd(m_current);
 }
 
 bool AVSViewer::isValidCut(int start, int end)
 {
-  emit sendInfos(tr("isValidCut(%1, %2)").arg(start).arg(end));
+  //emit sendInfos(tr("isValidCut(%1, %2)").arg(start).arg(end));
   if (start == end) {
     this->send(tr("Ignored start and end need to differ!").arg(start).arg(end));
     return false;
@@ -149,26 +149,22 @@ bool AVSViewer::isValidCut(int start, int end)
     //CUT-START
     pos = cutElems.at(0).toInt();
     if ((start <= pos && pos <= end)) {
-      this->send(tr("Position: %1").arg(pos));
       this->send(tr("Ignored %1-%2 since it overlaps with %3. (start)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos--;
     if ((start <= pos && pos <= end)) {
-      this->send(tr("Position: %1").arg(pos));
       this->send(tr("Ignored %1-%2 need more distrance from. (start-1)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos += 2;
     if ((start <= pos && pos <= end)) {
-      this->send(tr("Position: %1").arg(pos));
       this->send(tr("Ignored %1-%2 need more distrance from. (start+1)").arg(start).arg(end).arg(elem));
       return false;
     }
     //CUT-END
     pos = cutElems.at(1).toInt(); //end
     if ((start <= pos && pos <= end)) {
-      this->send(tr("Position: %1").arg(pos));
       this->send(tr("Ignored %1-%2 since it overlaps with %3. (end)").arg(start).arg(end).arg(elem));
       return false;
     }
@@ -212,8 +208,7 @@ void AVSViewer::on_addCutPushButton_clicked()
         endPos = "0" + endPos;
     }
     QString cut = startPos + "-" + endPos;
-    emit
-    sendInfos(tr("add cut item: %1").arg(cut));
+    //emit sendInfos(tr("add cut item: %1").arg(cut));
     ui.cutListWidget->addItem(cut);
     ui.cutListWidget->sortItems();
     ui.frameHorizontalSlider->resetMarks();
@@ -229,9 +224,9 @@ void AVSViewer::on_removeCutPushButton_clicked()
   if (row == -1) {
     return;
   }
-  QListWidgetItem *item = ui.cutListWidget->takeItem(row);
-  emit
-  sendInfos(tr("removing %1 from cut-list").arg(item->text()));
+  //QListWidgetItem *item =
+  ui.cutListWidget->takeItem(row);
+  //emit sendInfos(tr("removing %1 from cut-list").arg(item->text()));
 }
 
 void AVSViewer::on_saveImagePushButton_clicked()

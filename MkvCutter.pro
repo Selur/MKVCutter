@@ -11,7 +11,8 @@ HEADERS += tools/FFIndexCaller.h \
     tools/viewer/avisynth.h \
     tools/viewer/stdafx.h \
     tools/analyzer/MkvInfoSourceAnalyser.h \
-    mkvcutter.h
+    mkvcutter.h \
+    Globals.h
 SOURCES += tools/FFIndexCaller.cpp \
     tools/viewer/AVSViewer.cpp \
     tools/viewer/ImageLabel.cpp \

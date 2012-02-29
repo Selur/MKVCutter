@@ -105,16 +105,24 @@ void MkvInfoSourceAnalyser::analyseOutput()
   QStringList lines = m_outData.split("\n");
   int videoTrack = -1;
   QString mediaInfo;
-  QString line, track;
+  QString line, track, videoData;
   bool gotMediaInfo = false;
   for (int i = 0, c = lines.count(); i < c; ++i) {
     line = lines.at(i);
     if (!gotMediaInfo && line.startsWith("Track")) {
       mediaInfo += "\r\n" + line.trimmed();
       if (videoTrack == -1) {
+        videoData = line;
         line = line.remove(line.indexOf(":"), line.size());
         line = line.remove(0, 6).trimmed();
         videoTrack = line.toInt();
+        int index = videoData.indexOf(" fps");
+        if (index != 0) {
+            line = videoData;
+            line = line.remove(index, line.size());
+            line = line.remove(0, line.lastIndexOf("(")+1);
+            emit fps(line.trimmed().toDouble());
+        }
       }
       continue;
     }

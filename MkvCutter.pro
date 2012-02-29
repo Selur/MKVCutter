@@ -4,7 +4,8 @@ TEMPLATE = app
 TARGET = MkvCutter
 QT += core \
     gui
-HEADERS += tools/FFIndexCaller.h \
+HEADERS += tools/MkvSplitCaller.h \
+    tools/FFIndexCaller.h \
     tools/viewer/AVSViewer.h \
     tools/viewer/ImageLabel.h \
     tools/viewer/MarkSlider.h \
@@ -13,7 +14,9 @@ HEADERS += tools/FFIndexCaller.h \
     tools/analyzer/MkvInfoSourceAnalyser.h \
     mkvcutter.h \
     Globals.h
-SOURCES += tools/FFIndexCaller.cpp \
+SOURCES += Globals.cpp \
+    tools/MkvSplitCaller.cpp \
+    tools/FFIndexCaller.cpp \
     tools/viewer/AVSViewer.cpp \
     tools/viewer/ImageLabel.cpp \
     tools/viewer/MarkSlider.cpp \

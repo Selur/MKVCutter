@@ -1,8 +1,6 @@
 #include "mkvcutter.h"
 #include <QMessageBox>
 #include <QFileDialog>
-#include <QTextStream>
-#include <QTextCodec>
 #include <QScrollbar>
 #include <iostream>
 #include "Globals.h"
@@ -10,8 +8,8 @@ using namespace std;
 
 MkvCutter::MkvCutter(QWidget *parent) :
     QWidget(parent), m_currentInput(QString()), m_tempAvs(QString()), m_indexFile(QString()),
-    m_currentOutput(QString()), m_tempFolder(QString()), m_enabled(0), m_frameCount(0),
-    m_keyframes(), m_cuts(), m_fps(-1), m_trimming(),m_cutList(), m_mkvmergeIntSplitList()
+        m_currentOutput(QString()), m_tempFolder(QString()), m_enabled(0), m_frameCount(0),
+        m_keyframes(), m_cuts(), m_fps(-1), m_trimming(), m_cutList(), m_mkvmergeIntSplitList()
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -28,6 +26,12 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_ffindexCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_ffindexCaller, SIGNAL(finished(int)), this, SLOT(ffIndexerFinished(int)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(progress(int)), this, SLOT(ffindexProgress(int)));
+  m_mkvSplitCaller = new MkvSplitCaller(this);
+  this->myconnect(m_ffindexCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
+  this->myconnect(m_ffindexCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_ffindexCaller, SIGNAL(finished(int)), this, SLOT(mkvSplitFinished(int)));
+  this->myconnect(m_mkvinfoAnalyser, SIGNAL(progress(int)), this, SLOT(mkvsplitProgress(int)));
+
   m_viewer = 0;
   ui.setupUi(this);
   ui.mainStackedWidget->setCurrentIndex(0);
@@ -40,7 +44,7 @@ MkvCutter::~MkvCutter()
 
 void MkvCutter::setFPS(double framerate)
 {
-    m_fps = framerate;
+  m_fps = framerate;
 }
 
 void MkvCutter::on_openSourcePushButton_clicked()
@@ -65,30 +69,14 @@ void MkvCutter::ffindexProgress(int percent)
   ui.infoLabel->setText(tr("FFIndex at %1%").arg(percent));
 }
 
+void MkvCutter::mkvsplitProgress(int percent)
+{
+  ui.infoLabel->setText(tr("MkvMerge splitting at %1%").arg(percent));
+}
+
 void MkvCutter::mkvAnalyseProgress(int linesRead)
 {
   ui.infoLabel->setText(tr("MkvInfoAnalyser read %1 lines,..").arg(linesRead));
-}
-
-int MkvCutter::saveTextTo(QString text, QString to)
-{
-  if (text.isEmpty()) {
-    this->addInfo(QObject::tr("Failed: saveTextTo %1 called with empty text").arg(to));
-    return -1;
-  }
-  QFile file(to);
-  file.remove();
-  if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-    QTextStream out(&file);
-    out.setCodec(QTextCodec::codecForUtfText(text.toUtf8()));
-    out << text;
-    if (file.exists()) {
-      file.close();
-      return 0;
-    }
-  }
-  this->addInfo(QObject::tr("Failed to saveTextTo %1").arg(to));
-  return -1;
 }
 
 bool MkvCutter::createAVS()
@@ -111,7 +99,7 @@ bool MkvCutter::createAVS()
   call += ", threads=1";
   call += ")";
   script << call;
-  return this->saveTextTo(script.join("\n"), m_tempAvs) == 0;
+  return Globals::saveTextTo(script.join("\n"), m_tempAvs) == 0;
 }
 
 void MkvCutter::mkvAnalysefinished()
@@ -132,89 +120,111 @@ void MkvCutter::mkvAnalysefinished()
 
 void MkvCutter::buildCutList()
 {
-    this->addInfo("building cut list,..");
-    //build cuts list
-    QStringList tCuts;
-    int prevKey = -1, nextKey = -1, keyIndex = 0, keyCount = m_keyframes.count();
-    QString tmp;
-    int currentKey;
-    int start, end;
-    cutTyp1 temp;
-    for (int i = 0, c = m_cuts.count(); i < c; ++i) {
-        tCuts = m_cuts.at(i).split("-");
-        start = tCuts.at(0).toInt();
-        end = tCuts.at(1).toInt();
-        for (; keyIndex < keyCount; ++keyIndex) {
-            tmp = m_keyframes.at(keyIndex);
-            tmp = tmp.remove(tmp.indexOf(","), tmp.size());
-            currentKey = tmp.toInt();
-            if (currentKey <= start) { //
-                prevKey = currentKey;
-                continue;
-            }
-            if (currentKey >= end) {
-                nextKey = currentKey;
-                break;
-            }
-            if (nextKey < end) {
-                nextKey = end;
-            }
-        }
-        //add to list
-        m_mkvmergeIntSplitList.insert(prevKey);
-        m_mkvmergeIntSplitList.insert(nextKey);
-        temp.prevKey = prevKey;
-        temp.cut.start = start;
-        temp.cut.end = end;
-        temp.nextKey = nextKey;
-        this->addInfo("adding to cuts: "+cutTyp1ToString(temp));
-        m_cutList.append(temp);
-    }
-    this->addInfo("finished building cuts list,..");
-
-    QStringList trimCalls;
-    QString name, trim;
-    bool matchStart, matchEnd, matchLast;
-    for (int i = 0, c = m_cutList.count(); i < c; ++i) {
-        temp = m_cutList.at(i);
-        name = "cut_" + QString::number(temp.prevKey) + "-" + QString::number(temp.nextKey-1)+".mkv";
-        trim = QString();
-        matchStart = temp.prevKey == temp.cut.start;
-        matchEnd = temp.nextKey-1 == temp.cut.end;
-        matchLast = temp.nextKey == temp.cut.end && temp.nextKey == m_frameCount;
-        if (matchStart && (matchEnd || matchLast)) {
-            trim += "DELETE";
-            //this->addInfo(tr("%1 delete: adding %2 to trimList").arg(name).arg(trim));
-            m_trimming.insert(name,trim);
-            continue;
-        }
-        if (matchStart) {
-            trim += "Trim("+QString::number(temp.cut.end-temp.prevKey+1)+","+QString::number(temp.nextKey-temp.prevKey-1)+")";
-            //this->addInfo(tr("%1 matchedStart: adding %2 to trimList").arg(name).arg(trim));
-            m_trimming.insert(name,trim);
-            continue;
-        }
-        if (matchLast) {
-            trim += "Trim(0,"+QString::number(temp.cut.start-temp.prevKey-1)+")";
-            //this->addInfo(tr("%1 matchLast: adding %2 to trimList").arg(name).arg(trim));
-            m_trimming.insert(name,trim);
-            continue;
-        }
-        if (matchEnd) {
-            trim += "Trim(0,"+QString::number(temp.cut.start-temp.prevKey-1)+")";
-            //this->addInfo(tr("%1 matchEnd: adding %2 to trimList").arg(name).arg(trim));
-            m_trimming.insert(name,trim);
-            continue;
-        }
-        trim += "Trim(0,"+QString::number(temp.cut.start-temp.prevKey-1)+")";
-        trim+="+";
-        trim += "Trim("+QString::number(temp.cut.end-temp.prevKey+1)+","+QString::number(temp.nextKey-temp.prevKey-1)+")";
-        //this->addInfo(tr("%1 matchMiddle: adding %2 to trimList").arg(name).arg(trim));
-        m_trimming.insert(name,trim);
+  this->addInfo("building cut list,..");
+  //build cuts list
+  QStringList tCuts;
+  int prevKey = -1, nextKey = -1, keyIndex = 0, keyCount = m_keyframes.count();
+  QString tmp;
+  int currentKey;
+  int start, end;
+  cutTyp1 temp;
+  for (int i = 0, c = m_cuts.count(); i < c; ++i) {
+    tCuts = m_cuts.at(i).split("-");
+    start = tCuts.at(0).toInt();
+    end = tCuts.at(1).toInt();
+    for (; keyIndex < keyCount; ++keyIndex) {
+      tmp = m_keyframes.at(keyIndex);
+      tmp = tmp.remove(tmp.indexOf(","), tmp.size());
+      currentKey = tmp.toInt();
+      if (currentKey <= start) { //
+        prevKey = currentKey;
         continue;
+      }
+      if (currentKey >= end) {
+        nextKey = currentKey;
+        break;
+      }
+      if (nextKey < end) {
+        nextKey = end;
+      }
     }
-    this->addInfo("finished building trimList,..");
+    //add to list
+    m_mkvmergeIntSplitList.insert(prevKey);
+    m_mkvmergeIntSplitList.insert(nextKey);
+    temp.prevKey = prevKey;
+    temp.cut.start = start;
+    temp.cut.end = end;
+    temp.nextKey = nextKey;
+    this->addInfo("adding to cuts: " + Globals::cutTyp1ToString(temp));
+    m_cutList.append(temp);
+  }
+  this->addInfo("finished building cuts list,..");
+
+  QStringList trimCalls;
+  QString name, trim;
+  bool matchStart, matchEnd, matchLast;
+  for (int i = 0, c = m_cutList.count(); i < c; ++i) {
+    temp = m_cutList.at(i);
+    name = "cut_" + QString::number(temp.prevKey) + "-" + QString::number(temp.nextKey - 1)
+        + ".mkv";
+    trim = QString();
+    matchStart = temp.prevKey == temp.cut.start;
+    matchEnd = temp.nextKey - 1 == temp.cut.end;
+    matchLast = temp.nextKey == temp.cut.end && temp.nextKey == m_frameCount;
+    if (matchStart && (matchEnd || matchLast)) {
+      trim += "DELETE";
+      //this->addInfo(tr("%1 delete: adding %2 to trimList").arg(name).arg(trim));
+      m_trimming.insert(name, trim);
+      continue;
+    }
+    if (matchStart) {
+      trim += "Trim(" + QString::number(temp.cut.end - temp.prevKey + 1) + ","
+          + QString::number(temp.nextKey - temp.prevKey - 1) + ")";
+      //this->addInfo(tr("%1 matchedStart: adding %2 to trimList").arg(name).arg(trim));
+      m_trimming.insert(name, trim);
+      continue;
+    }
+    if (matchLast) {
+      trim += "Trim(0," + QString::number(temp.cut.start - temp.prevKey - 1) + ")";
+      //this->addInfo(tr("%1 matchLast: adding %2 to trimList").arg(name).arg(trim));
+      m_trimming.insert(name, trim);
+      continue;
+    }
+    if (matchEnd) {
+      trim += "Trim(0," + QString::number(temp.cut.start - temp.prevKey - 1) + ")";
+      //this->addInfo(tr("%1 matchEnd: adding %2 to trimList").arg(name).arg(trim));
+      m_trimming.insert(name, trim);
+      continue;
+    }
+    trim += "Trim(0," + QString::number(temp.cut.start - temp.prevKey - 1) + ")";
+    trim += "+";
+    trim += "Trim(" + QString::number(temp.cut.end - temp.prevKey + 1) + ","
+        + QString::number(temp.nextKey - temp.prevKey - 1) + ")";
+    //this->addInfo(tr("%1 matchMiddle: adding %2 to trimList").arg(name).arg(trim));
+    m_trimming.insert(name, trim);
+    continue;
+  }
+  this->addInfo("finished building trimList,..");
 }
+
+void MkvCutter::mkvSplitFinished(int exitstate)
+{
+  if (exitstate < 0) {
+    this->addInfo(tr("Resetting since mkv split caller crashed,.."));
+    this->reset();
+    return;
+  }
+  //TODO:
+  // 3. lösche die Dateien die gelsöcht werden sollen
+  // 4. erstelle Avisynth skripte zum Reencoden des Videos mit der TrimListe
+  // generate x264 call to reencode the first few frames that are needed video
+  // delete unneeded parts
+  // extract and cut audio with (delaycut)
+  // extract and cut subtitle with (?)
+  // generate mkvmerge calls to mux reencoded parts
+  // generate mkvmerge calls to join all parts
+}
+
 
 void MkvCutter::ffIndexerFinished(int exitstate)
 {
@@ -249,61 +259,53 @@ void MkvCutter::avsViewerFinished(int state)
   }
   ui.infoLabel->setText(tr("Cut-View finished,.."));
   this->buildCutList();
-  this->addInfo("split key frames: "+intSetToString(m_mkvmergeIntSplitList));
-  this->addInfo("split times: "+intSetToTimes(m_mkvmergeIntSplitList, m_fps));
+  this->addInfo("split key frames: " + Globals::intSetToString(m_mkvmergeIntSplitList));
+  this->addInfo("split times: " + Globals::intSetToTimes(m_mkvmergeIntSplitList, m_fps));
   ui.infoLabel->setText(tr("Set output base file and temp folder,.."));
   ui.mainStackedWidget->setCurrentIndex(2);
 }
 
 void MkvCutter::on_outputPushButton_clicked()
 {
-    QString name = tr("Select mkv output base file");
-    QString select = tr("Output (*.mkv)");
-    QString inputPath = QApplication::applicationDirPath();
-    QString output = QFileDialog::getSaveFileName(this, name, inputPath, select);
-    if (!output.isEmpty()) {
-        output = QDir::toNativeSeparators(output);
-        ui.outputLabel->setText(output);
-        m_currentOutput = output;
-    }
+  QString name = tr("Select mkv output base file");
+  QString select = tr("Output (*.mkv)");
+  QString inputPath = QApplication::applicationDirPath();
+  QString output = QFileDialog::getSaveFileName(this, name, inputPath, select);
+  if (!output.isEmpty()) {
+    output = QDir::toNativeSeparators(output);
+    ui.outputLabel->setText(output);
+    m_currentOutput = output;
+  }
 }
 
 void MkvCutter::on_tempPushButton_clicked()
 {
-    QString name = tr("Select temp folder");
-    QString inputPath = QApplication::applicationDirPath();
-    QString tempFolder = QFileDialog::getExistingDirectory(this, name, inputPath);
-    if (!tempFolder.isEmpty()) {
-        tempFolder = QDir::toNativeSeparators(tempFolder);
-        ui.tempFolderLabel->setText(tempFolder);
-        m_tempFolder = tempFolder;
-    }
+  QString name = tr("Select temp folder");
+  QString inputPath = QApplication::applicationDirPath();
+  QString tempFolder = QFileDialog::getExistingDirectory(this, name, inputPath);
+  if (!tempFolder.isEmpty()) {
+    tempFolder = QDir::toNativeSeparators(tempFolder);
+    ui.tempFolderLabel->setText(tempFolder);
+    m_tempFolder = tempFolder;
+  }
 }
 
 void MkvCutter::on_nextPushButton_clicked()
 {
-    if (m_tempFolder.isEmpty() || this->m_currentOutput.isEmpty()) {
-        QMessageBox::information(this, tr("Notice"), tr("You need to specify the output file and the temp folder!"));
-        return;
-    }
-    ui.mainStackedWidget->setCurrentIndex(3);
-    ui.infoLabel->setText(tr("Calling mkvmerge,.."));
-    this->buildAndCallMkvMerge();
+  if (m_tempFolder.isEmpty() || this->m_currentOutput.isEmpty()) {
+    QMessageBox::information(this, tr("Notice"),
+                             tr("You need to specify the output file and the temp folder!"));
+    return;
+  }
+  ui.mainStackedWidget->setCurrentIndex(3);
+  ui.infoLabel->setText(tr("Calling mkvmerge,.."));
+  this->buildAndCallMkvMerge();
 }
 
 void MkvCutter::buildAndCallMkvMerge()
 {
-    QMessageBox::information(this,"DEBUG", "Output: "+m_currentOutput+", temp: "+m_tempFolder);
-    //TODO:
-    // 2. generate mkvmerge split call
-    // 3. lösche die Dateien die gelsöcht werden sollen
-    // 4. erstelle Avisynth skripte zum Reencoden des Videos mit der TrimListe
-    // generate x264 call to reencode the first few frames that are needed video
-    // delete unneeded parts
-    // extract and cut audio with (delaycut)
-    // extract and cut subtitle with (?)
-    // generate mkvmerge calls to mux reencoded parts
-    // generate mkvmerge calls to join all parts
+  QString time = Globals::intSetToTimes(m_mkvmergeIntSplitList, m_fps);
+  m_mkvSplitCaller->start(m_currentInput, m_currentOutput, time, m_tempFolder);
 }
 
 void MkvCutter::setKeyFrames(QStringList list)

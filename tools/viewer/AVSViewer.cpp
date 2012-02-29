@@ -13,6 +13,7 @@
 #include <QFileInfo>
 #include <QTextStream>
 #include <QTextCodec>
+#include "Globals.h"
 using namespace std;
 
 AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport) :
@@ -273,101 +274,6 @@ void AVSViewer::on_ffinfoCheckBox_toggled()
   this->init(m_current);
 }
 
-QString removeQuotes(QString input)
-{
-  QString ret = input.trimmed();
-  if (ret.startsWith("\"")) {
-    ret = ret.remove(0, 1);
-  }
-  if (ret.endsWith("\"")) {
-    ret = ret.remove(ret.size() - 1, 1);
-  }
-  return ret;
-}
-
-QString getWholeFileName(const QString input)
-{
-  if (input.isEmpty()) {
-    return QString();
-  }
-  QString output = QDir::toNativeSeparators(input);
-  int index = output.lastIndexOf(QDir::separator());
-  if (output.endsWith(QDir::separator())) {
-    return QString();
-  } else if (index != -1) {
-    output = output.remove(0, index + 1);
-  }
-  output = removeQuotes(output);
-  return QDir::toNativeSeparators(output);
-}
-
-QString getFileName(const QString input)
-{
-  if (input.isEmpty()) {
-    return QString();
-  }
-  QString output = getWholeFileName(input);
-  int index = output.lastIndexOf(".");
-  if (index != -1) {
-    output = output.remove(index, output.size());
-  }
-  return output;
-}
-QString removeLastSeparatorFromPath(QString input)
-{
-  input = input.trimmed();
-  if (input.isEmpty()) {
-    return input;
-  }
-  input = QDir::toNativeSeparators(input);
-  int size = input.size();
-  if (!input.endsWith(QDir::separator())) {
-    return input;
-  } else if (size == 1) { //input only consists of the separator
-    return QString();
-  }
-  return input.remove(size - 1, 1);
-}
-
-QString getDirectory(const QString input)
-{
-  if (input.isEmpty()) {
-    return QString();
-  }
-  QString path = input;
-  QFileInfo info(path);
-  if (info.isDir()) {
-    return removeLastSeparatorFromPath(path);
-  }
-  QString output = path;
-  output = output.replace("\\", "/");
-  int index = output.lastIndexOf("/");
-  if (index == -1) {
-    return QString();
-  }
-  output = output.remove(index, output.size());
-  return QDir::toNativeSeparators(output);
-}
-
-int saveTextTo(QString text, QString to)
-{
-  if (text.isEmpty()) {
-    return -1;
-  }
-  QFile file(to);
-  file.remove();
-  if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-    QTextStream out(&file);
-    out.setCodec(QTextCodec::codecForUtfText(text.toUtf8()));
-    out << text;
-    if (file.exists()) {
-      file.close();
-      return 0;
-    }
-  }
-  return -1;
-}
-
 int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
 {
   //this->send(tr("handleFFInfo(%1, %2)").arg(input).arg(invokeFFInfo));
@@ -394,7 +300,7 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
         ffms2Line = line;
         ffms2Line = ffms2Line.remove(0, ffms2Line.indexOf("\"") + 1);
         ffms2Line = ffms2Line.remove(ffms2Line.indexOf("\""), ffms2Line.size());
-        ffms2Line = getDirectory(ffms2Line);
+        ffms2Line = Globals::getDirectory(ffms2Line);
         ffms2Line += QDir::separator();
         ffms2Line += "FFMS2.avsi";
         ffms2Line = QDir::toNativeSeparators(ffms2Line);
@@ -443,10 +349,10 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
   }
 
   if (!newContent.isEmpty()) {
-    QString directory = getDirectory(m_currentInput);
-    QString name = getFileName(m_currentInput);
+    QString directory = Globals::getDirectory(m_currentInput);
+    QString name = Globals::getFileName(m_currentInput);
     m_avsModified = QDir::toNativeSeparators(directory + QDir::separator() + name + "_tmp.avs");
-    if (saveTextTo(newContent, m_avsModified) == 0) {
+    if (Globals::saveTextTo(newContent, m_avsModified) == 0) {
       emit sendInfos(tr("Saved temp avs file to %1").arg(m_avsModified));
       input = m_avsModified;
       //emit sendInfos(tr("Content:\r\n%1").arg(newContent));

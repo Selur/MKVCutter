@@ -10,6 +10,7 @@
 #include "tools/analyzer/MkvInfoSourceAnalyser.h"
 #include "tools/viewer/AVSViewer.h"
 #include "tools/FFindexCaller.h"
+#include "tools/MkvSplitCaller.h"
 #include "ui_mkvcutter.h"
 
 struct cutTyp1;
@@ -33,11 +34,11 @@ class MkvCutter : public QWidget
     MkvInfoSourceAnalyser *m_mkvinfoAnalyser;
     AVSViewer *m_viewer;
     FFIndexCaller *m_ffindexCaller;
+    MkvSplitCaller *m_mkvSplitCaller;
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
     void reset();
     bool createAVS();
-    int saveTextTo(QString text, QString to);
     void buildCutList();
     void buildAndCallMkvMerge();
 
@@ -57,6 +58,8 @@ class MkvCutter : public QWidget
     void setCutList(QStringList cuts);
     void ffindexProgress(int percent);
     void setFPS(double framerate);
+    void mkvSplitFinished(int exitstate);
+    void mkvsplitProgress(int percent);
 };
 
 #endif // MKVCUTTER_H

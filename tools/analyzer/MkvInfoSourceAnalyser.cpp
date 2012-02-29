@@ -118,10 +118,10 @@ void MkvInfoSourceAnalyser::analyseOutput()
         videoTrack = line.toInt();
         int index = videoData.indexOf(" fps");
         if (index != 0) {
-            line = videoData;
-            line = line.remove(index, line.size());
-            line = line.remove(0, line.lastIndexOf("(")+1);
-            emit fps(line.trimmed().toDouble());
+          line = videoData;
+          line = line.remove(index, line.size());
+          line = line.remove(0, line.lastIndexOf("(") + 1);
+          emit fps(line.trimmed().toDouble());
         }
       }
       continue;

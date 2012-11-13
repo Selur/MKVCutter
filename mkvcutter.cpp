@@ -75,18 +75,17 @@ MkvCutter::~MkvCutter()
 void MkvCutter::setSplitFiles(QStringList splitFiles)
 {
   m_splitFiles = splitFiles;
-  this->addInfo(" " + tr("video splitter created the following files:"));
+  /*this->addInfo(" " + tr("video splitter created the following files:"));
   int i = 1;
   foreach(QString fileName, splitFiles) {
       this->addInfo("  "+tr("%1: %2").arg(i++).arg(fileName));
-  }
+  }*/
 }
 
 void MkvCutter::setFPS(double framerate)
 {
   m_fps = framerate;
   this->addInfo(tr("Video stream frame rate: %1").arg(m_fps));
-
 }
 
 void MkvCutter::on_openSourcePushButton_clicked()
@@ -710,7 +709,7 @@ void MkvCutter::on_nextPushButton_clicked()
   }
   ui.mainStackedWidget->setCurrentIndex(3);
   int listCount = m_mkvVideoParts.size();
-  this->addInfo(tr("mkvParts count: %1").arg(listCount));
+  //this->addInfo(tr("mkvParts count: %1").arg(listCount));
   if (listCount == 0) {
     ui.infoLabel->setText(tr("No cuts using mkvmerge needed,.."));
     m_splitFiles << m_currentInput;

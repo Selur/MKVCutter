@@ -49,7 +49,7 @@ void MkvMerger::start(QStringList splitFiles, QString audioFile, QString outputF
 
 void MkvMerger::call(QString call)
 {
-  this->sendInfos("MKVmerge call: "+call);
+  //this->sendInfos("MKVmerge call: "+call);
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,

@@ -12,7 +12,7 @@
 
 MkvSplitCaller::MkvSplitCaller(QObject *parent) :
     QObject(parent), m_process(NULL), m_input(QString()), m_output(QString()),
-    m_splitPart(QString()), m_outputFolder(QString()), m_tempFiles()
+    m_splitParts(), m_outputFolder(QString()), m_tempFiles(),m_audio(false)
 {
 
 }
@@ -56,23 +56,30 @@ void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitSta
     finished(-1);
     return;
   }
+  if (m_tempFiles.isEmpty() && QFile::exists(m_output)) {
+      //this->sendInfos(tr("only one output file: %1").arg(m_output));
+      m_tempFiles << m_output;
+  }
   emit splitFiles(m_tempFiles);
   emit finished(0);
 }
 
-void MkvSplitCaller::start(QString inputFile, QString outputFile, QString splitPart,
-                           QString outputFolder)
+void MkvSplitCaller::start(QString inputFile, QString outputFile, QStringList splitParts,
+                           QString outputFolder, bool audio)
 {
+  m_audio = audio;
   m_output = outputFile;
   m_input = inputFile;
-  m_splitPart = splitPart;
+  m_splitParts.clear();
+  m_splitParts = splitParts;
   m_outputFolder = outputFolder;
   this->call(this->buildCall());
 }
 
 void MkvSplitCaller::call(QString call)
 {
-  this->sendInfos("MKVmerge call: "+call);
+  QString typ = m_audio ? "Audio": "Video";
+  //this->sendInfos(typ+" split call: "+call);
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
@@ -94,12 +101,19 @@ QString MkvSplitCaller::buildCall()
 #endif
   call = "\"" + QDir::toNativeSeparators(appFolder + QDir::separator() + call) + "\"";
 
-  QString output = m_outputFolder + QDir::separator() + Globals::getWholeFileName(m_output);
-  call += " -o \"" + QDir::toNativeSeparators(output) + "\"";
-  call += " --split timecodes:" + m_splitPart;
-  //TODO: remove one audio&co can be handled
-  call += " --no-audio --no-subtitles --no-buttons --no-track-tags";
-  call += " --no-chapters --no-attachments --no-global-tags";
+  m_output = m_outputFolder + QDir::separator() + Globals::getWholeFileName(m_output);
+  if (m_audio) {
+    m_output = m_output.insert(m_output.lastIndexOf("."),"_AudioCut");
+  }
+  call += " -o \"" + QDir::toNativeSeparators(m_output) + "\"";
+  call += " --split parts:"+m_splitParts.join(",");
+  if (m_audio) {
+    call += " --no-video";
+  } else {
+    call += " --no-audio";
+    call += " --no-subtitles --no-buttons --no-track-tags";
+    call += " --no-chapters --no-attachments --no-global-tags";
+  }
   call += " \""+m_input+"\"";
   return call;
 }

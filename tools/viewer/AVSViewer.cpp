@@ -200,6 +200,9 @@ void AVSViewer::on_addCutPushButton_clicked()
   }
   int start = ui.frameHorizontalSlider->getStart();
   int end = ui.frameHorizontalSlider->getEnd();
+  if (end == -1) {
+      end = m_frameCount;
+  }
   if ((start == 0 && end == 0) || start == end) {
     return;
   }
@@ -217,7 +220,7 @@ void AVSViewer::on_addCutPushButton_clicked()
       endPos = "0" + endPos;
     }
     QString cut = startPos + "-" + endPos;
-    //emit sendInfos(tr("add cut item: %1").arg(cut));
+    emit sendInfos(tr("add cut item: %1").arg(cut));
     ui.cutListWidget->addItem(cut);
     ui.cutListWidget->sortItems();
     ui.frameHorizontalSlider->resetMarks();
@@ -233,9 +236,8 @@ void AVSViewer::on_removeCutPushButton_clicked()
   if (row == -1) {
     return;
   }
-  //QListWidgetItem *item =
-  ui.cutListWidget->takeItem(row);
-  //emit sendInfos(tr("removing %1 from cut-list").arg(item->text()));
+  QListWidgetItem *item = ui.cutListWidget->takeItem(row);
+  emit sendInfos(tr("removing %1 from cut-list").arg(item->text()));
 }
 
 void AVSViewer::on_saveImagePushButton_clicked()
@@ -517,11 +519,9 @@ void AVSViewer::init(int start)
       m_inf = m_clip->GetVideoInfo(); // update clip info
     }
 
-    emit
-    sendInfos(" " + tr("grabbing clip length,.."));
+    //emit sendInfos(" " + tr("grabbing clip length,.."));
     m_frameCount = m_inf.num_frames; //get frame count
-    emit
-    sendInfos("  -> " + tr("clip contains %1 frames,..").arg(m_frameCount));
+    //emit   sendInfos("  -> " + tr("clip contains %1 frames,..").arg(m_frameCount));
     emit
     sendInfos(" " + tr("adjusting slider to frame count,.."));
     ui.frameHorizontalSlider->setMaximum(m_frameCount);

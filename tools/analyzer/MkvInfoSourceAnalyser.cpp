@@ -109,6 +109,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
   bool gotMediaInfo = false;
   for (int i = 0, c = lines.count(); i < c; ++i) {
     line = lines.at(i);
+    //emit sendInfos(tr("looking at: %1").arg(line));
     if (!gotMediaInfo && line.startsWith("Track")) {
       mediaInfo += "\r\n" + line.trimmed();
       if (videoTrack == -1) {
@@ -116,8 +117,12 @@ void MkvInfoSourceAnalyser::analyseOutput()
         line = line.remove(line.indexOf(":"), line.size());
         line = line.remove(0, 6).trimmed();
         videoTrack = line.toInt();
+        emit sendInfos(tr("video track numer: %1").arg(videoTrack));
         int index = videoData.indexOf(" fps");
-        if (index != 0) {
+        if (index == -1) {
+            index = videoData.indexOf("frames/fields per second for a video track");
+        }
+        if (index != -1) {
           line = videoData;
           line = line.remove(index, line.size());
           line = line.remove(0, line.lastIndexOf("(") + 1);

@@ -10,6 +10,7 @@
 
 #include <QObject>
 #include <QProcess>
+#include <QStringList>
 
 class MkvSplitCaller : public QObject
 {
@@ -17,12 +18,13 @@ class MkvSplitCaller : public QObject
   public:
     MkvSplitCaller(QObject *parent);
     virtual ~MkvSplitCaller();
-    void start(QString inputFile, QString outputFile, QString splitPart, QString outputFolder);
+    void start(QString inputFile, QString outputFile, QStringList splitParts, QString outputFolder, bool audio = false);
 
   private:
     QProcess *m_process;
-    QString m_input, m_output, m_splitPart, m_outputFolder;
-    QStringList m_tempFiles;
+    QString m_input, m_output, m_outputFolder;
+    QStringList m_tempFiles, m_splitParts;
+    bool m_audio;
     void call(QString call);
     QString buildCall();
 

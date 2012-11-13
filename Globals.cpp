@@ -166,13 +166,14 @@ QString Globals::secondsToHMS(double seconds)
   time += QString::number(sec);
   return time;
 }
-
+//#include <iostream>
 QString Globals::intSetToTimes(QSet<int> keyframes, double fps)
 {
   QList<int> list = keyframes.toList();
   qSort(list);
   QString keyString;
   foreach(int key, list) {
+    //std::cerr << "key: " << key << ", fps: " << qPrintable(QString::number(fps)) << std::endl;
     keyString += milliSecondsToHMS(int(key / fps * 1000.0 + 0.5)) + ",";
   }
   if (!list.isEmpty()) {
@@ -278,6 +279,6 @@ int Globals::saveTextTo(QString text, QString to)
 
 QString Globals::frameToTime(int number, double fps)
 {
-  double seconds = number * fps;
+  double seconds = number / fps;
   return secondsToHMSZZZ(seconds);
 }

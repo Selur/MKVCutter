@@ -152,35 +152,41 @@ bool AVSViewer::isValidCut(int start, int end)
     //CUT-START
     pos = cutElems.at(0).toInt();
     if ((start <= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 since it overlaps with %3. (start)").arg(start).arg(end).arg(elem));
+      this->send(
+          tr("Ignored %1-%2 since it overlaps with %3. (start)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos--;
     if ((start <= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 need more distrance from. (start-1)").arg(start).arg(end).arg(elem));
+      this->send(
+          tr("Ignored %1-%2 need more distrance from. (start-1)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos += 2;
     if ((start <= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 need more distrance from. (start+1)").arg(start).arg(end).arg(elem));
+      this->send(
+          tr("Ignored %1-%2 need more distrance from. (start+1)").arg(start).arg(end).arg(elem));
       return false;
     }
     //CUT-END
     pos = cutElems.at(1).toInt(); //end
     if ((start <= pos && pos <= end)) {
-      this->send(tr("Ignored %1-%2 since it overlaps with %3. (end)").arg(start).arg(end).arg(elem));
+      this->send(
+          tr("Ignored %1-%2 since it overlaps with %3. (end)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos--;
     if ((start <= pos && pos <= end)) {
       this->send(tr("Position: %1").arg(pos));
-      this->send(tr("Ignored %1-%2 need more distrance from. (end-1)").arg(start).arg(end).arg(elem));
+      this->send(
+          tr("Ignored %1-%2 need more distrance from. (end-1)").arg(start).arg(end).arg(elem));
       return false;
     }
     pos += 2;
     if ((start <= pos && pos <= end)) {
       this->send(tr("Position: %1").arg(pos));
-      this->send(tr("Ignored %1-%2 need more distrance from. (end+1)").arg(start).arg(end).arg(elem));
+      this->send(
+          tr("Ignored %1-%2 need more distrance from. (end+1)").arg(start).arg(end).arg(elem));
       return false;
     }
   }
@@ -204,11 +210,11 @@ void AVSViewer::on_addCutPushButton_clicked()
     int max = QString::number(ui.frameHorizontalSlider->maximum()).size();
     QString startPos = QString::number(start);
     while (startPos.size() < max) {
-        startPos = "0" + startPos;
+      startPos = "0" + startPos;
     }
     QString endPos = QString::number(end);
     while (endPos.size() < max) {
-        endPos = "0" + endPos;
+      endPos = "0" + endPos;
     }
     QString cut = startPos + "-" + endPos;
     //emit sendInfos(tr("add cut item: %1").arg(cut));
@@ -261,7 +267,7 @@ void AVSViewer::on_commitPushButton_clicked()
     }
     emit cuts(cutList);
   }
-  ui.showLabel->resize(0,0);
+  ui.showLabel->resize(0, 0);
   emit finished(0);
 }
 
@@ -293,13 +299,13 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
   if (!content.contains("FFInfo()")) {
     bool ffmpegSource = false;
     bool ffms2Avs = false;
-    foreach(QString line, content.split("\n"))
-    {
+    foreach(QString line, content.split("\n")) {
       if (line.contains("FFMpegSource2(", Qt::CaseInsensitive)
           || line.contains("FFVideoSource(", Qt::CaseInsensitive)) {
         ffmpegSource = true;
       }
-      if (line.contains("ffms2.dll", Qt::CaseInsensitive)) {
+      if (line.contains("ffms2.dll", Qt::CaseInsensitive)
+          || line.contains("ffms2-x64.dll", Qt::CaseInsensitive)) {
         ffms2Line = line;
         ffms2Line = ffms2Line.remove(0, ffms2Line.indexOf("\"") + 1);
         ffms2Line = ffms2Line.remove(ffms2Line.indexOf("\""), ffms2Line.size());
@@ -314,7 +320,7 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
     }
     ui.ffinfoCheckBox->setEnabled(ffmpegSource);
     if (!ui.ffinfoCheckBox->isChecked()) {
-        return 0;
+      return 0;
     }
     //emit sendInfos(tr("FFInfoCheckBox is activated,.."));
     int index = content.indexOf("distributor()", Qt::CaseInsensitive);
@@ -396,22 +402,18 @@ void AVSViewer::init(int start)
       QString error = avsDLL.errorString();
       if (!error.isEmpty()) {
         this->send(tr("Could not load avisynth.dll! %1").arg(error));
-        emit
-        finished(-2);
+        emit  finished(-2);
         return;
       }
 
-      emit
-      sendInfos(tr("Could not load avisynth.dll!"));
+      emit sendInfos(tr("Could not load avisynth.dll!"));
       emit finished(-3);
     }
 
-    emit
-    sendInfos(tr("loaded avisynth dll,.."));
+    emit sendInfos(tr("loaded avisynth dll,.."));
     IScriptEnvironment* (*CreateScriptEnvironment)(
         int version) = (IScriptEnvironment*(*)(int)) avsDLL.resolve("CreateScriptEnvironment"); //resolve CreateScriptEnvironment from the dll
-    emit
-    sendInfos(tr("loaded CreateScriptEnvironment definition from dll,.."));
+    emit sendInfos(tr("loaded CreateScriptEnvironment definition from dll,.."));
     m_env = CreateScriptEnvironment(AVISYNTH_INTERFACE_VERSION); //create a new IScriptEnvironment
     if (!m_env) { //abort if IScriptEnvironment couldn't be created
       this->send(tr("Could not create IScriptenvironment,..."));

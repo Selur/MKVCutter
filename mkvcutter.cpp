@@ -8,11 +8,12 @@ using namespace std;
 
 MkvCutter::MkvCutter(QWidget *parent) :
     QWidget(parent), m_currentInput(QString()), m_tempAvs(QString()), m_indexFile(QString()),
-    m_currentOutput(QString()), m_tempFolder(QString()),m_avcProfileLevel(QString("High@L4.1")),
-    m_audioFormat(QString()), m_avcCabac(true), m_avcRefFrames(1), m_enabled(0), m_frameCount(0),
-    m_keyframes(), m_cuts(), m_splitFiles(), m_tempReencodeAvs(), m_videoEncodingCalls(),
-    m_audioEncodingCalls(), m_reencodedVideoFiles(), m_fps(-1), m_trimming(), m_keyTimes(),
-    m_cutList(), m_mkvmergeIntSplitList()
+        m_currentOutput(QString()), m_tempFolder(QString()),
+        m_avcProfileLevel(QString("High@L4.1")), m_audioFormat(QString()), m_avcCabac(true),
+        m_avcRefFrames(1), m_enabled(0), m_frameCount(0), m_keyframes(), m_cuts(), m_splitFiles(),
+        m_tempReencodeAvs(), m_videoEncodingCalls(), m_audioEncodingCalls(),
+        m_reencodedVideoFiles(), m_fps(-1), m_trimming(), m_keyTimes(), m_cutList(),
+        m_mkvmergeIntSplitList()
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -28,10 +29,12 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(finished(int)), this, SLOT(mediaInfoFinished(int)));
-  this->myconnect(m_mediaInfoAnalyser, SIGNAL(avcProfileLevel(QString)), this, SLOT(setAvcProfileLevel(QString)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(avcProfileLevel(QString)), this,
+                  SLOT(setAvcProfileLevel(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(refframes(int)), this, SLOT(setAvcRefFrames(int)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(cabac(bool)), this, SLOT(setAvcCabac(bool)));
-  this->myconnect(m_mediaInfoAnalyser, SIGNAL(audioFormat(QString)), this, SLOT(setAudioFormat(QString)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(audioFormat(QString)), this,
+                  SLOT(setAudioFormat(QString)));
   m_ffindexCaller = new FFIndexCaller(this);
   this->myconnect(m_ffindexCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_ffindexCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -42,7 +45,8 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_mkvSplitCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_mkvSplitCaller, SIGNAL(finished(int)), this, SLOT(mkvSplitFinished(int)));
   this->myconnect(m_mkvSplitCaller, SIGNAL(progress(int)), this, SLOT(mkvsplitProgress(int)));
-  this->myconnect(m_mkvSplitCaller, SIGNAL(splitFiles(QStringList)), this, SLOT(setSplitFiles(QStringList)));
+  this->myconnect(m_mkvSplitCaller, SIGNAL(splitFiles(QStringList)), this,
+                  SLOT(setSplitFiles(QStringList)));
   m_mkvMerger = new MkvMerger(this);
   this->myconnect(m_mkvMerger, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvMerger, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -65,7 +69,7 @@ MkvCutter::~MkvCutter()
 
 void MkvCutter::setSplitFiles(QStringList splitFiles)
 {
-    m_splitFiles = splitFiles;
+  m_splitFiles = splitFiles;
 }
 
 void MkvCutter::setFPS(double framerate)
@@ -127,7 +131,12 @@ bool MkvCutter::createAVS()
 
   QStringList script;
   QString inputPath = QApplication::applicationDirPath() + QDir::separator();
-  script << "LoadPlugin(\"" + QDir::toNativeSeparators(inputPath + "ffms2.dll") + "\")";
+  QString path = QDir::toNativeSeparators(inputPath + "ffms2.dll");
+  if (!QFile::exists(path)
+      && QFile::exists(QDir::toNativeSeparators(inputPath + "ffms2-x64.dll"))) {
+    path = QDir::toNativeSeparators(inputPath + "ffms2-x64.dll");
+  }
+  script << "LoadPlugin(\"" + path + "\")";
   QString call = "FFVideoSource(\"" + m_currentInput + "\"";
   call += ", ";
   call += "cachefile=\"" + m_indexFile + "\"";
@@ -158,7 +167,7 @@ QString numberToLength3String(int num)
 {
   QString ret = QString::number(num);
   while (ret.size() < 3) {
-    ret = "0"+ret;
+    ret = "0" + ret;
   }
   return ret;
 }
@@ -220,12 +229,12 @@ void MkvCutter::buildCutList()
     matchEnd = temp.nextKey - 1 == temp.cut.end;
     matchLast = temp.nextKey == temp.cut.end && temp.nextKey == m_frameCount;
     if (i != 0 || temp.prevKey != 0) {
-        trim += "KEEP";
-        this->addInfo(tr("keep: adding %1 <> %2 to trimList").arg(name).arg(trim));
-        m_trimming.insert(name, trim);
-        fileIndex++;
-        name = "cut_" + numberToLength3String(fileIndex) + ".mkv";
-        trim = QString();
+      trim += "KEEP";
+      this->addInfo(tr("keep: adding %1 <> %2 to trimList").arg(name).arg(trim));
+      m_trimming.insert(name, trim);
+      fileIndex++;
+      name = "cut_" + numberToLength3String(fileIndex) + ".mkv";
+      trim = QString();
     }
     if (matchStart && (matchEnd || matchLast)) {
       trim += "DELETE";
@@ -268,35 +277,41 @@ void MkvCutter::buildCutList()
  */
 void MkvCutter::createAudioCutCall(QString filename, QString trim)
 {
-    if (m_audioFormat.isEmpty()) {
-        return;
-    }
-    QStringList call;
-    call << "ffmpeg";
-    call << "-vn"; // disable video
-    call << "-acodec copy"; // copy audio
-    QMessageBox::critical(this, tr("TRIM"), trim);
-    //TODO: Create audioCut calls,.. fill m_audioEncodingCalls;
+  if (m_audioFormat.isEmpty()) {
+    return;
+  }
+  QStringList call;
+  call << "ffmpeg";
+  call << "-vn"; // disable video
+  call << "-acodec copy"; // copy audio
+  QMessageBox::critical(this, tr("TRIM"), trim);
+  //TODO: Create audioCut calls,.. fill m_audioEncodingCalls;
 }
 
 void MkvCutter::createAvisynthSkript(QString filename, QString trim)
 {
   this->addInfo(tr("createAvisynthSkript(%1, %2)").arg(filename).arg(trim));
   QString avisynthFileName = filename;
-  avisynthFileName = avisynthFileName.remove(avisynthFileName.lastIndexOf((".")), avisynthFileName.size());
+  avisynthFileName = avisynthFileName.remove(avisynthFileName.lastIndexOf((".")),
+                                             avisynthFileName.size());
   avisynthFileName += ".avs";
 
   QStringList script;
   QString inputPath = QApplication::applicationDirPath() + QDir::separator();
-  script << "LoadPlugin(\"" + QDir::toNativeSeparators(inputPath + "ffms2.dll") + "\")";
+  QString path = QDir::toNativeSeparators(inputPath + "ffms2.dll");
+  if (!QFile::exists(path)
+      && QFile::exists(QDir::toNativeSeparators(inputPath + "ffms2-x64.dll"))) {
+    path = QDir::toNativeSeparators(inputPath + "ffms2-x64.dll");
+  }
+  script << "LoadPlugin(\"" + path + "\")";
   script << "FFVideoSource(\"" + filename + "\", threads=1)";
   script << trim;
   trim = script.join("\n");
-  if(Globals::saveTextTo(trim, avisynthFileName) == 0) {
+  if (Globals::saveTextTo(trim, avisynthFileName) == 0) {
     QString tmp = "----------------------------";
     tmp += tr("Saved avisynth script:\r\n%1").arg(trim);
     tmp += "\r\n----------------------------";
-    tmp += "\r\n"+tr("to: %1").arg(avisynthFileName);
+    tmp += "\r\n" + tr("to: %1").arg(avisynthFileName);
     this->addInfo(tmp);
     m_tempReencodeAvs << avisynthFileName;
     this->createReencodeCall(avisynthFileName);
@@ -320,7 +335,7 @@ void MkvCutter::createReencodeCall(QString avisynthFile)
   call << tmp;
   tmp = "--profile ";
   if (m_avcProfileLevel.contains("High") || m_avcProfileLevel.isEmpty()) {
-    tmp+= "high";
+    tmp += "high";
   } else if (m_avcProfileLevel.contains("High")) {
     tmp += "baseline";
   } else {
@@ -332,12 +347,12 @@ void MkvCutter::createReencodeCall(QString avisynthFile)
   if (!tmp.isEmpty()) {
     tmp = tmp.remove(0, tmp.indexOf("@") + 2);
     tmp = tmp.remove(".");
-    tmp = "--level "+tmp;
+    tmp = "--level " + tmp;
     call << tmp;
     //TODO: add vbv restrictions
   }
   if (!m_avcCabac) {
-      call << "-no-cabac";
+    call << "-no-cabac";
   }
   call << "--thread-input";
   //TODO: bluray check
@@ -347,9 +362,9 @@ void MkvCutter::createReencodeCall(QString avisynthFile)
   tmp = tmp.remove(tmp.indexOf("."), tmp.size());
   tmp += "_reencode.mkv";
   m_reencodedVideoFiles << tmp;
-  tmp = "-o \""+tmp+"\"";
+  tmp = "-o \"" + tmp + "\"";
   call << tmp;
-  tmp = "\""+avisynthFile+"\"";
+  tmp = "\"" + avisynthFile + "\"";
   call << tmp;
   tmp = call.join(" ");
   this->addInfo(tr("x264 call: %1").arg(tmp));
@@ -358,47 +373,47 @@ void MkvCutter::createReencodeCall(QString avisynthFile)
 
 void MkvCutter::startReencoding()
 {
-    this->addInfo(tr("Starting reencoding,..."));
-    if (m_videoEncodingCalls.isEmpty()) { //encodings finished
-      this->addInfo(tr("Finished all the reencoding,..."));
-      // TODO: m_audioEncodingCalls abarbeiten, muxing calls erstellen
-      this->cleanUpAndMerge();
-      return;
-    }
-    m_x264->start(m_videoEncodingCalls.takeFirst());
+  this->addInfo(tr("Starting reencoding,..."));
+  if (m_videoEncodingCalls.isEmpty()) { //encodings finished
+    this->addInfo(tr("Finished all the reencoding,..."));
+    // TODO: m_audioEncodingCalls abarbeiten, muxing calls erstellen
+    this->cleanUpAndMerge();
+    return;
+  }
+  m_x264->start(m_videoEncodingCalls.takeFirst());
 }
 
 void MkvCutter::cleanUpAndMerge()
 {
-    this->addInfo(tr("Doing the clean up"));
-    // generate mkvmerge calls to join all parts
-    //TODO: Implement cleanUpAndMerge
-    QString target;
-    foreach(QString file, m_reencodedVideoFiles) {
-        target = file;
-        target = target.remove("_reencode");
-        if (!QFile::remove(target)) {
-            this->addInfo(tr("Couldn't delete %1").arg(file));
-            return;
-        }
-        QDir dir;
-        if (!dir.rename(file, target)) {
-            this->addInfo(tr("Couldn't rename %1 to %2").arg(file).arg(target));
-            return;
-        }
+  this->addInfo(tr("Doing the clean up"));
+  // generate mkvmerge calls to join all parts
+  //TODO: Implement cleanUpAndMerge
+  QString target;
+  foreach(QString file, m_reencodedVideoFiles) {
+    target = file;
+    target = target.remove("_reencode");
+    if (!QFile::remove(target)) {
+      this->addInfo(tr("Couldn't delete %1").arg(file));
+      return;
     }
-    m_mkvMerger->start(m_splitFiles, m_currentOutput);
+    QDir dir;
+    if (!dir.rename(file, target)) {
+      this->addInfo(tr("Couldn't rename %1 to %2").arg(file).arg(target));
+      return;
+    }
+  }
+  m_mkvMerger->start(m_splitFiles, m_currentOutput);
 }
 
 void MkvCutter::x264Finished(int exitstate)
 {
-    this->addInfo(tr("x264 finished,.."));
-    if (exitstate < 0) {
-      this->addInfo(tr("Resetting since x264 crashed,.."));
-      this->reset();
-      return;
-    }
-    this->startReencoding();
+  this->addInfo(tr("x264 finished,.."));
+  if (exitstate < 0) {
+    this->addInfo(tr("Resetting since x264 crashed,.."));
+    this->reset();
+    return;
+  }
+  this->startReencoding();
 }
 
 void MkvCutter::mkvMergerFinished(int exitstate)
@@ -411,9 +426,9 @@ void MkvCutter::mkvMergerFinished(int exitstate)
   }
 
   foreach (QString file, m_splitFiles) {
-      if (!QFile::remove(file)) {
-          this->addInfo(tr("Couldn't delete %1").arg(file));
-      }
+    if (!QFile::remove(file)) {
+      this->addInfo(tr("Couldn't delete %1").arg(file));
+    }
   }
   QMessageBox::information(this, tr("Finished!"), tr("Created %1!").arg(m_currentOutput));
   this->reset();
@@ -435,24 +450,24 @@ void MkvCutter::mkvSplitFinished(int exitstate)
   //handle splitFiles
   QString toDelete, trim;
   foreach (QString file, m_splitFiles) {
-      toDelete = file;
-      toDelete = Globals::getWholeFileName(file);
-      toDelete = toDelete.remove(0, toDelete.indexOf("-")+1);
-      toDelete = "cut_"+toDelete;
-      trim = m_trimming.value(toDelete);
-      if (trim == "KEEP" || trim.isEmpty()) {
-          continue;
+    toDelete = file;
+    toDelete = Globals::getWholeFileName(file);
+    toDelete = toDelete.remove(0, toDelete.indexOf("-") + 1);
+    toDelete = "cut_" + toDelete;
+    trim = m_trimming.value(toDelete);
+    if (trim == "KEEP" || trim.isEmpty()) {
+      continue;
+    }
+    if (trim == "DELETE") {
+      if (QFile::remove(file)) {
+        this->addInfo(tr("Deleted %1,..").arg(file));
+      } else {
+        this->addInfo(tr("Couldn't delete %1,..").arg(file));
       }
-      if (trim == "DELETE") {
-          if (QFile::remove(file)) {
-            this->addInfo(tr("Deleted %1,..").arg(file));
-          } else {
-            this->addInfo(tr("Couldn't delete %1,..").arg(file));
-          }
-          continue;
-      }
-      this->createAvisynthSkript(file, trim);
-      this->createAudioCutCall(file, trim);
+      continue;
+    }
+    this->createAvisynthSkript(file, trim);
+    this->createAudioCutCall(file, trim);
   }
 
   this->startReencoding();
@@ -548,28 +563,28 @@ void MkvCutter::on_nextPushButton_clicked()
 
 QString MkvCutter::keyFrameTimes()
 {
-   QStringList times;
-   QString value;
-   foreach (int key, m_mkvmergeIntSplitList) {
-       if (key == 0/* || key == m_frameCount*/) {
-           continue;
-       }
-       value = m_keyTimes.value(key);
-       if (value.isEmpty()) {
-           this->addInfo("FOUND NO ENTRY FOR: "+QString::number(key));
-           continue;
-       }
-       value = value.remove(0, value.indexOf("(")+1);
-       value = value.remove(value.indexOf(")"), value.size());
-       //URGLY HACK
-       if (!value.isEmpty()) {
-         times << value;
-       }
-   }
-   times.sort();
-   value = times.join(",");
-   this->addInfo("Times: "+value);
-   return value;
+  QStringList times;
+  QString value;
+  foreach (int key, m_mkvmergeIntSplitList) {
+    if (key == 0/* || key == m_frameCount*/) {
+      continue;
+    }
+    value = m_keyTimes.value(key);
+    if (value.isEmpty()) {
+      this->addInfo("FOUND NO ENTRY FOR: " + QString::number(key));
+      continue;
+    }
+    value = value.remove(0, value.indexOf("(") + 1);
+    value = value.remove(value.indexOf(")"), value.size());
+    //URGLY HACK
+    if (!value.isEmpty()) {
+      times << value;
+    }
+  }
+  times.sort();
+  value = times.join(",");
+  this->addInfo("Times: " + value);
+  return value;
 }
 
 void MkvCutter::buildAndCallMkvMerge()
@@ -634,17 +649,17 @@ void MkvCutter::setFrameCount(int count)
 
 void MkvCutter::setAvcProfileLevel(QString pl)
 {
-    m_avcProfileLevel = pl;
+  m_avcProfileLevel = pl;
 }
 
 void MkvCutter::setAvcCabac(bool cabac)
 {
-    m_avcCabac = cabac;
+  m_avcCabac = cabac;
 }
 
 void MkvCutter::setAvcRefFrames(int frames)
 {
-    m_avcRefFrames = frames;
+  m_avcRefFrames = frames;
 }
 
 void MkvCutter::setAudioFormat(QString format)

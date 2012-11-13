@@ -28,7 +28,12 @@ void FFIndexCaller::index(QString inputFile, QString cacheFile)
   QStringList call;
 #ifdef Q_OS_WIN32
   QString inputPath = QApplication::applicationDirPath();
-  call << "\"" + QDir::toNativeSeparators(inputPath+QDir::separator()+"ffmsindex.exe") + "\"";
+  QString path = QDir::toNativeSeparators(inputPath+QDir::separator()+"ffmsindex.exe");
+  if (!QFile::exists(path)
+      && QFile::exists(QDir::toNativeSeparators(inputPath+QDir::separator()+"ffmsindex64.exe"))) {
+    path = QDir::toNativeSeparators(inputPath+QDir::separator()+"ffmsindex64.exe");
+  }
+  call << "\"" + path + "\"";
 #else
   call << "ffmsindex";
 #endif

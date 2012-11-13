@@ -263,11 +263,19 @@ void MkvCutter::buildCutList()
   this->addInfo("finished building trimList,..");
 }
 
+/**
+ * this method creates the segment split time points
+ */
 void MkvCutter::createAudioCutCall(QString filename, QString trim)
 {
     if (m_audioFormat.isEmpty()) {
         return;
     }
+    QStringList call;
+    call << "ffmpeg";
+    call << "-vn"; // disable video
+    call << "-acodec copy"; // copy audio
+    QMessageBox::critical(this, tr("TRIM"), trim);
     //TODO: Create audioCut calls,.. fill m_audioEncodingCalls;
 }
 
@@ -444,7 +452,7 @@ void MkvCutter::mkvSplitFinished(int exitstate)
           continue;
       }
       this->createAvisynthSkript(file, trim);
-      //this->createAudioCutCall(file, trim);
+      this->createAudioCutCall(file, trim);
   }
 
   this->startReencoding();

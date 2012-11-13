@@ -36,6 +36,8 @@ namespace Globals
   QString getWholeFileName(const QString input);
   QString getFileName(const QString input);
   QString removeLastSeparatorFromPath(QString input);
+  QString frameToTime(int number, double fps);
+  QString secondsToHMSZZZ(double seconds);
 
   QString getDirectory(const QString input);
   int saveTextTo(QString text, QString to);

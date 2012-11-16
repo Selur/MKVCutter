@@ -14,6 +14,7 @@
 #include "tools/MkvSplitCaller.h"
 #include "tools/X264Caller.h"
 #include "tools/MkvMerger.h"
+#include "tools/MkvVideoExtractor.h"
 #include "ui_mkvcutter.h"
 
 struct cutTyp1;
@@ -48,7 +49,9 @@ class MkvCutter : public QWidget
     QStringList m_mkvVideoParts, m_mkvAudioParts;
     QString m_audioFile;
     int m_averageBitrate;
-    QStringList m_audioSplitFiles;
+    QStringList m_audioSplitFiles, m_extractionFiles, m_toDelete;
+    int m_videoTrackID;
+    MkvVideoExtractor *m_extractor;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -65,6 +68,7 @@ class MkvCutter : public QWidget
     void buildCutList();
     void calculateMatroskyKeyFrameTimes();
     void cutAudio();
+    void startExtraction();
     cutTyp1 findCutForFrame(int frame);
 
   private slots:
@@ -94,11 +98,14 @@ class MkvCutter : public QWidget
     void mediaInfoFinished(int exitstate);
     void setAudioFormat(QString format);
     void mkvMergerProgress(int percent);
+    void mkvExtractorProgress(int percent);
     void mkvMergerFinished(int exitstate);
+    void mkvExtractorFinished(int exitstate);
     void x264Progress(int percent);
     void x264Finished(int exitstate);
     void setAverageBitrate(int bitrate);
     void setAudioSplitFiles(QStringList splitFiles);
+    void setVideoTrackID(int id);
 
 };
 

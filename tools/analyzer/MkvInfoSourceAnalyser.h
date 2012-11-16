@@ -43,6 +43,7 @@ class MkvInfoSourceAnalyser : public QObject
     void keyFrameInfos(QStringList infos);
     void finished();
     void fps(double framerate);
+    void videoTrackID(int videoTrack);
 };
 
 #endif /* MKVINFOSOURCEANALYSER_H_ */

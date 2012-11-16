@@ -13,7 +13,8 @@ MkvCutter::MkvCutter(QWidget *parent) :
         m_avcRefFrames(1), m_enabled(0), m_frameCount(0), m_keyframes(), m_cuts(), m_splitFiles(),
         m_tempReencodeAvs(), m_videoEncodingCalls(),
         m_reencodedVideoFiles(), m_fps(-1), m_trimming(), m_matroskaKeyFrameTimes(), m_cutList(),
-        m_mkvVideoParts(), m_mkvAudioParts(), m_audioFile(QString()), m_averageBitrate(-1), m_audioSplitFiles()
+        m_mkvVideoParts(), m_mkvAudioParts(), m_audioFile(QString()), m_averageBitrate(-1), m_audioSplitFiles(),
+        m_extractionFiles(), m_videoTrackID(-1), m_extractor(NULL), m_toDelete()
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -21,6 +22,8 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(keyFrameInfos(QStringList)), this,
                   SLOT(setKeyFrames(QStringList)));
+  this->myconnect(m_mkvinfoAnalyser, SIGNAL(videoTrackID(int)), this,
+                  SLOT(setVideoTrackID(int)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(finished()), this, SLOT(mkvAnalysefinished()));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(progress(int)), this, SLOT(mkvAnalyseProgress(int)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(frameCount(int)), this, SLOT(setFrameCount(int)));
@@ -64,6 +67,11 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_x264, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_x264, SIGNAL(finished(int)), this, SLOT(x264Finished(int)));
   this->myconnect(m_x264, SIGNAL(progress(int)), this, SLOT(x264Progress(int)));
+  m_extractor = new MkvVideoExtractor(this);
+  this->myconnect(m_extractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
+  this->myconnect(m_extractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_extractor, SIGNAL(finished(int)), this, SLOT(mkvExtractorFinished(int)));
+  this->myconnect(m_extractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
   m_viewer = 0;
   ui.setupUi(this);
   ui.mainStackedWidget->setCurrentIndex(0);
@@ -72,6 +80,12 @@ MkvCutter::MkvCutter(QWidget *parent) :
 MkvCutter::~MkvCutter()
 {
   this->reset();
+}
+
+
+void MkvCutter::setVideoTrackID(int id)
+{
+    m_videoTrackID = id;
 }
 
 void MkvCutter::setAverageBitrate(int bitrate)
@@ -133,6 +147,10 @@ void MkvCutter::ffindexProgress(int percent)
 void MkvCutter::mkvMergerProgress(int percent)
 {
   ui.infoLabel->setText(tr("MkvMerge merging at %1").arg(percent));
+}
+void MkvCutter::mkvExtractorProgress(int percent)
+{
+  ui.infoLabel->setText(tr("MkvExtractor at %1").arg(percent));
 }
 
 void MkvCutter::mkvsplitProgress(int percent)
@@ -672,7 +690,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << "--demuxer avs";
   tmp = avisynthFile;
   tmp = tmp.remove(tmp.indexOf("."), tmp.size());
-  tmp += "_reencode.mkv";
+  tmp += "_reencode.264";
   m_reencodedVideoFiles << tmp;
   tmp = "-o \"" + tmp + "\"";
   call << tmp;
@@ -755,7 +773,7 @@ void MkvCutter::mkvMergerFinished(int exitstate)
 
   this->addInfo(" "+tr("deleting split list elements,..."));
   foreach (QString file, m_splitFiles) {
-      if (file.isEmpty() || file == m_currentInput || !QFile::exists(file)) {
+      if (file.isEmpty() || (file == m_currentInput || !QFile::exists(file))) {
         continue;
       }
 
@@ -774,8 +792,17 @@ void MkvCutter::mkvMergerFinished(int exitstate)
       this->addInfo("   "+tr("Couldn't delete %1!").arg(file));
     }
   }
+  foreach (QString file, m_toDelete) {
+    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+      continue;
+    }
+    this->addInfo("  "+tr("deleting video file: %1").arg(file));
+    if(!QFile::remove(file)) {
+      this->addInfo("   "+tr("Couldn't delete %1!").arg(file));
+    }
+  }
   foreach (QString file, m_audioSplitFiles) {
-    if (file.isEmpty() || file == m_currentInput && !QFile::exists(file)) {
+    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
       continue;
     }
     this->addInfo("  "+tr("deleting audio file: %1").arg(file));
@@ -810,6 +837,19 @@ void MkvCutter::mkvSplitFinished(int exitstate)
   this->handleSplitFiles();
 }
 
+
+
+void MkvCutter::mkvExtractorFinished(int exitstate)
+{
+  this->addInfo(tr("mkvExtract finished,.."));
+  if (exitstate < 0) {
+    this->addInfo(tr("Resetting since mkv extractor crashed,.."));
+    this->reset();
+    return;
+  }
+  this->startExtraction();
+}
+
 void MkvCutter::mkvAudioCutFinished(int exitstate)
 {
   this->addInfo(tr("mkvAudioCut finished,.."));
@@ -825,6 +865,8 @@ void MkvCutter::mkvAudioCutFinished(int exitstate)
 void MkvCutter::handleSplitFiles()
 {
     m_reencodedVideoFiles.clear();
+    m_extractionFiles.clear();
+    m_toDelete.clear();
     this->addInfo("handling split files,...");
     //handle splitFiles
     QString toDelete, trim;
@@ -841,12 +883,29 @@ void MkvCutter::handleSplitFiles()
       this->addInfo(" "+tr("trim value for %1: %2").arg(toDelete).arg(trim));
       if (trim == "KEEP" || trim.isEmpty()) {
         m_reencodedVideoFiles << file;
+        m_extractionFiles << file;
         continue;
       }
       this->createAvisynthSkript(file, trim);
     }
+    this->startExtraction();
+}
 
-    this->startVideoReencoding();
+void MkvCutter::startExtraction()
+{
+    if (m_extractionFiles.isEmpty()) {
+      this->startVideoReencoding();
+        return;
+    }
+    QString input = m_extractionFiles.takeFirst();
+    QString filename = input;
+    filename = filename.remove(filename.lastIndexOf("."), filename.length());
+    filename += ".264";
+    filename = m_tempFolder + QDir::separator() + Globals::getWholeFileName(filename);
+    filename = QDir::toNativeSeparators(filename);
+    m_toDelete << filename;
+    m_reencodedVideoFiles.replace(m_reencodedVideoFiles.indexOf(input), filename);
+    m_extractor->startExtraction(input, "264", m_tempFolder);
 }
 
 void MkvCutter::mediaInfoFinished(int exitstate)

@@ -7,7 +7,7 @@ X264Caller::X264Caller(QObject *parent) :
 
 void X264Caller::start(QString call)
 {
-    this->sendInfos("x264 call: "+call);
+    this->sendInfos(" "+tr("x264 call: %1").arg(call));
     delete m_process;
     m_process = new QProcess(this);
     QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,

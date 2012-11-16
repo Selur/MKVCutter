@@ -41,15 +41,15 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
   emit finished(0);
 }
 
-void MkvMerger::start(QStringList splitFiles, QString audioFile, QString outputFile)
+void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QString outputFile)
 {
   m_output = outputFile;
-  this->call(this->buildCall(splitFiles, audioFile));
+  this->call(this->buildCall(splitFiles, audioFiles));
 }
 
 void MkvMerger::call(QString call)
 {
-  //this->sendInfos("MKVmerge call: "+call);
+  this->sendInfos("MKVmerge call: "+call);
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
@@ -60,7 +60,7 @@ void MkvMerger::call(QString call)
   m_process->start(call);
 }
 
-QString MkvMerger::buildCall(QStringList splitFiles, QString audioFile)
+QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles)
 {
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -71,15 +71,18 @@ QString MkvMerger::buildCall(QStringList splitFiles, QString audioFile)
 #endif
   call = "\"" + QDir::toNativeSeparators(appFolder + QDir::separator() + call) + "\"";
   call += " -o \"" + m_output + "\"";
-  call += " -A ";
   foreach (QString file, splitFiles) {
    call += " \"" + file + "\" +";
   }
   if (call.endsWith("+")) {
       call = call.remove(call.size()-2, 2);
   }
-  if (!audioFile.isEmpty()) {
-      call += " \"" + audioFile + "\"";
+  foreach (QString file, audioFiles) {
+   call += " \"" + file + "\" +";
   }
+  if (call.endsWith("+")) {
+      call = call.remove(call.size()-2, 2);
+  }
+
   return call.trimmed();
 }

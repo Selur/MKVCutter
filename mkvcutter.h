@@ -47,11 +47,13 @@ class MkvCutter : public QWidget
     X264Caller *m_x264;
     QStringList m_mkvVideoParts, m_mkvAudioParts;
     QString m_audioFile;
+    int m_averageBitrate;
+    QStringList m_audioSplitFiles;
+
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
     void reset();
     bool createAVS();
-    void buildCutList();
     QStringList keyFrameTimes();
     void buildAndCallMkvMerge();
     void createVideoReencodeCall(QString avisynthFile);
@@ -60,7 +62,10 @@ class MkvCutter : public QWidget
     void cleanUpAndMerge();
     void handleSplitFiles();
     void buildTrimAndPartsList();
+    void buildCutList();
+    void calculateMatroskyKeyFrameTimes();
     void cutAudio();
+    cutTyp1 findCutForFrame(int frame);
 
   private slots:
     void on_openSourcePushButton_clicked();
@@ -92,6 +97,8 @@ class MkvCutter : public QWidget
     void mkvMergerFinished(int exitstate);
     void x264Progress(int percent);
     void x264Finished(int exitstate);
+    void setAverageBitrate(int bitrate);
+    void setAudioSplitFiles(QStringList splitFiles);
 
 };
 

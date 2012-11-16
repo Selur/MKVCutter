@@ -104,6 +104,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
   QStringList infos;
   QStringList lines = m_outData.split("\n");
   int videoTrack = -1;
+  int index1, index2;
   QString mediaInfo;
   QString line, track, videoData;
   bool gotMediaInfo = false;
@@ -113,8 +114,13 @@ void MkvInfoSourceAnalyser::analyseOutput()
     if (!gotMediaInfo && line.startsWith("Track")) {
       mediaInfo += "\r\n" + line.trimmed();
       if (videoTrack == -1) {
+        index1 = line.indexOf(":");
+        index2 = line.indexOf(": video");
+        if (index1 != index2) {
+            continue;
+        }
         videoData = line;
-        line = line.remove(line.indexOf(":"), line.size());
+        line = line.remove(index1, line.size());
         line = line.remove(0, 6).trimmed();
         videoTrack = line.toInt();
         emit sendInfos(tr("video track numer: %1").arg(videoTrack));
@@ -162,6 +168,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
     //currentframe, 20000 (00:00:20.000)
     keyFrames << frame;
   }
+  sendInfos(tr("MkvvInfo detected %1 frames %2 of them are key frames").arg(currentFrame+1).arg(keyFrames.count()));
 
   keyFrameInfos(keyFrames);
   emit

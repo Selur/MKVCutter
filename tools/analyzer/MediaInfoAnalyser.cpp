@@ -117,6 +117,13 @@ void MediaInfoAnalyser::mediainfoOutput()
           emit audioFormat(line.toLower());
           continue;
         }
+        if (line.startsWith("Bitrate") && line.endsWith("Kbps")) {
+          removeStartOfLine(line);
+          line = line.remove(line.indexOf("K"), line.size());
+          int bitrate = line.trimmed().toInt();
+            emit averageBitrate(bitrate);
+            continue;
+        }
       }
     }
   }

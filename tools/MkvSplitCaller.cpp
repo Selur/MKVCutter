@@ -25,20 +25,28 @@ void MkvSplitCaller::handleMkvmergeOutput()
 {
   QString out = m_process->readAllStandardOutput().data();
   if (!out.isEmpty()) {
-      //emit sendInfos("MkvMerge out: " + out.trimmed());
-      QStringList lines  = out.split("\n");
+      QStringList lines  = out.split("\n", QString::SkipEmptyParts);
+      int index;
       foreach(QString line, lines) {
+          line = line.trimmed();
+          //emit sendInfos("MkvMerge output: " + line);
           if (line.startsWith("Progress:")) {
               line = line.remove(0, 10);
               line = line.remove("%").trimmed();
               emit progress(line.toInt());
-              continue;
+              index = line.indexOf("The file '");
+              if (index == -1) {
+                continue;
+              }
+              line = line.remove(0, index);
+              line = line.trimmed();
           }
           if (!line.startsWith("The file '")) {
               continue;
           }
           line = line.remove(0, line.indexOf("'")+1);
           line = line.remove(line.indexOf("'"), line.size());
+          emit sendInfos(" -> "+tr("new temp file: %1").arg(line));
           m_tempFiles << line;
       }
   }
@@ -79,7 +87,7 @@ void MkvSplitCaller::start(QString inputFile, QString outputFile, QStringList sp
 void MkvSplitCaller::call(QString call)
 {
   QString typ = m_audio ? "Audio": "Video";
-  //this->sendInfos(typ+" split call: "+call);
+  this->sendInfos(typ+" split call: "+call);
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,

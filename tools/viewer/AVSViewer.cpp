@@ -22,18 +22,12 @@ AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport
         m_mult(mult), m_currentImage(), m_cutSupport(cutSupport)
 {
   ui.setupUi(this);
-  if (!m_cutSupport) {
-    delete ui.cutStackedWidget;
-    delete ui.commitPushButton;
-  }
   if (m_currentInput.isEmpty()) {
     return;
   }
   ui.showLabel->setText(tr("Preparing environment for %1").arg(m_currentInput));
   QString tmp = tr("AVSViewer, current input: %1").arg(m_currentInput);
   this->send(tmp);
-
-  delete ui.openAvsPushButton;
 }
 
 AVSViewer::~AVSViewer()
@@ -266,6 +260,10 @@ void AVSViewer::on_commitPushButton_clicked()
         continue;
       }
       cutList << elem;
+    }
+    if (cutList.isEmpty()) {
+        QMessageBox::information(this, "Info", tr("Your cut list is empty!"));
+        return;
     }
     emit cuts(cutList);
   }

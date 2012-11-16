@@ -28,6 +28,7 @@ class MediaInfoAnalyser : public QObject
     void cabac(bool use);
     void audioFormat(QString format);
     void finished(int state);
+    void averageBitrate(int bitrate);
     
 };
 

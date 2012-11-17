@@ -26,7 +26,8 @@ void FFIndexCaller::index(QString inputFile, QString cacheFile)
   m_input = inputFile;
   m_cache = cacheFile;
   if (QFile::exists(m_cache)) {
-    emit sendInfos(" -> "+tr("Skipping indexing %1 since %2 already exists.").arg(inputFile).arg(cacheFile));
+    emit sendInfos(
+        " -> " + tr("Skipping indexing %1 since %2 already exists.").arg(inputFile).arg(cacheFile));
     emit finished(0);
     return;
   }

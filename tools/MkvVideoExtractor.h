@@ -7,24 +7,24 @@
 
 class MkvVideoExtractor : public QObject
 {
-    Q_OBJECT
-    public:
-        explicit MkvVideoExtractor(QObject *parent = 0);
-        void startExtraction(QString filename, QString typ, QString tempFolder);
-    private:
-        QProcess *m_process;
-        void call(QString call);
-        QString buildCall(QString filename, QString typ, QString tempFolder);
-    
-    private slots:
-       void handleMkvExtractOutput();
-       void mkvextractFinished(int exitCode, QProcess::ExitStatus exitStatus);
+  Q_OBJECT
+  public:
+    explicit MkvVideoExtractor(QObject *parent = 0);
+    void startExtraction(QString filename, QString typ, QString tempFolder);
+  private:
+    QProcess *m_process;
+    void call(QString call);
+    QString buildCall(QString filename, QString typ, QString tempFolder);
 
-     signals:
-       void enableGui(bool enable);
-       void sendInfos(QString infos);
-       void progress(int position);
-       void finished(int state);
+  private slots:
+    void handleMkvExtractOutput();
+    void mkvextractFinished(int exitCode, QProcess::ExitStatus exitStatus);
+
+  signals:
+    void enableGui(bool enable);
+    void sendInfos(QString infos);
+    void progress(int position);
+    void finished(int state);
 };
 
 #endif // MKVVIDEOEXTRACTOR_H

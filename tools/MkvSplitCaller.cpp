@@ -11,8 +11,8 @@
 #include "Globals.h"
 
 MkvSplitCaller::MkvSplitCaller(QObject *parent) :
-    QObject(parent), m_process(NULL), m_input(QString()), m_output(QString()),
-    m_splitParts(), m_outputFolder(QString()), m_tempFiles(),m_audio(false)
+    QObject(parent), m_process(NULL), m_input(QString()), m_output(QString()), m_splitParts(),
+        m_outputFolder(QString()), m_tempFiles(), m_audio(false)
 {
 
 }
@@ -25,34 +25,34 @@ void MkvSplitCaller::handleMkvmergeOutput()
 {
   QString out = m_process->readAllStandardOutput().data();
   if (!out.isEmpty()) {
-      QStringList lines  = out.split("\n", QString::SkipEmptyParts);
-      int index;
-      foreach(QString line, lines) {
-          line = line.trimmed();
-          //emit sendInfos("MkvMerge output: " + line);
-          if (line.startsWith("Progress:")) {
-              line = line.remove(0, 10);
-              line = line.remove("%").trimmed();
-              emit progress(line.toInt());
-              index = line.indexOf("The file '");
-              if (index == -1) {
-                continue;
-              }
-              line = line.remove(0, index);
-              line = line.trimmed();
-          }
-          if (!line.startsWith("The file '")) {
-              continue;
-          }
-          line = line.remove(0, line.indexOf("'")+1);
-          line = line.remove(line.indexOf("'"), line.size());
-          emit sendInfos(" -> "+tr("new temp file: %1").arg(line));
-          m_tempFiles << line;
+    QStringList lines = out.split("\n", QString::SkipEmptyParts);
+    int index;
+    foreach(QString line, lines) {
+      line = line.trimmed();
+      //emit sendInfos("MkvMerge output: " + line);
+      if (line.startsWith("Progress:")) {
+        line = line.remove(0, 10);
+        line = line.remove("%").trimmed();
+        emit progress(line.toInt());
+        index = line.indexOf("The file '");
+        if (index == -1) {
+          continue;
+        }
+        line = line.remove(0, index);
+        line = line.trimmed();
       }
+      if (!line.startsWith("The file '")) {
+        continue;
+      }
+      line = line.remove(0, line.indexOf("'") + 1);
+      line = line.remove(line.indexOf("'"), line.size());
+      emit sendInfos(" -> " + tr("new temp file: %1").arg(line));
+      m_tempFiles << line;
+    }
   }
   QString err = m_process->readAllStandardOutput().data();
   if (!err.isEmpty()) {
-      emit sendInfos("MkvMerge err: " + err.trimmed());
+    emit sendInfos("MkvMerge err: " + err.trimmed());
   }
 }
 
@@ -65,8 +65,8 @@ void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitSta
     return;
   }
   if (m_tempFiles.isEmpty() && QFile::exists(m_output)) {
-      //this->sendInfos(tr("only one output file: %1").arg(m_output));
-      m_tempFiles << m_output;
+    //this->sendInfos(tr("only one output file: %1").arg(m_output));
+    m_tempFiles << m_output;
   }
   emit splitFiles(m_tempFiles);
   emit finished(0);
@@ -86,8 +86,8 @@ void MkvSplitCaller::start(QString inputFile, QString outputFile, QStringList sp
 
 void MkvSplitCaller::call(QString call)
 {
-  QString typ = m_audio ? "Audio": "Video";
-  this->sendInfos(typ+" split call: "+call);
+  QString typ = m_audio ? "Audio" : "Video";
+  this->sendInfos(typ + " split call: " + call);
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
@@ -111,10 +111,10 @@ QString MkvSplitCaller::buildCall()
 
   m_output = m_outputFolder + QDir::separator() + Globals::getWholeFileName(m_output);
   if (m_audio) {
-    m_output = m_output.insert(m_output.lastIndexOf("."),"_AudioCut");
+    m_output = m_output.insert(m_output.lastIndexOf("."), "_AudioCut");
   }
   call += " -o \"" + QDir::toNativeSeparators(m_output) + "\"";
-  call += " --split parts:"+m_splitParts.join(",");
+  call += " --split parts:" + m_splitParts.join(",");
   if (m_audio) {
     call += " --no-video";
   } else {
@@ -122,6 +122,6 @@ QString MkvSplitCaller::buildCall()
     call += " --no-subtitles --no-buttons --no-track-tags";
     call += " --no-chapters --no-attachments --no-global-tags";
   }
-  call += " \""+m_input+"\"";
+  call += " \"" + m_input + "\"";
   return call;
 }

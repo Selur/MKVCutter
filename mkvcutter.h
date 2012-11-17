@@ -35,15 +35,15 @@ class MkvCutter : public QWidget
     QStringList m_keyframes, m_cuts, m_splitFiles, m_tempReencodeAvs, m_videoEncodingCalls;
     QStringList m_reencodedVideoFiles;
     double m_fps;
-    QHash <QString, QString> m_trimming;
-    QHash <int, QString> m_matroskaKeyFrameTimes;
+    QHash<QString, QString> m_trimming;
+    QHash<int, QString> m_matroskaKeyFrameTimes;
     QList<cutTyp1> m_cutList;
     QSet<int> m_mkvmergeIntSplitList;
     MkvInfoSourceAnalyser *m_mkvinfoAnalyser;
     MediaInfoAnalyser *m_mediaInfoAnalyser;
     AVSViewer *m_viewer;
     FFIndexCaller *m_ffindexCaller;
-    MkvSplitCaller *m_mkvVideoSplitCaller,*m_mkvAudioCutCaller;
+    MkvSplitCaller *m_mkvVideoSplitCaller, *m_mkvAudioCutCaller;
     MkvMerger *m_mkvMerger;
     X264Caller *m_x264;
     QStringList m_mkvVideoParts, m_mkvAudioParts;

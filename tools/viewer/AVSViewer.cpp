@@ -195,7 +195,7 @@ void AVSViewer::on_addCutPushButton_clicked()
   int start = ui.frameHorizontalSlider->getStart();
   int end = ui.frameHorizontalSlider->getEnd();
   if (end == -1) {
-      end = m_frameCount;
+    end = m_frameCount;
   }
   if ((start == 0 && end == 0) || start == end) {
     return;
@@ -262,8 +262,8 @@ void AVSViewer::on_commitPushButton_clicked()
       cutList << elem;
     }
     if (cutList.isEmpty()) {
-        QMessageBox::information(this, "Info", tr("Your cut list is empty!"));
-        return;
+      QMessageBox::information(this, "Info", tr("Your cut list is empty!"));
+      return;
     }
     emit cuts(cutList);
   }
@@ -402,7 +402,7 @@ void AVSViewer::init(int start)
       QString error = avsDLL.errorString();
       if (!error.isEmpty()) {
         this->send(tr("Could not load avisynth.dll! %1").arg(error));
-        emit  finished(-2);
+        emit finished(-2);
         return;
       }
 

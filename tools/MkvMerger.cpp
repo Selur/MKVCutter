@@ -7,26 +7,25 @@ MkvMerger::MkvMerger(QObject *parent) :
 {
 }
 
-
 void MkvMerger::handleMkvmergeOutput()
 {
   QString out = m_process->readAllStandardOutput().data();
   if (!out.isEmpty()) {
-      //emit sendInfos("MkvMerge out: " + out.trimmed());
-      QStringList lines  = out.split("\n");
-      foreach(QString line, lines) {
-          if (!line.startsWith("Progress:")) {
-              continue;
-          }
-          line = line.remove(0, 10);
-          line = line.remove("%").trimmed();
-          emit progress(line.toInt());
-          continue;
+    //emit sendInfos("MkvMerge out: " + out.trimmed());
+    QStringList lines = out.split("\n");
+    foreach(QString line, lines) {
+      if (!line.startsWith("Progress:")) {
+        continue;
       }
+      line = line.remove(0, 10);
+      line = line.remove("%").trimmed();
+      emit progress(line.toInt());
+      continue;
+    }
   }
   QString err = m_process->readAllStandardOutput().data();
   if (!err.isEmpty()) {
-      emit sendInfos("MkvMerge err: " + err.trimmed());
+    emit sendInfos("MkvMerge err: " + err.trimmed());
   }
 }
 
@@ -49,7 +48,7 @@ void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QString ou
 
 void MkvMerger::call(QString call)
 {
-  this->sendInfos("MKVmerge call: "+call);
+  this->sendInfos("MKVmerge call: " + call);
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
@@ -72,16 +71,16 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles)
   call = "\"" + QDir::toNativeSeparators(appFolder + QDir::separator() + call) + "\"";
   call += " -o \"" + m_output + "\"";
   foreach (QString file, splitFiles) {
-   call += " \"" + file + "\" +";
+    call += " \"" + file + "\" +";
   }
   if (call.endsWith("+")) {
-      call = call.remove(call.size()-2, 2);
+    call = call.remove(call.size() - 2, 2);
   }
   foreach (QString file, audioFiles) {
-   call += " \"" + file + "\" +";
+    call += " \"" + file + "\" +";
   }
   if (call.endsWith("+")) {
-      call = call.remove(call.size()-2, 2);
+    call = call.remove(call.size() - 2, 2);
   }
 
   return call.trimmed();

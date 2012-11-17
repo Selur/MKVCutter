@@ -15,7 +15,7 @@ class MediaInfoAnalyser : public QObject
   private:
     QProcess *m_process;
     QString m_audioFormat;
-    
+
   private slots:
     void mediainfoFinished(int exitState, QProcess::ExitStatus status);
     void mediainfoOutput();
@@ -29,7 +29,7 @@ class MediaInfoAnalyser : public QObject
     void audioFormat(QString format);
     void finished(int state);
     void averageBitrate(int bitrate);
-    
+
 };
 
 #endif // MEDIAINFOANALYSER_H

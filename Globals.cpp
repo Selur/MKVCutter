@@ -134,7 +134,6 @@ QString Globals::secondsToHMSZZZ(double seconds)
   return time;
 }
 
-
 QString Globals::secondsToHMS(double seconds)
 {
   if (seconds == 0) {

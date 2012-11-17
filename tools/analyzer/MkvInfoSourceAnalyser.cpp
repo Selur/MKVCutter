@@ -117,7 +117,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
         index1 = line.indexOf(":");
         index2 = line.indexOf(": video");
         if (index1 != index2) {
-            continue;
+          continue;
         }
         videoData = line;
         line = line.remove(index1, line.size());
@@ -127,7 +127,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
         emit sendInfos(tr("video track numer: %1").arg(videoTrack));
         int index = videoData.indexOf(" fps");
         if (index == -1) {
-            index = videoData.indexOf("frames/fields per second for a video track");
+          index = videoData.indexOf("frames/fields per second for a video track");
         }
         if (index != -1) {
           line = videoData;
@@ -169,7 +169,9 @@ void MkvInfoSourceAnalyser::analyseOutput()
     //currentframe, 20000 (00:00:20.000)
     keyFrames << frame;
   }
-  sendInfos(tr("MkvvInfo detected %1 frames %2 of them are key frames").arg(currentFrame+1).arg(keyFrames.count()));
+  sendInfos(
+      tr("MkvvInfo detected %1 frames %2 of them are key frames").arg(currentFrame + 1).arg(
+          keyFrames.count()));
 
   keyFrameInfos(keyFrames);
   emit

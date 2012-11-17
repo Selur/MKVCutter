@@ -7,7 +7,8 @@ MediaInfoAnalyser::MediaInfoAnalyser(QObject *parent) :
     QObject(parent)
 {
   m_process = new QProcess(this);
-  QObject::connect(m_process, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(mediainfoFinished(int,QProcess::ExitStatus)));
+  QObject::connect(m_process, SIGNAL(finished(int,QProcess::ExitStatus)), this,
+                   SLOT(mediainfoFinished(int,QProcess::ExitStatus)));
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this, SLOT(mediainfoOutput()));
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(mediainfoOutput()));
 }
@@ -23,9 +24,9 @@ void MediaInfoAnalyser::analyse(QString input)
 #endif
   mediainfo = QDir::toNativeSeparators(mediainfo);
   QStringList call;
-  call << "\""+mediainfo+"\"";
+  call << "\"" + mediainfo + "\"";
   //call << "--Full";
-  call << "\""+input+"\"";
+  call << "\"" + input + "\"";
   emit enableGui(false);
   emit sendInfos(tr("MediaInfo call: %1").arg(call.join(" ")));
   m_process->start(call.join(" "));
@@ -49,35 +50,36 @@ void MediaInfoAnalyser::mediainfoFinished(int exitState, QProcess::ExitStatus st
 
 void MediaInfoAnalyser::mediainfoOutput()
 {
-   QString out = m_process->readAllStandardOutput().data();
-   if (!out.isEmpty()) {
+  QString out = m_process->readAllStandardOutput().data();
+  if (!out.isEmpty()) {
     bool audio = false;
     QStringList lines = out.split("\n");
     foreach(QString line, lines) {
       line = line.trimmed();
       //emit sendInfos(tr("MediaInfo out: %1").arg(line));
       if (!audio) {
-          if (line.startsWith("Format profile")) {
-            removeStartOfLine(line);
-            emit avcProfileLevel(line);
-            continue;
-          }
-          if (line.startsWith("Format settings, CABAC")) {
-            removeStartOfLine(line);
-            emit cabac(line == "Yes");
-            continue;
-          }
-          if (line.startsWith("Format settings, ReFrames")) {
-            removeStartOfLine(line);
-            emit refframes(line.toInt());
-            continue;
-          }
-          if (line == "Audio") {
-              audio = true;
-          }
+        if (line.startsWith("Format profile")) {
+          removeStartOfLine(line);
+          emit avcProfileLevel(line);
+          continue;
+        }
+        if (line.startsWith("Format settings, CABAC")) {
+          removeStartOfLine(line);
+          emit cabac(line == "Yes");
+          continue;
+        }
+        if (line.startsWith("Format settings, ReFrames")) {
+          removeStartOfLine(line);
+          emit refframes(line.toInt());
+          continue;
+        }
+        if (line == "Audio") {
+          audio = true;
+        }
       } else {
-          if (line.startsWith("Format") && !line.startsWith("Format profile") && !line.startsWith("Format/")
-            && !line.startsWith("Format version") && !line.startsWith("Format settings")) {
+        if (line.startsWith("Format") && !line.startsWith("Format profile")
+            && !line.startsWith("Format/") && !line.startsWith("Format version")
+            && !line.startsWith("Format settings")) {
           removeStartOfLine(line);
           if (line == "MPEG Audio") {
             continue;
@@ -101,8 +103,7 @@ void MediaInfoAnalyser::mediainfoOutput()
           continue;
         }
 
-        if (!line.startsWith("Codec ID") && line.startsWith("Codec")
-            && m_audioFormat.isEmpty()) {
+        if (!line.startsWith("Codec ID") && line.startsWith("Codec") && m_audioFormat.isEmpty()) {
           removeStartOfLine(line);
           if (line.startsWith("MPA1L")) {
             if (line.startsWith("MPA1L1")) {
@@ -121,8 +122,8 @@ void MediaInfoAnalyser::mediainfoOutput()
           removeStartOfLine(line);
           line = line.remove(line.indexOf("K"), line.size());
           int bitrate = line.trimmed().toInt();
-            emit averageBitrate(bitrate);
-            continue;
+          emit averageBitrate(bitrate);
+          continue;
         }
       }
     }

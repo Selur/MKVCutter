@@ -18,7 +18,8 @@ class MkvSplitCaller : public QObject
   public:
     MkvSplitCaller(QObject *parent);
     virtual ~MkvSplitCaller();
-    void start(QString inputFile, QString outputFile, QStringList splitParts, QString outputFolder, bool audio = false);
+    void start(QString inputFile, QString outputFile, QStringList splitParts, QString outputFolder,
+               bool audio = false);
 
   private:
     QProcess *m_process;
@@ -28,17 +29,16 @@ class MkvSplitCaller : public QObject
     void call(QString call);
     QString buildCall();
 
-
   private slots:
-     void handleMkvmergeOutput();
-     void mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus);
+    void handleMkvmergeOutput();
+    void mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
-   signals:
-     void enableGui(bool enable);
-     void sendInfos(QString infos);
-     void progress(int position);
-     void finished(int state);
-     void splitFiles(QStringList splitFiles);
+  signals:
+    void enableGui(bool enable);
+    void sendInfos(QString infos);
+    void progress(int position);
+    void finished(int state);
+    void splitFiles(QStringList splitFiles);
 };
 
 #endif /* MKVSPLITCALLER_H_ */

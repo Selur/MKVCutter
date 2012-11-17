@@ -23,8 +23,6 @@ class ImageLabel : public QLabel
     QPixmap m_source, m_current;
     void displayImage();
 
-
-
 };
 
 #endif /* IMAGELABEL_H_ */

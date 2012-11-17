@@ -12,23 +12,22 @@ class MkvMerger : public QObject
     MkvMerger(QObject *parent = 0);
     void start(QStringList toMerge, QStringList audioFile2, QString outputFile);
 
-    private:
-      QProcess *m_process;
-      QString   m_output;
-      void call(QString call);
-      QString buildCall(QStringList splitFiles, QStringList audioFiles);
+  private:
+    QProcess *m_process;
+    QString m_output;
+    void call(QString call);
+    QString buildCall(QStringList splitFiles, QStringList audioFiles);
 
+  private slots:
+    void handleMkvmergeOutput();
+    void mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus);
 
-    private slots:
-       void handleMkvmergeOutput();
-       void mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus);
+  signals:
+    void enableGui(bool enable);
+    void sendInfos(QString infos);
+    void progress(int position);
+    void finished(int state);
 
-     signals:
-       void enableGui(bool enable);
-       void sendInfos(QString infos);
-       void progress(int position);
-       void finished(int state);
-    
 };
 
 #endif // MKVMERGER_H

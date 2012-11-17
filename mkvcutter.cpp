@@ -768,6 +768,8 @@ void MkvCutter::mkvMergerFinished(int exitstate)
     return;
   }
   if (ui.keepIntermediateCheckBox->isChecked()) {
+      QMessageBox::information(this, tr("Finished!"), tr("Created %1!").arg(m_currentOutput));
+      this->reset();
       return;
   }
 

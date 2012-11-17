@@ -114,10 +114,11 @@ QString MkvSplitCaller::buildCall()
     m_output = m_output.insert(m_output.lastIndexOf("."), "_AudioCut");
   }
   call += " -o \"" + QDir::toNativeSeparators(m_output) + "\"";
-  call += " --split parts:" + m_splitParts.join(",");
   if (m_audio) {
+    call += " --split parts:"+m_splitParts.join(",+");
     call += " --no-video";
   } else {
+    call += " --split parts:"+m_splitParts.join(",");
     call += " --no-audio";
     call += " --no-subtitles --no-buttons --no-track-tags";
     call += " --no-chapters --no-attachments --no-global-tags";

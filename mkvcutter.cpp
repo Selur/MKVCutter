@@ -312,21 +312,33 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
           }
         }
         if (currentKey == frame) {
-            previousKey = currentKey;
+            if (keyIndex+1 < keyCount) {
+                previousKey = frame;
+                this->addInfo("  -> "+tr("currentKey(%1) == frame(%2) -> previousKey(%3) = frame(%2)").arg(currentKey).arg(frame).arg(previousKey));
+                continue;
+            }
+            this->addInfo("  -> "+tr("frame(%2) == lastKey(%1) -> previousKey(%3) = frame(%2) && cut.nextKey(%4) = frameCount && cut.cut.end(%5) = frame(%2)").arg(currentKey).arg(frame).arg(previousKey).arg(cut.nextKey).arg(m_frameCount).arg(cut.cut.end));
             cut.prevKey = currentKey;
-            this->addInfo("  -> "+tr("currentKey(%1) == frame(%2) -> cut.prevKey(%3) = currentKey(%1) && previousKey(%5) = currentKey(%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey));
-            continue;
+            cut.nextKey = m_frameCount;
+            cut.cut.end = frame;
+            break;
+
         }
         if (currentKey > frame) {
-            this->addInfo("  -> "+tr("currentKey(%1) > frame(%2) => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = currentKey-1 (%7) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(cut.nextKey).arg(cut.cut.end).arg(currentKey-1));
+            if (currentKey == m_frameCount) {
+                cut.cut.end = currentKey;
+                this->addInfo("  -> "+tr("currentKey(%1) > frame(%2) == framecount => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = frameCount (%1) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey).arg(cut.cut.end));
+            } else {
+                cut.cut.end = currentKey-1;
+                this->addInfo("  -> "+tr("currentKey(%1) > frame(%2) => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = currentKey-1 (%7) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey).arg(cut.cut.end).arg(currentKey-1));
+            }
             cut.prevKey = previousKey;
             cut.nextKey = currentKey;
-            cut.cut.end = currentKey-1;
             previousKey = currentKey;
             break;
         }
 
-        this->addInfo("  -> "+tr("frame(%1) > lastKey(%2) => cut.prevKey(%3) = currentKey(%2) && cut.nextKey(%4) = frameCount(%5) && cut.cut.start(%5) = currentKey(%2) && cut.cut.end(%6) = frameCount(%5)").arg(frame).arg(currentKey).arg(cut.prevKey).arg(cut.nextKey).arg(cut.cut.start).arg(cut.cut.end));
+        this->addInfo("  -> "+tr("frame(%1) > lastKey(%2) => cut.prevKey(%3) = currentKey(%2) && cut.nextKey(%4) = frameCount(%5) && cut.cut.start(%6) = currentKey(%2) && cut.cut.end(%7) = frameCount(%5)").arg(frame).arg(currentKey).arg(cut.prevKey).arg(cut.nextKey).arg(m_frameCount).arg(cut.cut.start).arg(cut.cut.end));
         cut.prevKey = currentKey;
         cut.nextKey = m_frameCount;
         cut.cut.start = currentKey;
@@ -377,8 +389,17 @@ void MkvCutter::buildCutList()
         endCut = findCutForFrame(end);
 
         // add audio cut
-        startTime = Globals::frameToTime(start, m_fps);
-        endTime = Globals::frameToTime(end, m_fps);
+        if (start == 0) {
+            startTime = QString();
+        } else {
+            startTime = Globals::frameToTime(start, m_fps);
+        }
+        if (end == 0) {
+            endTime = QString();
+        } else {
+            endTime = Globals::frameToTime(end, m_fps);
+        }
+
         m_mkvAudioParts << startTime+"-"+endTime;
 
         // CUT LIST
@@ -404,7 +425,6 @@ void MkvCutter::buildCutList()
             m_cutList.append(tempCut);
             continue;
         }
-
 
         // B: start&end frame are in different GOPs
         // start cut
@@ -555,9 +575,9 @@ void MkvCutter::buildTrimAndPartsList()
     }
     if (m_trimming.count() == 1) {
         QString trim = m_trimming.value(name);
-        this->addInfo("  " + tr("removing %1 <> %2").arg(name).arg(trim));
+        this->addInfo("  " + tr("removing %1 <> %2 from trim list").arg(name).arg(trim));
         m_trimming.clear();
-        this->addInfo("  " + tr("adding %1 <> %2").arg(m_currentInput).arg(trim));
+        this->addInfo("  " + tr("adding %1 <> %2 to trim list").arg(m_currentInput).arg(trim));
         m_trimming.insert(m_currentInput, trim);
     }
     if (mkvparts.count() == 1) {
@@ -768,8 +788,14 @@ void MkvCutter::mkvMergerFinished(int exitstate)
     return;
   }
   if (ui.keepIntermediateCheckBox->isChecked()) {
-      QMessageBox::information(this, tr("Finished!"), tr("Created %1!").arg(m_currentOutput));
+
+      if (!QFile::exists(m_currentOutput)) {
+        QMessageBox::information(this, tr("Finished!"), tr("Created %1!").arg(m_currentOutput));
+      } else {
+          QMessageBox::information(this, tr("Finished!"), tr("%1 wasn't created due to soem unknown error!").arg(m_currentOutput));
+      }
       this->reset();
+
       return;
   }
 
@@ -819,7 +845,11 @@ void MkvCutter::mkvMergerFinished(int exitstate)
       }
   }
 
-  QMessageBox::information(this, tr("Finished!"), tr("Created %1!").arg(m_currentOutput));
+  if (!QFile::exists(m_currentOutput)) {
+    QMessageBox::information(this, tr("Finished!"), tr("Created %1!").arg(m_currentOutput));
+  } else {
+      QMessageBox::information(this, tr("Finished!"), tr("%1 wasn't created due to soem unknown error!").arg(m_currentOutput));
+  }
   this->reset();
 }
 

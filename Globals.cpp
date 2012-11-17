@@ -278,6 +278,6 @@ int Globals::saveTextTo(QString text, QString to)
 
 QString Globals::frameToTime(int number, double fps)
 {
-  double seconds = number / fps;
+  double seconds = int(number / fps * 1000 + 0.5)/1000.0;
   return secondsToHMSZZZ(seconds);
 }

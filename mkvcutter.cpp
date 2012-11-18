@@ -753,13 +753,14 @@ void MkvCutter::cleanUpAndMerge()
                 tr("Error"),
                 tr("Couldn't move %1 to %2").arg(tmp).arg(m_currentOutput));
         } else {
-            this->addInfo(tr("Finished!"));
+            QMessageBox::information(this, tr("Finished!"), tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
         }
       } else {
             this->addInfo(" " + tr("audio file: %1").arg(m_audioFile));
             this->addInfo(" " + tr("Muxing audio&video(1),.."));
         m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput);
       }
+    this->reset();
     return;
   }
 
@@ -788,14 +789,8 @@ void MkvCutter::mkvMergerFinished(int exitstate)
     return;
   }
   if (ui.keepIntermediateCheckBox->isChecked()) {
-
-      if (!QFile::exists(m_currentOutput)) {
-        QMessageBox::information(this, tr("Finished!"), tr("Created %1!").arg(m_currentOutput));
-      } else {
-          QMessageBox::information(this, tr("Finished!"), tr("%1 wasn't created due to soem unknown error!").arg(m_currentOutput));
-      }
+      QMessageBox::information(this, tr("Finished!"), tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
       this->reset();
-
       return;
   }
 
@@ -845,11 +840,7 @@ void MkvCutter::mkvMergerFinished(int exitstate)
       }
   }
 
-  if (!QFile::exists(m_currentOutput)) {
-    QMessageBox::information(this, tr("Finished!"), tr("Created %1!").arg(m_currentOutput));
-  } else {
-      QMessageBox::information(this, tr("Finished!"), tr("%1 wasn't created due to soem unknown error!").arg(m_currentOutput));
-  }
+  QMessageBox::information(this, tr("Finished!"), tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
   this->reset();
 }
 
@@ -1088,10 +1079,6 @@ void MkvCutter::addInfo(QString infos)
 
 void MkvCutter::reset()
 {
-  m_currentInput = QString();
-  m_keyframes.clear();
-  m_frameCount = 0;
-  ui.mainStackedWidget->setCurrentIndex(0);
   if (!m_tempAvs.isEmpty()) {
     QFile::remove(m_tempAvs);
     m_tempAvs = QString();
@@ -1103,8 +1090,34 @@ void MkvCutter::reset()
   foreach(QString file, m_tempReencodeAvs) {
     QFile::remove(file);
   }
-  m_tempReencodeAvs.clear();
+  m_currentInput = QString();
+  m_currentOutput = QString();
+  m_tempFolder  = QString();
+  m_avcProfileLevel = QString();
+  m_audioFormat  = QString();
+  m_avcCabac = true;
+  m_avcRefFrames = -1;
+  m_enabled = 0;
+  m_frameCount = -1;
+  m_keyframes.clear();
   m_cuts.clear();
+  m_splitFiles.clear();
+  m_tempReencodeAvs.clear();
+  m_videoEncodingCalls.clear();
+  m_reencodedVideoFiles.clear();
+  m_fps = -1; m_trimming.clear();
+  m_matroskaKeyFrameTimes.clear();
+  m_cutList.clear();
+  m_mkvmergeIntSplitList.clear();
+  m_mkvVideoParts.clear();
+  m_mkvAudioParts.clear();
+  m_audioFile = QString();
+  m_averageBitrate = -1;
+  m_audioSplitFiles.clear();
+  m_extractionFiles.clear();
+  m_toDelete.clear();
+  m_videoTrackID = 0;
+  ui.mainStackedWidget->setCurrentIndex(0);
 }
 
 void MkvCutter::setCutList(QStringList cuts)

@@ -37,6 +37,14 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
     finished(-1);
     return;
   }
+  QString optionFile = m_output;
+  optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
+  optionFile += "_mkvOptions.txt";
+  if (QFile::remove(optionFile)) {
+    this->sendInfos(tr("deleted %1").arg(optionFile));
+  } else {
+    this->sendInfos(tr("only one output file: %1").arg(m_output));
+  }
   emit finished(0);
 }
 
@@ -58,6 +66,10 @@ void MkvMerger::call(QString call)
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleMkvmergeOutput()));
   m_process->start(call);
 }
+QString doubleBackSlash(QString text)
+{
+  return text.replace("\\", "\\\\");
+}
 
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles)
 {
@@ -69,19 +81,34 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles)
   call = "mkvmerge";
 #endif
   call = "\"" + QDir::toNativeSeparators(appFolder + QDir::separator() + call) + "\"";
-  call += " -o \"" + m_output + "\"";
+  QStringList options;
+  options << "-o";
+  options << doubleBackSlash(m_output);
+  QString videoFiles;
   foreach (QString file, splitFiles) {
-    call += " \"" + file + "\" +";
+    videoFiles += file + "+";
   }
-  if (call.endsWith("+")) {
-    call = call.remove(call.size() - 2, 2);
+  if (videoFiles.endsWith("+")) {
+    videoFiles = videoFiles.remove(videoFiles.size() - 2, 2);
   }
+  options << videoFiles;
+  QString audio;
   foreach (QString file, audioFiles) {
-    call += " \"" + file + "\" +";
+    audio += file + "+";
   }
-  if (call.endsWith("+")) {
-    call = call.remove(call.size() - 2, 2);
+  if (audio.endsWith("+")) {
+    audio = audio.remove(call.size() - 2, 2);
+  }
+  options << audio;
+  QString optionFile = m_output;
+  optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
+  optionFile += "_mkvOptions.txt";
+  if (Globals::saveTextTo(options.join("\n"), optionFile) != 0) {
+    emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));
+  } else {
+    emit sendInfos(tr("Saved %1.").arg(optionFile));
   }
 
-  return call.trimmed();
+  call += " @\"" + optionFile + "\"";
+  return call;
 }

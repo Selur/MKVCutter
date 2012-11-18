@@ -106,7 +106,7 @@ void MkvSplitCaller::call(QString call)
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleMkvmergeOutput()));
   m_process->start(call);
 }
-QString doubleBackSlash(QString text)
+QString MkvSplitCaller::doubleBackSlash(QString text)
 {
     return text.replace("\\", "\\\\");
 }

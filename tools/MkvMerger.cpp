@@ -1,6 +1,7 @@
 #include "MkvMerger.h"
 #include <QApplication>
 #include <QDir>
+#include "Globals.h"
 
 MkvMerger::MkvMerger(QObject *parent) :
     QObject(parent)
@@ -40,11 +41,11 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
   QString optionFile = m_output;
   optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
   optionFile += "_mkvOptions.txt";
-  if (QFile::remove(optionFile)) {
+  /*if (QFile::remove(optionFile)) {
     this->sendInfos(tr("deleted %1").arg(optionFile));
   } else {
     this->sendInfos(tr("only one output file: %1").arg(m_output));
-  }
+  }*/
   emit finished(0);
 }
 
@@ -66,7 +67,7 @@ void MkvMerger::call(QString call)
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleMkvmergeOutput()));
   m_process->start(call);
 }
-QString doubleBackSlash(QString text)
+QString MkvMerger::doubleBackSlash(QString text)
 {
   return text.replace("\\", "\\\\");
 }
@@ -84,23 +85,24 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles)
   QStringList options;
   options << "-o";
   options << doubleBackSlash(m_output);
-  QString videoFiles;
+  QStringList files;
   foreach (QString file, splitFiles) {
-    videoFiles += file + "+";
+      files << doubleBackSlash(file);
   }
-  if (videoFiles.endsWith("+")) {
-    videoFiles = videoFiles.remove(videoFiles.size() - 2, 2);
+  options << files.join("\n+");
+  QString optionFile;
+  if (!files.isEmpty()) {
+      optionFile = files.at(0);
   }
-  options << videoFiles;
-  QString audio;
+  files.clear();
+
   foreach (QString file, audioFiles) {
-    audio += file + "+";
+    files << doubleBackSlash(file);
   }
-  if (audio.endsWith("+")) {
-    audio = audio.remove(call.size() - 2, 2);
+  options << files.join("\n+");
+  if (optionFile.isEmpty() && !files.isEmpty()) {
+      optionFile = files.at(0);
   }
-  options << audio;
-  QString optionFile = m_output;
   optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
   optionFile += "_mkvOptions.txt";
   if (Globals::saveTextTo(options.join("\n"), optionFile) != 0) {

@@ -17,6 +17,7 @@ class MkvMerger : public QObject
     QString m_output;
     void call(QString call);
     QString buildCall(QStringList splitFiles, QStringList audioFiles);
+    QString doubleBackSlash(QString text);
 
   private slots:
     void handleMkvmergeOutput();

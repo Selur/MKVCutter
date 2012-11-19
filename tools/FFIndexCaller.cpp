@@ -6,6 +6,7 @@
  */
 
 #include "FFIndexCaller.h"
+#include "Globals.h"
 #include <QDir>
 #include <QApplication>
 
@@ -43,7 +44,7 @@ void FFIndexCaller::index(QString inputFile, QString cacheFile)
 #else
   call << "ffmsindex";
 #endif
-  call << "\"" + QDir::toNativeSeparators(inputFile) + "\"";
+  call << "\"" + QDir::toNativeSeparators(Globals::shortFileName(inputFile)) + "\"";
   call << "\"" + QDir::toNativeSeparators(cacheFile) + "\"";
   QString tmp = call.join(" ");
   delete m_process;

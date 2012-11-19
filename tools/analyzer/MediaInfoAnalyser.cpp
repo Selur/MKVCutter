@@ -25,11 +25,17 @@ void MediaInfoAnalyser::analyse(QString input)
   mediainfo = QDir::toNativeSeparators(mediainfo);
   QStringList call;
   call << "\"" + mediainfo + "\"";
-  //call << "--Full";
+  call << "--Full";
   call << "\"" + input + "\"";
   emit enableGui(false);
   emit sendInfos(tr("MediaInfo call: %1").arg(call.join(" ")));
   m_process->start(call.join(" "));
+}
+
+void removeInnerWhiteSpace(QString &line)
+{
+  line = line.remove(" ");
+  line = line.trimmed();
 }
 
 void removeStartOfLine(QString &line)
@@ -73,6 +79,16 @@ void MediaInfoAnalyser::mediainfoOutput()
           emit refframes(line.toInt());
           continue;
         }
+        if (line.startsWith("Pixel aspect ratio") && !line.contains("/")) {
+            removeStartOfLine(line);
+            removeInnerWhiteSpace(line);
+            if (line == "1.000") {
+              line = "1";
+            }
+            emit aspectRatio(line.toDouble());
+            continue;
+        }
+
         if (line == "Audio") {
           audio = true;
         }

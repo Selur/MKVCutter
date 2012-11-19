@@ -29,6 +29,7 @@ class MediaInfoAnalyser : public QObject
     void audioFormat(QString format);
     void finished(int state);
     void averageBitrate(int bitrate);
+    void aspectRatio(double aspectRatio);
 
 };
 

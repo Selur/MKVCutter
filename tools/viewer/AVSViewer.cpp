@@ -365,7 +365,7 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
       //emit sendInfos(tr("Content:\r\n%1").arg(newContent));
     }
   } else {
-    //emit sendInfos(tr("No need for temporal avs file,.."));
+    emit sendInfos(tr("No need for temporal avs file,.."));
     QFile::remove(m_avsModified);
     m_avsModified = QString();
   }
@@ -442,6 +442,8 @@ void AVSViewer::init(int start)
 
     emit
     sendInfos(tr("Importing %1 into environment,..").arg(input));
+    input = Globals::shortFileName(input);
+    sendInfos(tr("ShortName").arg(input));
     const char *inputFile = input.toUtf8();
     if (import(inputFile, m_res, m_env) != 0) {
       emit finished(-6);
@@ -563,8 +565,7 @@ void AVSViewer::showFrame(int i)
 
     if (m_mult > 0 && m_mult != 1) {
       width = int(width * m_mult + 0.5);
-      emit
-      sendInfos(tr("Width: %1, Height: %2").arg(width).arg(height));
+      //emit sendInfos(tr("Width: %1, Height: %2").arg(width).arg(height));
       image = image.scaled(width, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     }
     ui.showLabel->setText(QString());
@@ -614,11 +615,11 @@ void AVSViewer::on_openAvsPushButton_clicked()
     return;
   }
   this->killEnv();
-
+  ui.showLabel->setText(tr("Preparing environment for %1").arg(input));
+  sendInfos(tr("Current input: %1").arg(input));
+  input = Globals::shortFileName(input);
   m_currentInput = input; //set current input
-  ui.showLabel->setText(tr("Preparing environment for %1").arg(m_currentInput));
   emit
-  sendInfos(tr("Current input: %1").arg(m_currentInput));
   this->init();
 }
 

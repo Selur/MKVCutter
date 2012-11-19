@@ -12,13 +12,18 @@
 
 MkvSplitCaller::MkvSplitCaller(QObject *parent) :
     QObject(parent), m_process(NULL), m_input(QString()), m_output(QString()), m_splitParts(),
-        m_outputFolder(QString()), m_tempFiles(), m_audio(false)
+    m_outputFolder(QString()), m_tempFiles(), m_audio(false), m_keepIntermediate(false)
 {
 
 }
 
 MkvSplitCaller::~MkvSplitCaller()
 {
+}
+
+void MkvSplitCaller::setKeepIntermediate(bool keep)
+{
+    m_keepIntermediate = keep;
 }
 
 void MkvSplitCaller::handleMkvmergeOutput()
@@ -29,7 +34,7 @@ void MkvSplitCaller::handleMkvmergeOutput()
     int index;
     foreach(QString line, lines) {
       line = line.trimmed();
-      //emit sendInfos("MkvMerge output: " + line);
+      emit sendInfos("MkvMerge output: " + line);
       if (line.startsWith("Progress:")) {
         line = line.remove(0, 10);
         line = line.remove("%").trimmed();
@@ -41,10 +46,11 @@ void MkvSplitCaller::handleMkvmergeOutput()
         line = line.remove(0, index);
         line = line.trimmed();
       }
-      if (!line.startsWith("The file '")) {
+      index = line.indexOf("The file '");
+      if (index == -1) {
         continue;
       }
-      line = line.remove(0, line.indexOf("'") + 1);
+      line = line.remove(0, index+10);
       line = line.remove(line.indexOf("'"), line.size());
       emit sendInfos(" -> " + tr("new temp file: %1").arg(line));
       m_tempFiles << line;
@@ -71,7 +77,7 @@ void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitSta
   QString optionFile = m_output;
   optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
   optionFile +="_mkvOptions.txt";
-  if (QFile::remove(optionFile)) {
+  if (!m_keepIntermediate && QFile::remove(optionFile)) {
       this->sendInfos(tr("deleted %1").arg(optionFile));
   } else {
       this->sendInfos(tr("only one output file: %1").arg(m_output));
@@ -148,6 +154,13 @@ QString MkvSplitCaller::buildCall()
   QString optionFile = m_output;
   optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
   optionFile +="_mkvOptions.txt";
+  emit sendInfos(tr("Saving options:"));
+  emit sendInfos("---------------------------");
+  foreach (QString option, options) {
+    emit sendInfos(option);
+  }
+  emit sendInfos("---------------------------");
+  emit sendInfos(tr("to:  %1").arg(optionFile));
   if (Globals::saveTextTo(options.join("\n"), optionFile)!= 0) {
       emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));
   } else {

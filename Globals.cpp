@@ -6,6 +6,7 @@
  */
 
 #include "Globals.h"
+#include "Windows.h"
 
 QString Globals::cutTypToString(cutTyp cut)
 {
@@ -257,16 +258,42 @@ QString Globals::getDirectory(const QString input)
   return QDir::toNativeSeparators(output);
 }
 
+#define UTF8BOM "\xEF\xBB\xBF"
+#define UTF8 "UTF-8"
+#define UTF16LEBOM "\xFF\xFE"
+#define UTF16LE "UTF-16LE"
+#define UTF16BEBOM "\xFE\xFF"
+#define UTF16BE "UTF-16BE"
+
+/**
+ * saves the content of a QString 'text' into a file 'to'
+ * 0 -> no problem
+ * -1 -> saving failed
+ **/
 int Globals::saveTextTo(QString text, QString to)
 {
   if (text.isEmpty()) {
     return -1;
   }
+  text = text.replace("\r\n", "\n");
   QFile file(to);
   file.remove();
-  if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+  if (file.open(QIODevice::WriteOnly)) {
+    bool ttxt = to.endsWith(".ttxt", Qt::CaseInsensitive);
+    bool avs =  to.endsWith(".avs", Qt::CaseInsensitive);
+    bool meta =  to.endsWith(".meta", Qt::CaseInsensitive);
+    if (!ttxt && !avs && !meta) {
+      file.write(UTF8BOM);
+      file.setTextModeEnabled(true);
+    }
     QTextStream out(&file);
-    out.setCodec(QTextCodec::codecForUtfText(text.toUtf8()));
+    if (ttxt) {
+       out.setAutoDetectUnicode(true);
+    } else if (avs || meta) {
+      out.setCodec(QTextCodec::codecForLocale());
+    } else {
+      out.setCodec("UTF-8");
+    }
     out << text;
     if (file.exists()) {
       file.close();
@@ -280,4 +307,27 @@ QString Globals::frameToTime(int number, double fps)
 {
   double seconds = int(number / fps * 1000 + 0.5)/1000.0;
   return secondsToHMSZZZ(seconds);
+}
+
+QString Globals::shortFileName(QString inputFile)
+{
+  if (inputFile.isEmpty()) {
+    return QString();
+  }
+  inputFile = removeQuotes(inputFile);
+  inputFile = QDir::toNativeSeparators(inputFile);
+  if (QFile::exists(inputFile)) {
+    wchar_t* input = new wchar_t[inputFile.size() + 1];
+    inputFile.toWCharArray(input);
+    input[inputFile.size()] = L'\0';
+    long length = GetShortPathName(input, NULL, 0);
+    wchar_t* output = new wchar_t[length];
+    GetShortPathName(input, output, length);
+    inputFile = QString::fromWCharArray(output, length - 1);
+    delete[] input;
+    delete[] output;
+  } else {
+      inputFile = inputFile+" DOES NOT EXIST!";
+  }
+  return inputFile;
 }

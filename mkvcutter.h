@@ -52,6 +52,7 @@ class MkvCutter : public QWidget
     QStringList m_audioSplitFiles, m_extractionFiles, m_toDelete;
     int m_videoTrackID;
     MkvVideoExtractor *m_extractor;
+    double m_aspectRatio;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -79,6 +80,7 @@ class MkvCutter : public QWidget
     void enableGui(bool enable);
     void addInfo(QString infos);
     void setKeyFrames(QStringList list);
+    void setAspectRatio(double aspect);
     void mkvAnalysefinished();
     void mkvAnalyseProgress(int linesRead);
     void setFrameCount(int count);

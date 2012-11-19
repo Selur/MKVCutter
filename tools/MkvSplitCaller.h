@@ -20,6 +20,7 @@ class MkvSplitCaller : public QObject
     virtual ~MkvSplitCaller();
     void start(QString inputFile, QString outputFile, QStringList splitParts, QString outputFolder,
                bool audio = false);
+    void setKeepIntermediate(bool keep);
 
   private:
     QProcess *m_process;
@@ -29,6 +30,7 @@ class MkvSplitCaller : public QObject
     void call(QString call);
     QString buildCall();
     QString doubleBackSlash(QString text);
+    bool m_keepIntermediate;
 
   private slots:
     void handleMkvmergeOutput();

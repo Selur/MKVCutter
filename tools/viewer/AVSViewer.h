@@ -38,8 +38,8 @@ class AVSViewer : public QWidget
     QImage m_currentImage;
     bool m_cutSupport;
     void showFrame(int frame);
-    int import(const char *input);
-    int invokeImportInternal(const char *input);
+    int import(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
+    int invokeImportInternal(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
     int invoke(const char *function);
     int invokeInternal(const char *function);
     void killEnv();

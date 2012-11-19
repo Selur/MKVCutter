@@ -43,10 +43,10 @@ void AVSViewer::send(QString message)
   emit sendInfos(message);
 }
 
-int AVSViewer::invokeImportInternal(const char *inputFile)
+int AVSViewer::invokeImportInternal(const char *inputFile, AVSValue &res, IScriptEnvironment* env)
 {
   try {
-    m_res = m_env->Invoke("Import", inputFile); //import current input to environment
+    res = env->Invoke("Import", inputFile); //import current input to environment
   } catch (AvisynthError &err) { //catch AvisynthErrors
     this->send(tr("Avisynth error: %1").arg(err.msg));
     return -1;
@@ -57,33 +57,31 @@ int AVSViewer::invokeImportInternal(const char *inputFile)
   return 0;
 }
 
-int AVSViewer::import(const char* input)
+int AVSViewer::import(const char *inputFile, AVSValue &res, IScriptEnvironment* env)
 {
-  __try {
-    if (invokeImportInternal(input) != 0) {
+  try {
+    if (invokeImportInternal(inputFile, res, env) != 0) {
       return -1;
     }
-  }
-  __except(1)
-  {
+  } catch(...) {
     cerr << "-> Win32 exception" << endl;
     return -1;
   }
   return 0;
 }
 
+
 int AVSViewer::invokeInternal(const char *function)
 {
   try {
     QString tmp = function;
-    emit
-    sendInfos(" " + tr("invoking %1").arg(tmp));
+    emit sendInfos(" " + QObject::tr("invoking %1").arg(tmp));
     m_res = m_env->Invoke(function, AVSValue(&m_res, 1)); //import current input to environment
   } catch (AvisynthError &err) { //catch AvisynthErrors
-    this->send(tr("Avisynth error: %1").arg(err.msg));
+    this->sendInfos(QObject::tr("Avisynth error: %1").arg(err.msg));
     return -1;
   } catch (...) { //catch the rest
-    this->send(tr("Unknown C++ exception"));
+    this->sendInfos(QObject::tr("Unknown C++ exception"));
     return -1;
   }
   return 0;
@@ -92,7 +90,7 @@ int AVSViewer::invokeInternal(const char *function)
 int AVSViewer::invoke(const char *function)
 {
   __try {
-    if (invokeInternal(function) != 0) {
+    if (this->invokeInternal(function) != 0) {
       return -1;
     }
   }
@@ -445,7 +443,7 @@ void AVSViewer::init(int start)
     emit
     sendInfos(tr("Importing %1 into environment,..").arg(input));
     const char *inputFile = input.toUtf8();
-    if (import(inputFile) != 0) {
+    if (import(inputFile, m_res, m_env) != 0) {
       emit finished(-6);
       return;
     }

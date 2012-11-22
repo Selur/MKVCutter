@@ -60,6 +60,7 @@ void MediaInfoAnalyser::mediainfoOutput()
   if (!out.isEmpty()) {
     bool audio = false;
     QStringList lines = out.split("\n");
+    QString scanorder = "progressive";
     foreach(QString line, lines) {
       line = line.trimmed();
       //emit sendInfos(tr("MediaInfo out: %1").arg(line));
@@ -88,9 +89,21 @@ void MediaInfoAnalyser::mediainfoOutput()
             emit aspectRatio(line.toDouble());
             continue;
         }
-
+        if (line.startsWith("Scan type") && line.endsWith("Interlaced")) {
+            scanorder = "TFF";
+            continue;
+        }
+        if (line.startsWith("Scan order")) {
+            removeStartOfLine(line);
+            if (line == "Top Field First" || line == "TFF") {
+                scanorder = "TFF";
+            } else if (line == "Bottom Field First" || line == "BFF") {
+                scanorder = "BFF";
+            }
+        }
         if (line == "Audio") {
           audio = true;
+          continue;
         }
       } else {
         if (line.startsWith("Format") && !line.startsWith("Format profile")
@@ -143,7 +156,9 @@ void MediaInfoAnalyser::mediainfoOutput()
         }
       }
     }
+    emit interlaced(scanorder);
   }
+
   QString err = m_process->readAllStandardOutput().data();
   if (!err.isEmpty()) {
     emit sendInfos(tr("MediaInfo error: %1").arg(err));

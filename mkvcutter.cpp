@@ -14,7 +14,8 @@ MkvCutter::MkvCutter(QWidget *parent) :
         m_tempReencodeAvs(), m_videoEncodingCalls(),
         m_reencodedVideoFiles(), m_fps(-1), m_trimming(), m_matroskaKeyFrameTimes(), m_cutList(),
         m_mkvVideoParts(), m_mkvAudioParts(), m_audioFile(QString()), m_averageBitrate(-1), m_audioSplitFiles(),
-        m_extractionFiles(), m_videoTrackID(-1), m_extractor(NULL), m_toDelete(), m_aspectRatio(1)
+        m_extractionFiles(), m_videoTrackID(-1), m_extractor(NULL), m_toDelete(), m_aspectRatio(1),
+    m_interlaced("progressive")
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -37,6 +38,7 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(aspectRatio(double)), this, SLOT(setAspectRatio(double)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(refframes(int)), this, SLOT(setAvcRefFrames(int)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(cabac(bool)), this, SLOT(setAvcCabac(bool)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(interlaced(QString)), this, SLOT(setInterlaced(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(audioFormat(QString)), this,
                   SLOT(setAudioFormat(QString)));
   m_ffindexCaller = new FFIndexCaller(this);
@@ -76,6 +78,8 @@ MkvCutter::MkvCutter(QWidget *parent) :
   m_viewer = 0;
   ui.setupUi(this);
   ui.mainStackedWidget->setCurrentIndex(0);
+  QObject::connect(ui.openSourcePushButton, SIGNAL(droppedInput(QString)), this,
+                     SLOT(setInput(QString)));
 }
 
 MkvCutter::~MkvCutter()
@@ -83,6 +87,12 @@ MkvCutter::~MkvCutter()
   this->reset();
 }
 
+
+void MkvCutter::setInterlaced(QString interlaced)
+{
+    m_interlaced = interlaced;
+    this->addInfo(" " + tr("video scan order: %1").arg(interlaced));
+}
 
 void MkvCutter::setVideoTrackID(int id)
 {
@@ -92,7 +102,7 @@ void MkvCutter::setVideoTrackID(int id)
 void MkvCutter::setAverageBitrate(int bitrate)
 {
     m_averageBitrate = bitrate;
-    this->addInfo(" " + tr("video avreage bitrate: %1").arg(bitrate));
+    this->addInfo(" " + tr("video average bitrate: %1").arg(bitrate));
 }
 
 void MkvCutter::setSplitFiles(QStringList splitFiles)
@@ -123,21 +133,26 @@ void MkvCutter::setFPS(double framerate)
   this->addInfo(tr("Video stream frame rate: %1").arg(m_fps));
 }
 
+void MkvCutter::setInput(QString input)
+{
+    this->reset();
+    if (!input.endsWith(".mkv") || input.isEmpty()) { //abort if input does not end with .avs
+      QString text = tr("Input needs to be a .mkv file!");
+      QMessageBox::critical(this, tr("Error"), text);
+      this->reset();
+      return;
+    }
+    m_currentInput = QDir::toNativeSeparators(input); //set current input
+    m_mkvinfoAnalyser->analyse(m_currentInput);
+}
+
 void MkvCutter::on_openSourcePushButton_clicked()
 {
-  this->reset();
   QString name = tr("Select mkv input file");
   QString select = tr("Input (*.mkv)");
   QString inputPath = QApplication::applicationDirPath();
   QString input = QFileDialog::getOpenFileName(this, name, inputPath, select);
-  if (!input.endsWith(".mkv") || input.isEmpty()) { //abort if input does not end with .avs
-    QString text = tr("Input needs to be a .mkv file!");
-    QMessageBox::critical(this, tr("Error"), text);
-    this->reset();
-    return;
-  }
-  m_currentInput = QDir::toNativeSeparators(input); //set current input
-  m_mkvinfoAnalyser->analyse(m_currentInput);
+  this->setInput(input);
 }
 
 void MkvCutter::ffindexProgress(int percent)
@@ -760,6 +775,13 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   if (!m_avcCabac) {
     call << "--no-cabac";
   }
+  if (m_interlaced != "progressive") {
+      if (m_interlaced == "BFF") {
+          call << "--bff";
+      } else if (m_interlaced == "TFF") {
+          call << "--tff";
+      }
+  }
   call << "--thread-input";
   //TODO: bluray check
   call << "--crf 19";
@@ -1196,6 +1218,7 @@ void MkvCutter::reset()
   ui.infoLabel->setText(QString());
   ui.outputLabel->setText(QString());
   ui.tempFolderLabel->setText(QString());
+  m_interlaced = "progressive";
 }
 
 void MkvCutter::setCutList(QStringList cuts)

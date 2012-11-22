@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>256</width>
-    <height>328</height>
+    <height>347</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -44,7 +44,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>2</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="startPage">
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -55,7 +55,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QPushButton" name="openSourcePushButton">
+        <widget class="DropPushButton" name="openSourcePushButton">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
            <horstretch>0</horstretch>
@@ -215,6 +215,13 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>DropPushButton</class>
+   <extends>QPushButton</extends>
+   <header>DropPushButton.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

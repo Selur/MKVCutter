@@ -86,6 +86,10 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles)
   options << "-o";
   options << doubleBackSlash(m_output);
   QStringList files;
+  if (splitFiles.count() > 0) {
+   options << "--compression";
+   options << "-1:none";
+  }
   foreach (QString file, splitFiles) {
       files << doubleBackSlash(file);
   }
@@ -95,7 +99,10 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles)
       optionFile = files.at(0);
   }
   files.clear();
-
+  if (audioFiles.count() > 0) {
+   options << "--compression";
+   options << "-1:none";
+  }
   foreach (QString file, audioFiles) {
     files << doubleBackSlash(file);
   }

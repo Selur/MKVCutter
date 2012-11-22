@@ -53,6 +53,7 @@ class MkvCutter : public QWidget
     int m_videoTrackID;
     MkvVideoExtractor *m_extractor;
     double m_aspectRatio;
+    QString m_interlaced;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -74,6 +75,7 @@ class MkvCutter : public QWidget
 
   private slots:
     void on_openSourcePushButton_clicked();
+    void setInput(QString input);
     void on_outputPushButton_clicked();
     void on_tempPushButton_clicked();
     void on_nextPushButton_clicked();
@@ -108,6 +110,7 @@ class MkvCutter : public QWidget
     void setAverageBitrate(int bitrate);
     void setAudioSplitFiles(QStringList splitFiles);
     void setVideoTrackID(int id);
+    void setInterlaced(QString interlaced);
 
 };
 

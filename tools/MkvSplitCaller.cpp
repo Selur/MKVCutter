@@ -34,7 +34,7 @@ void MkvSplitCaller::handleMkvmergeOutput()
     int index;
     foreach(QString line, lines) {
       line = line.trimmed();
-      emit sendInfos("MkvMerge output: " + line);
+      //emit sendInfos("MkvMerge output: " + line);
       if (line.startsWith("Progress:")) {
         line = line.remove(0, 10);
         line = line.remove("%").trimmed();

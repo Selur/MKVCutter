@@ -89,9 +89,20 @@ MkvCutter::~MkvCutter()
 }
 
 
+void MkvCutter::setInterlacedMode(QString interlacedMode)
+{
+    if (interlacedMode == tr("auto")) {
+        m_interlaced = m_mediaInfoScanorder;
+    } else {
+        m_mediaInfoScanorder = interlacedMode;
+        this->addInfo(" " + tr("changed video scan order to: %1").arg(interlacedMode));
+    }
+}
+
 void MkvCutter::setInterlaced(QString interlaced)
 {
     m_interlaced = interlaced;
+    m_mediaInfoScanorder = interlaced;
     this->addInfo(" " + tr("video scan order: %1").arg(interlaced));
 }
 
@@ -284,13 +295,21 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
       && QFile::exists(QDir::toNativeSeparators(inputPath + "ffms2-x64.dll"))) {
     path = QDir::toNativeSeparators(inputPath + "ffms2-x64.dll");
   }
+  QString assume;
+  if (m_interlaced == "bff" || m_interlaced == "BFF") {
+      assume = "AssumeBFF()";
+  } else if (m_interlaced == "tff" || m_interlaced == "TFF") {
+      assume = "AssumeTFF()";
+  }
   script << "LoadPlugin(\"" + path + "\")";
   script << "FFVideoSource(\"" + filename + "\", threads=1)";
+  script << assume;
   script << trim;
   trim = script.join("\n");
   if (Globals::saveTextTo(trim, avisynthFileName) == 0) {
     this->addInfo("  "+tr("Saved avisynth script:"));
     this->addInfo("   ----------------------------");
+    this->addInfo(assume);
     this->addInfo(trim);
     this->addInfo("   ----------------------------");
     this->addInfo("  "+tr("to: %1").arg(avisynthFileName));
@@ -777,9 +796,9 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     call << "--no-cabac";
   }
   if (m_interlaced != "progressive") {
-      if (m_interlaced == "BFF") {
+      if (m_interlaced == "BFF" || m_interlaced == "bff") {
           call << "--bff";
-      } else if (m_interlaced == "TFF") {
+      } else if (m_interlaced == "TFF" || m_interlaced == "tff") {
           call << "--tff";
       }
   }
@@ -1035,10 +1054,17 @@ void MkvCutter::ffIndexerFinished(int exitstate)
   }
   ui.infoLabel->setText(tr("Indexing input file finished,.."));
   delete m_viewer;
-  m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, m_keyframes);
+  QStringList keyframes;
+  foreach(QString key, m_keyframes) {
+      key = key.remove(key.indexOf(","), key.size());
+      //this->addInfo("key "+key);
+      keyframes << key;
+  }
+  m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, keyframes);
   this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
   this->myconnect(m_viewer, SIGNAL(cuts(QStringList)), this, SLOT(setCutList(QStringList)));
   this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_viewer, SIGNAL(setInterlacedMode(QString)), this, SLOT(setInterlacedMode(QString)));
   ui.avsViewerVerticalLayout->insertWidget(0, m_viewer);
   ui.mainStackedWidget->setCurrentIndex(1);
   ui.infoLabel->setText(tr("- Cut View -"));

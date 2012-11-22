@@ -46,9 +46,11 @@ class AVSViewer : public QWidget
     void killEnv();
     void send(QString message);
     int handleFFInfo(QString &input, bool &invokeFFInfo);
+    QString m_scanOrder;
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);
+    void on_scanOrderComboBox_currentIndexChanged( const QString & text);
     void on_nextPushButton_clicked();
     void on_previousPushButton_clicked();
     void on_frameHorizontalSlider_sliderReleased();
@@ -68,6 +70,7 @@ class AVSViewer : public QWidget
     void finished(int state);
     void sendInfos(QString info);
     void cuts(QStringList cuts);
+    void setInterlacedMode(QString mode);
 };
 
 #endif /* AVSVIEWER_H_ */

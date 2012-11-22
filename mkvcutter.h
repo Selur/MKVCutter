@@ -53,7 +53,7 @@ class MkvCutter : public QWidget
     int m_videoTrackID;
     MkvVideoExtractor *m_extractor;
     double m_aspectRatio;
-    QString m_interlaced;
+    QString m_interlaced, m_mediaInfoScanorder;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -111,6 +111,7 @@ class MkvCutter : public QWidget
     void setAudioSplitFiles(QStringList splitFiles);
     void setVideoTrackID(int id);
     void setInterlaced(QString interlaced);
+    void setInterlacedMode(QString interlaced);
 
 };
 

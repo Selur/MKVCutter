@@ -80,6 +80,7 @@ MkvCutter::MkvCutter(QWidget *parent) :
   ui.mainStackedWidget->setCurrentIndex(0);
   QObject::connect(ui.openSourcePushButton, SIGNAL(droppedInput(QString)), this,
                      SLOT(setInput(QString)));
+  ui.openSourcePushButton->acceptDrops(true);
 }
 
 MkvCutter::~MkvCutter()

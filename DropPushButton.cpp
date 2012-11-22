@@ -16,7 +16,7 @@ void DropPushButton::dropEvent(QDropEvent *event)
   }
   QList<QUrl> urls = event->mimeData()->urls();
   QString location;
-  if (urls.count() > 1) {
+  if (urls.count() > 0) {
     location += QDir::toNativeSeparators(urls.at(0).toLocalFile());
   }
 
@@ -25,8 +25,7 @@ void DropPushButton::dropEvent(QDropEvent *event)
     return;
   }
   this->setText(location);
-  emit
-  droppedInput(location);
+  emit droppedInput(location);
   event->accept();
 }
 

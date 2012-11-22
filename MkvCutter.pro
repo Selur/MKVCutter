@@ -1,4 +1,5 @@
-CONFIG += qt
+CONFIG += qt \
+console
 TEMPLATE = app
 TARGET = MkvCutter
 QT += core \

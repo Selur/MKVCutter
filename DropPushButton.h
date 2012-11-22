@@ -2,28 +2,29 @@
 #define DROPPUSHBUTTON_H
 
 #include <QPushButton>
+#include <QObject>
 class QDropEvent;
 class QDragEnterEvent;
 
 class DropPushButton : public QPushButton
 {
-    Q_OBJECT
-public:
+  Q_OBJECT
+  public:
     explicit DropPushButton(QWidget *parent = 0);
-    
-protected:
+
+  protected:
     void dropEvent(QDropEvent *event);
     void dragEnterEvent(QDragEnterEvent *event);
 
   private:
     bool m_drops;
 
-  public slots:
+    public slots:
     void acceptDrops(bool value);
 
-  signals:
+    signals:
     void droppedInput(QString input);
-    
+
 };
 
 #endif // DROPPUSHBUTTON_H

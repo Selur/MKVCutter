@@ -110,6 +110,19 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="previousKeyPushButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Previous key</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="previousPushButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -151,6 +164,19 @@
        </property>
        <property name="autoRepeat">
         <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="nextKeyPushButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Next key</string>
        </property>
       </widget>
      </item>

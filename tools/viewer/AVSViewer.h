@@ -22,7 +22,7 @@ class AVSViewer : public QWidget
   Q_OBJECT
   public:
     AVSViewer(QWidget *parent = 0, QString path = QString(), double mult = 0, bool cutSupport =
-                  false);
+                  false, QStringList keyframes = QStringList());
     ~AVSViewer();
     void init(int start = 0);
 
@@ -37,6 +37,7 @@ class AVSViewer : public QWidget
     double m_mult;
     QImage m_currentImage;
     bool m_cutSupport;
+    QStringList m_keyFrames;
     void showFrame(int frame);
     int import(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
     int invokeImportInternal(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
@@ -60,6 +61,8 @@ class AVSViewer : public QWidget
     void on_removeCutPushButton_clicked();
     void on_commitPushButton_clicked();
     bool isValidCut(int start, int end);
+    void on_previousKeyPushButton_clicked();
+    void on_nextKeyPushButton_clicked();
 
   signals:
     void finished(int state);

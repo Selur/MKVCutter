@@ -1035,7 +1035,7 @@ void MkvCutter::ffIndexerFinished(int exitstate)
   }
   ui.infoLabel->setText(tr("Indexing input file finished,.."));
   delete m_viewer;
-  m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true);
+  m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, m_keyframes);
   this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
   this->myconnect(m_viewer, SIGNAL(cuts(QStringList)), this, SLOT(setCutList(QStringList)));
   this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));

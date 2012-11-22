@@ -22,7 +22,8 @@ class AVSViewer : public QWidget
   Q_OBJECT
   public:
     AVSViewer(QWidget *parent = 0, QString path = QString(), double mult = 0, bool cutSupport =
-                  false, QStringList keyframes = QStringList());
+                  false,
+              QStringList keyframes = QStringList());
     ~AVSViewer();
     void init(int start = 0);
 
@@ -50,7 +51,7 @@ class AVSViewer : public QWidget
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);
-    void on_scanOrderComboBox_currentIndexChanged( const QString & text);
+    void on_scanOrderComboBox_currentIndexChanged(const QString & text);
     void on_nextPushButton_clicked();
     void on_previousPushButton_clicked();
     void on_frameHorizontalSlider_sliderReleased();

@@ -62,6 +62,7 @@ void AVSViewer::on_previousKeyPushButton_clicked()
   foreach (QString key, m_keyFrames) {
     if (key.toInt() < m_current) {
       previous = key.toInt();
+      continue;
     }
     break;
   }

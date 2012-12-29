@@ -8,9 +8,9 @@ MkvVideoExtractor::MkvVideoExtractor(QObject *parent) :
 {
 }
 
-void MkvVideoExtractor::startExtraction(QString filename, QString typ, QString tempFolder)
+void MkvVideoExtractor::startExtraction(QString filename, QString track, QString typ, QString tempFolder)
 {
-  QString call = this->buildCall(filename, typ, tempFolder);
+  QString call = this->buildCall(filename, track, typ, tempFolder);
   this->call(call);
 }
 
@@ -26,7 +26,7 @@ void MkvVideoExtractor::call(QString call)
   m_process->start(call);
 }
 
-QString MkvVideoExtractor::buildCall(QString filename, QString typ, QString tempFolder)
+QString MkvVideoExtractor::buildCall(QString filename, QString, QString typ, QString tempFolder)
 {
   QString call = QApplication::applicationDirPath();
   call += QDir::separator();

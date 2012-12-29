@@ -205,10 +205,10 @@ void AVSViewer::on_loadPushButton_clicked()
     }
     start = startEnd.at(0).toInt();
     end = startEnd.at(1).toInt();
-    if (!isValidCut(start, end)) {
+    if (!this->isValidCut(start, end)) {
       continue;
     }
-
+    this->addCut(start, end);
   }
 }
 
@@ -297,10 +297,10 @@ bool AVSViewer::isValidCut(int start, int end)
 
 void AVSViewer::addCut(int start, int end)
 {
-  if (start == ui.frameHorizontalSlider->minimum() && end != ui.frameHorizontalSlider->maximum()) {
+  if (start == ui.frameHorizontalSlider->minimum() && end == ui.frameHorizontalSlider->maximum()) {
     return;
   }
-  if (!isValidCut(start, end)) {
+  if (!this->isValidCut(start, end)) {
     return;
   }
   int max = QString::number(ui.frameHorizontalSlider->maximum()).size();

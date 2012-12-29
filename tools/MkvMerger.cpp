@@ -117,7 +117,9 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles)
   } else {
     emit sendInfos(tr("Saved %1.").arg(optionFile));
   }
-
+  while (optionFile.contains("\\\\")) {
+    optionFile = optionFile.replace("\\\\","\\");
+  }
   call += " @\"" + optionFile + "\"";
   return call;
 }

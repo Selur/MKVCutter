@@ -39,6 +39,7 @@ class AVSViewer : public QWidget
     QImage m_currentImage;
     bool m_cutSupport;
     QStringList m_keyFrames;
+    QString m_scanOrder;
     void showFrame(int frame);
     int import(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
     int invokeImportInternal(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
@@ -47,7 +48,7 @@ class AVSViewer : public QWidget
     void killEnv();
     void send(QString message);
     int handleFFInfo(QString &input, bool &invokeFFInfo);
-    QString m_scanOrder;
+    void addCut(int start, int end);
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);
@@ -67,6 +68,8 @@ class AVSViewer : public QWidget
     void on_previousKeyPushButton_clicked();
     void on_nextKeyPushButton_clicked();
     void on_jumpToPushButton_clicked();
+    void on_savePushButton_clicked();
+    void on_loadPushButton_clicked();
 
   signals:
     void finished(int state);

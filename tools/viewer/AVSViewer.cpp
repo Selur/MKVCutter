@@ -13,6 +13,8 @@
 #include <QFileInfo>
 #include <QTextStream>
 #include <QTextCodec>
+#include <QApplication>
+#include <QFileDialog>
 #include "Globals.h"
 using namespace std;
 
@@ -141,6 +143,75 @@ int AVSViewer::invoke(const char *function)
   return 0;
 }
 
+void AVSViewer::on_savePushButton_clicked()
+{
+  QStringList cutList, elems;
+  QString elem;
+  for (int i = 0, c = ui.cutListWidget->count(); i < c; ++i) {
+    elem = ui.cutListWidget->item(i)->text();
+    if (elem.isEmpty()) {
+      continue;
+    }
+    elems = elem.split("-");
+    cutList << elems.at(0) + "#" + elems.at(1);
+  }
+  if (cutList.isEmpty()) {
+    return;
+  }
+  QString tmp = tr("Save cut-list");
+  QString text = QFileDialog::getSaveFileName(0, tmp, Globals::getDirectory(m_currentInput),
+                                              tr("cut-lists (*.cut)"));
+  if (text.isEmpty()) {
+    return;
+  }
+  if (!text.endsWith(".cut", Qt::CaseInsensitive)) {
+    text += ".cut";
+  }
+  if (Globals::saveTextTo(cutList.join("\n"), text) == 0) {
+    this->send(tr("Saved list to: %1").arg(text));
+  }
+}
+
+void AVSViewer::on_loadPushButton_clicked()
+{
+  QString name = tr("Select cut list");
+  QString select = tr("Input (*.cut)");
+  QString inputPath = Globals::getDirectory(m_currentInput);
+  if (inputPath.trimmed().isEmpty()) {
+    inputPath = QApplication::applicationDirPath();
+  }
+  QString input = QFileDialog::getOpenFileName(this, name, inputPath, select);
+  if (input.isEmpty()) {
+    return;
+  }
+  QFile file(input);
+  if (!file.open(QIODevice::ReadOnly)) {
+    this->send(tr("Couldn't read content of %1!").arg(input));
+    return;
+  }
+  ui.cutListWidget->clear();
+  QString content = file.readAll();
+  int start, end;
+  QStringList lines = content.split("\n"), startEnd;
+  foreach(QString line, lines) {
+    line = line.trimmed();
+    if (line.isEmpty()) {
+      continue;
+    }
+    startEnd = line.split("#");
+    if (startEnd.count() != 2) {
+      this->send(tr("Ignored: %1").arg(line));
+      continue;
+    }
+    start = startEnd.at(0).toInt();
+    end = startEnd.at(1).toInt();
+    if (!isValidCut(start, end)) {
+      continue;
+    }
+
+  }
+}
+
 //TODO: add cut-edit option
 //TODO: add preview-trimms, add reset view
 
@@ -224,6 +295,30 @@ bool AVSViewer::isValidCut(int start, int end)
   return true;
 }
 
+void AVSViewer::addCut(int start, int end)
+{
+  if (start == ui.frameHorizontalSlider->minimum() && end != ui.frameHorizontalSlider->maximum()) {
+    return;
+  }
+  if (!isValidCut(start, end)) {
+    return;
+  }
+  int max = QString::number(ui.frameHorizontalSlider->maximum()).size();
+  QString startPos = QString::number(start);
+  while (startPos.size() < max) {
+    startPos = "0" + startPos;
+  }
+  QString endPos = QString::number(end);
+  while (endPos.size() < max) {
+    endPos = "0" + endPos;
+  }
+  QString cut = startPos + "-" + endPos;
+  emit sendInfos(tr("add cut item: %1").arg(cut));
+  ui.cutListWidget->addItem(cut);
+  ui.cutListWidget->sortItems();
+  ui.frameHorizontalSlider->resetMarks();
+}
+
 void AVSViewer::on_addCutPushButton_clicked()
 {
   if (!m_cutSupport) {
@@ -237,25 +332,7 @@ void AVSViewer::on_addCutPushButton_clicked()
   if ((start == 0 && end == 0) || start == end) {
     return;
   }
-  if (start != ui.frameHorizontalSlider->minimum() || end != ui.frameHorizontalSlider->maximum()) {
-    if (!isValidCut(start, end)) {
-      return;
-    }
-    int max = QString::number(ui.frameHorizontalSlider->maximum()).size();
-    QString startPos = QString::number(start);
-    while (startPos.size() < max) {
-      startPos = "0" + startPos;
-    }
-    QString endPos = QString::number(end);
-    while (endPos.size() < max) {
-      endPos = "0" + endPos;
-    }
-    QString cut = startPos + "-" + endPos;
-    emit sendInfos(tr("add cut item: %1").arg(cut));
-    ui.cutListWidget->addItem(cut);
-    ui.cutListWidget->sortItems();
-    ui.frameHorizontalSlider->resetMarks();
-  }
+  this->addCut(start, end);
 }
 
 void AVSViewer::on_removeCutPushButton_clicked()

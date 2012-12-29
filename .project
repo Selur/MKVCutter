@@ -44,7 +44,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.build.target.inc</key>
-					<value>release</value>
+					<value>debug</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.enableAutoBuild</key>
@@ -64,7 +64,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.environment</key>
-					<value>QMAKESPEC=win32-msvc2010|TMP=c:\\tmp|FrameworkDir=C:\\Windows\\Microsoft.NET\\Framework64|FrameworkVersion=v4.0.30319|DevEnvDir=C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\IDE|SystemRoot=C:\\Windows|PATH=C:\\QtSDK\\QtSources\\qt-everywhere-opensource-src-4.8.1\\bin;${env_var:PATH};C:\\QtSDK\\QtSources\\qt-everywhere-opensource-src-4.8.0\\bin;C:\\QtSDK\\QtSources\\qt-everywhere-opensource-src-4.7.3\\bin;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\IDE;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\bin\\amd64;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\Tools|VCINSTALLDIR=c:\\Programme\\Microsoft Visual Studio 10.0\\VC|VSINSTALLDIR=c:\\Programme\\Microsoft Visual Studio 10.0|LIBPATH=${env_var::LIBPATH};C:\\Windows\\Microsoft.NET\\Framework64\\${FrameworkVersion};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\LIB\\amd64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib\\x64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\lib;|LIB=${env_var:LIB};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\LIB\\amd64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib\\x64;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\lib;|INCLUDE=${env_var:INCLUDE};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\include;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Include;|</value>
+					<value>QMAKESPEC=win32-msvc2010|TMP=c:\\tmp|FrameworkDir=C:\\Windows\\Microsoft.NET\\Framework64|FrameworkVersion=v4.0.30319|DevEnvDir=C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\IDE|SystemRoot=C:\\Windows|PATH=C:\\QtSDK\\QtSources\\qt-everywhere-opensource-src-4.8.4\\bin;${env_var:PATH};C:\\QtSDK\\QtSources\\qt-everywhere-opensource-src-4.8.1\\bin;C:\\QtSDK\\QtSources\\qt-everywhere-opensource-src-4.8.0\\bin;C:\\QtSDK\\QtSources\\qt-everywhere-opensource-src-4.7.3\\bin;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\IDE;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\bin\\amd64;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\Tools|VCINSTALLDIR=c:\\Programme\\Microsoft Visual Studio 10.0\\VC|VSINSTALLDIR=c:\\Programme\\Microsoft Visual Studio 10.0|LIBPATH=${env_var::LIBPATH};C:\\Windows\\Microsoft.NET\\Framework64\\${FrameworkVersion};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\LIB\\amd64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib\\x64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\lib;|LIB=${env_var:LIB};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\LIB\\amd64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib\\x64;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\lib;|INCLUDE=${env_var:INCLUDE};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\include;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Include;|</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.stopOnError</key>

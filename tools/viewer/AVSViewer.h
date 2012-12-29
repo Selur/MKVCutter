@@ -66,6 +66,7 @@ class AVSViewer : public QWidget
     bool isValidCut(int start, int end);
     void on_previousKeyPushButton_clicked();
     void on_nextKeyPushButton_clicked();
+    void on_jumpToPushButton_clicked();
 
   signals:
     void finished(int state);

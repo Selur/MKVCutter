@@ -558,6 +558,7 @@ void AVSViewer::init(int start)
 
     //emit sendInfos(" " + tr("grabbing clip length,.."));
     m_frameCount = m_inf.num_frames; //get frame count
+    ui.jumpToSpinBox->setMaximum(m_frameCount);
     //emit   sendInfos("  -> " + tr("clip contains %1 frames,..").arg(m_frameCount));
     emit
     sendInfos(" " + tr("adjusting slider to frame count,.."));
@@ -583,6 +584,11 @@ void AVSViewer::on_frameHorizontalSlider_valueChanged(int value)
   if (!ui.frameHorizontalSlider->isSliderDown()) {
     this->showFrame(value); //show current frame
   }
+}
+
+void AVSViewer::on_jumpToPushButton_clicked()
+{
+  ui.frameHorizontalSlider->setValue(ui.jumpToSpinBox->value());
 }
 
 /**

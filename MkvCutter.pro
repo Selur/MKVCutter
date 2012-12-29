@@ -17,7 +17,8 @@ HEADERS += tools/MkvSplitCaller.h \
     tools/MkvMerger.h \
     tools/X264Caller.h \
     tools/MkvVideoExtractor.h \
-    DropPushButton.h
+    DropPushButton.h \
+    tools/MkvTimeExtractor.h
 SOURCES += Globals.cpp \
     tools/MkvSplitCaller.cpp \
     tools/FFIndexCaller.cpp \
@@ -32,7 +33,8 @@ SOURCES += Globals.cpp \
     tools/MkvMerger.cpp \
     tools/X264Caller.cpp \
     tools/MkvVideoExtractor.cpp \
-    DropPushButton.cpp
+    DropPushButton.cpp \
+    tools/MkvTimeExtractor.cpp
 FORMS += tools/viewer/AVSViewer.ui \
     mkvcutter.ui
 RESOURCES += 

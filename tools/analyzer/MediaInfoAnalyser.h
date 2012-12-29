@@ -31,6 +31,7 @@ class MediaInfoAnalyser : public QObject
     void averageBitrate(int bitrate);
     void aspectRatio(double aspectRatio);
     void interlaced(QString scanOrder);
+    void frameRateMode(bool vfr);
 
 };
 

@@ -14,8 +14,8 @@ MkvCutter::MkvCutter(QWidget *parent) :
         m_tempReencodeAvs(), m_videoEncodingCalls(), m_reencodedVideoFiles(), m_fps(-1),
         m_trimming(), m_matroskaKeyFrameTimes(), m_cutList(), m_mkvVideoParts(), m_mkvAudioParts(),
         m_audioFile(QString()), m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(),
-        m_videoTrackID(-1), m_extractor(NULL), m_toDelete(), m_aspectRatio(1),
-        m_interlaced("progressive")
+        m_videoTrackID(-1), m_extractor(NULL), m_timeextractor(NULL), m_toDelete(), m_aspectRatio(1),
+        m_interlaced("progressive"), m_vfr(false), m_timecodes(QString())
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -38,6 +38,7 @@ MkvCutter::MkvCutter(QWidget *parent) :
                   SLOT(setAspectRatio(double)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(refframes(int)), this, SLOT(setAvcRefFrames(int)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(cabac(bool)), this, SLOT(setAvcCabac(bool)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(frameRateMode(bool)), this, SLOT(setFrameRateMode(bool)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(interlaced(QString)), this,
                   SLOT(setInterlaced(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(audioFormat(QString)), this,
@@ -76,6 +77,12 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_extractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_extractor, SIGNAL(finished(int)), this, SLOT(mkvExtractorFinished(int)));
   this->myconnect(m_extractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+  m_timeextractor = new MkvTimeExtractor(this);
+  this->myconnect(m_timeextractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
+  this->myconnect(m_timeextractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_timeextractor, SIGNAL(timecodes(QString)), this, SLOT(setTimecodes(QString)));
+  this->myconnect(m_timeextractor, SIGNAL(finished(int)), this, SLOT(finishedTimeCodeExtraction(int)));
+  this->myconnect(m_timeextractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
   m_viewer = 0;
   ui.setupUi(this);
   ui.mainStackedWidget->setCurrentIndex(0);
@@ -87,6 +94,19 @@ MkvCutter::MkvCutter(QWidget *parent) :
 MkvCutter::~MkvCutter()
 {
   this->reset();
+}
+
+
+
+void MkvCutter::setTimecodes(QString timecodeFile)
+{
+    m_timecodes = timecodeFile;
+    if (QFile::exists(m_timecodes)) {
+        this->addInfo(" " + tr("time code file was extracted to: %1").arg(m_timecodes));
+    } else {
+        this->addInfo(" " + tr("%1 doesn't exist,...").arg(m_timecodes));
+        m_timecodes = QString();
+    }
 }
 
 void MkvCutter::setInterlacedMode(QString interlacedMode)
@@ -1056,7 +1076,23 @@ void MkvCutter::startExtraction()
   filename = QDir::toNativeSeparators(filename);
   m_toDelete << filename;
   m_reencodedVideoFiles.replace(m_reencodedVideoFiles.indexOf(input), filename);
-  m_extractor->startExtraction(input, "264", m_tempFolder);
+  m_extractor->startExtraction(input, QString::number(m_videoTrackID), "264", m_tempFolder);
+}
+
+void MkvCutter::extractTimeCodes()
+{
+    m_timeextractor->startExtraction(m_currentInput, QString::number(m_videoTrackID), m_tempFolder);
+}
+
+void MkvCutter::finishedTimeCodeExtraction(int state)
+{
+    if (state < 0) {
+      this->addInfo(tr("Resetting since time code extraction crashed,.."));
+      this->reset();
+      return;
+    }
+    ui.infoLabel->setText(tr("Indexing input file,.."));
+    m_ffindexCaller->index(m_currentInput, m_indexFile);
 }
 
 void MkvCutter::mediaInfoFinished(int exitstate)
@@ -1065,6 +1101,11 @@ void MkvCutter::mediaInfoFinished(int exitstate)
   if (exitstate < 0) {
     this->addInfo(tr("Resetting since mediaingo analyzer crashed,.."));
     this->reset();
+    return;
+  }
+  if (m_vfr) {
+    ui.infoLabel->setText(tr("extracting time codes with mkvextract,.."));
+    this->extractTimeCodes();
     return;
   }
 
@@ -1099,6 +1140,18 @@ void MkvCutter::ffIndexerFinished(int exitstate)
   m_viewer->init();
 }
 
+QString MkvCutter::cutTimecodes(QString timecodes)
+{
+    QStringList outputLines;
+    QStringList lines = timecodes.split("\n");
+    //TODO: cut timecodes based on m_mkvAudioParts
+    foreach (QString line, lines) {
+        this->addInfo("Looking at: "+line);
+        outputLines << line;
+    }
+    return outputLines.join("\r\n");
+}
+
 void MkvCutter::avsViewerFinished(int state)
 {
   if (state < 0) {
@@ -1114,6 +1167,14 @@ void MkvCutter::avsViewerFinished(int state)
   ui.infoLabel->setText(tr("Cut-View finished,.."));
   this->calculateMatroskyKeyFrameTimes();
   this->buildCutList();
+  if (!m_timecodes.isEmpty()) {
+      QString text = Globals::readAll(m_timecodes, "auto");
+    text = this->cutTimecodes(text);
+    QFile::remove(m_timecodes);
+    if (Globals::saveTextTo(text, m_timecodes) == 0) {
+        this->addInfo(tr("Successfully cut and saved timecodes, to: %1").arg(m_timecodes));
+    }
+  }
   this->buildTrimAndPartsList();
   ui.infoLabel->setText(tr("Set output base file and temp folder,.."));
   ui.mainStackedWidget->setCurrentIndex(2);
@@ -1201,6 +1262,12 @@ void MkvCutter::setKeyFrames(QStringList list)
   m_keyframes = list;
 }
 
+void MkvCutter::setFrameRateMode(bool vfr)
+{
+    this->addInfo(tr("Frame rate mode: %1").arg(vfr ? "vfr" : "cfr"));
+    m_vfr = vfr;
+}
+
 void MkvCutter::setAspectRatio(double aspect)
 {
   this->addInfo(tr("Aspect ratio of input: %1").arg(aspect));
@@ -1275,6 +1342,8 @@ void MkvCutter::reset()
   ui.outputLabel->setText(QString());
   ui.tempFolderLabel->setText(QString());
   m_interlaced = "progressive";
+  m_vfr = false;
+  m_timecodes = QString();
 }
 
 void MkvCutter::setCutList(QStringList cuts)

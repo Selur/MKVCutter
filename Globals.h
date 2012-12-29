@@ -40,7 +40,7 @@ namespace Globals
   QString secondsToHMSZZZ(double seconds);
   QString shortFileName(QString inputFile);
   QString getDirectory(const QString input);
-
-  int saveTextTo(QString text, QString to);
+  QString readAll(const QString fileName, QString type);
+  int saveTextTo(QString fileName, QString to);
 }
 #endif // GLOBALS_H

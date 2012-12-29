@@ -61,6 +61,7 @@ void MediaInfoAnalyser::mediainfoOutput()
     bool audio = false;
     QStringList lines = out.split("\n");
     QString scanorder = "progressive";
+    bool vfr = false;
     foreach(QString line, lines) {
       line = line.trimmed();
       //emit sendInfos(tr("MediaInfo out: %1").arg(line));
@@ -101,8 +102,16 @@ void MediaInfoAnalyser::mediainfoOutput()
                 scanorder = "BFF";
             }
         }
+        if (line.startsWith("Frame rate mode")) {
+            removeStartOfLine(line);
+            if (line == "VFR") {
+                vfr = true;
+            }
+        }
+
         if (line == "Audio") {
           audio = true;
+          emit frameRateMode(vfr);
           continue;
         }
       } else {

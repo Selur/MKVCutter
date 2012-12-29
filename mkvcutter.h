@@ -15,6 +15,7 @@
 #include "tools/X264Caller.h"
 #include "tools/MkvMerger.h"
 #include "tools/MkvVideoExtractor.h"
+#include "tools/MkvTimeExtractor.h"
 #include "ui_mkvcutter.h"
 
 struct cutTyp1;
@@ -52,9 +53,11 @@ class MkvCutter : public QWidget
     QStringList m_audioSplitFiles, m_extractionFiles, m_toDelete;
     int m_videoTrackID;
     MkvVideoExtractor *m_extractor;
+    MkvTimeExtractor *m_timeextractor;
     double m_aspectRatio;
     QString m_interlaced, m_mediaInfoScanorder;
-
+    bool m_vfr;
+    QString m_timecodes;
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
     void reset();
@@ -72,6 +75,8 @@ class MkvCutter : public QWidget
     void cutAudio();
     void startExtraction();
     cutTyp1 findCutForFrame(int frame);
+    void extractTimeCodes();
+    QString cutTimecodes(QString timecodes);
 
   private slots:
     void on_openSourcePushButton_clicked();
@@ -112,6 +117,9 @@ class MkvCutter : public QWidget
     void setVideoTrackID(int id);
     void setInterlaced(QString interlaced);
     void setInterlacedMode(QString interlaced);
+    void setFrameRateMode(bool vfr);
+    void finishedTimeCodeExtraction(int exitstate);
+    void setTimecodes(QString timecodes);
 
 };
 

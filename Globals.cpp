@@ -265,6 +265,32 @@ QString Globals::getDirectory(const QString input)
 #define UTF16BEBOM "\xFE\xFF"
 #define UTF16BE "UTF-16BE"
 
+
+QString Globals::readAll(const QString fileName, QString type)
+{
+  QString input = removeQuotes(fileName);
+  if (input.startsWith("./") || input.startsWith(".\\")) {
+    input = input.remove(0, 1);
+    input = QDir::toNativeSeparators(QDir::currentPath() + input);
+  }
+  QFile file(fileName);
+  if (!file.exists()) {
+    return QString();
+  }
+  if (!file.open(QIODevice::ReadOnly)) {
+    return QString();
+  }
+  QTextStream stream(&file);
+  if (type == "auto") {
+    stream.autoDetectUnicode();
+  } else {
+    stream.setCodec(type.toUtf8());
+  }
+  input = stream.readAll();
+  file.close();
+  return input;
+}
+
 /**
  * saves the content of a QString 'text' into a file 'to'
  * 0 -> no problem
@@ -282,7 +308,7 @@ int Globals::saveTextTo(QString text, QString to)
     bool ttxt = to.endsWith(".ttxt", Qt::CaseInsensitive);
     bool avs =  to.endsWith(".avs", Qt::CaseInsensitive);
     bool meta =  to.endsWith(".meta", Qt::CaseInsensitive);
-    if (!ttxt && !avs && !meta) {
+    if (!ttxt && !avs && !meta && !to.endsWith(".cut")) {
       file.write(UTF8BOM);
       file.setTextModeEnabled(true);
     }

@@ -35,6 +35,7 @@ AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport
     delete ui.nextKeyPushButton;
     delete ui.previousKeyPushButton;
   }
+  this->setButtonImages();
 }
 
 AVSViewer::~AVSViewer()
@@ -758,31 +759,6 @@ void AVSViewer::killEnv()
   if (m_cutSupport) {
     ui.cutListWidget->clear();
   }
-}
-
-/**
- * allows to select a .avs file, starts the initialization
- **/
-void AVSViewer::on_openAvsPushButton_clicked()
-{
-  ui.showLabel->setText(tr("Opening new file,.."));
-  QString name = tr("Select input file");
-  QString select = tr("Input (*.avs)");
-  QString inputPath = QApplication::applicationDirPath();
-  QString input = QFileDialog::getOpenFileName(this, name, inputPath, select);
-  if (!input.endsWith(".avs") || input.isEmpty()) { //abort if input does not end with .avs
-    this->send("Current input is empty or not an .avs file,..");
-    emit
-    finished(-11);
-    return;
-  }
-  this->killEnv();
-  ui.showLabel->setText(tr("Preparing environment for %1").arg(input));
-  sendInfos(tr("Current input: %1").arg(input));
-  input = Globals::shortFileName(input);
-  m_currentInput = input; //set current input
-  emit
-  this->init();
 }
 
 /**

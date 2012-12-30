@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/buttons">
+    <qresource prefix="/">
         <file>images/next.png</file>
         <file>images/nextK.png</file>
         <file>images/prev.png</file>

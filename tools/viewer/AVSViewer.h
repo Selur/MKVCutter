@@ -60,7 +60,6 @@ class AVSViewer : public QWidget
     void on_nextPushButton_clicked();
     void on_previousPushButton_clicked();
     void on_frameHorizontalSlider_sliderReleased();
-    void on_openAvsPushButton_clicked();
     void on_ffinfoCheckBox_toggled();
     void on_saveImagePushButton_clicked();
     void on_setCutStartPushButton_clicked();

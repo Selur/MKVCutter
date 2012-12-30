@@ -37,4 +37,4 @@ SOURCES += Globals.cpp \
     tools/MkvTimeExtractor.cpp
 FORMS += tools/viewer/AVSViewer.ui \
     mkvcutter.ui
-RESOURCES += 
+RESOURCES += resources.qrc

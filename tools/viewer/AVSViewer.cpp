@@ -44,6 +44,46 @@ AVSViewer::~AVSViewer()
   }
 }
 
+void AVSViewer::setButtonImages()
+{
+  QIcon next = QIcon(":/images/next.png");
+  QIcon nextK = QIcon(":/images/nextK.png");
+  QIcon prev = QIcon(":/images/prev.png");
+  QIcon prevK = QIcon(":/images/prevK.png");
+  int height = ui.jumpToSpinBox->minimumSizeHint().height();
+  this->setButtonImage(ui.previousPushButton, prev, height);
+  this->setButtonImage(ui.previousKeyPushButton, prevK, height);
+  this->setButtonImage(ui.nextPushButton, next, height);
+  this->setButtonImage(ui.nextKeyPushButton, nextK, height);
+  this->minimumSize();
+}
+
+void AVSViewer::setButtonImage(QPushButton *button, QIcon image, const int height)
+{
+  if (button == NULL || image.isNull()) {
+    return;
+  }
+  QString toolTip = button->text();
+  button->setText(QString());
+  button->setIcon(image);
+  if (button->toolTip().trimmed().isEmpty()) {
+    button->setToolTip(button->text());
+  }
+#ifdef Q_OS_DARWIN
+  if (height != 0) {
+    button->resize(height, height);
+  } else {
+    button->resize(button->minimumSizeHint());
+  }
+#else
+  if (height != 0) {
+    button->setFixedSize(height, height);
+  } else {
+    button->setFixedSize(button->minimumSizeHint());
+  }
+#endif
+}
+
 void AVSViewer::send(QString message)
 {
   cout << qPrintable(message) << endl;

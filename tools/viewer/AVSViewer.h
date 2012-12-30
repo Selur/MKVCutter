@@ -14,8 +14,10 @@
 #include <QString>
 #include <QStringList>
 #include <QImage>
+#include <QIcon>
 
-class IScriptEnvironment;
+
+class IScriptEnvironment;class QPushButton;
 
 class AVSViewer : public QWidget
 {
@@ -49,6 +51,8 @@ class AVSViewer : public QWidget
     void send(QString message);
     int handleFFInfo(QString &input, bool &invokeFFInfo);
     void addCut(int start, int end);
+    void setButtonImage(QPushButton *button, QIcon image, const int height);
+    void setButtonImages();
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);

@@ -1,9 +1,11 @@
 #ifndef MKVVIDEOEXTRACTOR_H
 #define MKVVIDEOEXTRACTOR_H
 
+#include <QIcon>
 #include <QObject>
 #include <QProcess>
 #include <QStringList>
+class QPushButton;
 
 class MkvVideoExtractor : public QObject
 {
@@ -11,6 +13,7 @@ class MkvVideoExtractor : public QObject
   public:
     explicit MkvVideoExtractor(QObject *parent = 0);
     void startExtraction(QString filename, QString track, QString typ, QString tempFolder);
+
   private:
     QProcess *m_process;
     void call(QString call);

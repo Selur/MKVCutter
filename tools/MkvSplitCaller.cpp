@@ -167,6 +167,6 @@ QString MkvSplitCaller::buildCall()
       emit sendInfos(tr("Saved %1.").arg(optionFile));
   }
 
-  call += " @\""+optionFile+"\"";
+  call += " @\""+Globals::shortFileName(optionFile)+"\"";
   return call;
 }

@@ -557,8 +557,8 @@ void MkvCutter::buildTrimAndPartsList()
       trim = "KEEP";
       this->addInfo("  " + tr("adding %1 <> %2").arg(name).arg(trim));
       m_trimming.insert(name, trim);
-      this->addInfo("  " + tr("keep: mkv parts append: %1").arg(prevKey + "-" + nextKey));
-      mkvparts.append(prevKey + "-" + nextKey);
+      this->addInfo("  " + tr("keep: mkv parts append: %1-%2").arg(prevKey).arg(nextKey));
+      mkvparts.append(QString::number(prevKey) + "-" + QString::number(nextKey));
       continue;
     }
     if (prevKey >= nextKey) {
@@ -592,7 +592,7 @@ void MkvCutter::buildTrimAndPartsList()
     } else if (!mkvparts.isEmpty()) {
       mkvparts.removeLast();
     }
-    mkvparts.append(fileStartKey + "-" + fileEndKey);
+    mkvparts.append(QString::number(fileStartKey) + "-" + QString::number(fileEndKey));
 
     if (!append && (cutStart == clipStart || cutStart == prevKey)) {
       trim = "Trim(0,";
@@ -918,10 +918,11 @@ void MkvCutter::mkvMergerFinished(int exitstate)
     if (file.isEmpty() || (file == m_currentInput || !QFile::exists(file))) {
       continue;
     }
-
-    this->addInfo("  " + tr("deleting video split file: %1").arg(file));
-    if (!QFile::remove(file)) {
-      this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+    if (QFile::exists(file)) {
+        this->addInfo("  " + tr("deleting video split file: %1").arg(file));
+        if (!QFile::remove(file)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+        }
     }
   }
   this->addInfo(" " + tr("deleting reencoded video files elements,..."));
@@ -929,34 +930,42 @@ void MkvCutter::mkvMergerFinished(int exitstate)
     if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
       continue;
     }
-    this->addInfo("  " + tr("deleting video file: %1").arg(file));
-    if (!QFile::remove(file)) {
-      this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+    if (QFile::exists(file)) {
+        this->addInfo("  " + tr("deleting video file: %1").arg(file));
+        if (!QFile::remove(file)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+        }
     }
   }
   foreach (QString file, m_toDelete) {
     if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
       continue;
     }
-    this->addInfo("  " + tr("deleting video file: %1").arg(file));
-    if (!QFile::remove(file)) {
-      this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+    if (QFile::exists(file)) {
+        this->addInfo("  " + tr("deleting video file: %1").arg(file));
+        if (!QFile::remove(file)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+        }
     }
   }
   foreach (QString file, m_audioSplitFiles) {
     if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
       continue;
     }
-    this->addInfo("  " + tr("deleting audio file: %1").arg(file));
-    if (!QFile::remove(file)) {
-      this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+    if (QFile::exists(file)) {
+        this->addInfo("  " + tr("deleting audio file: %1").arg(file));
+        if (!QFile::remove(file)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+        }
     }
   }
   if (!m_audioFile.isEmpty() && m_audioFile != m_currentInput) {
-    this->addInfo("  " + tr("deleting audio file: %1").arg(m_audioFile));
-    if (QFile::exists(m_audioFile) && !QFile::remove(m_audioFile)) {
-      this->addInfo("   " + tr("Couldn't delete %1!").arg(m_audioFile));
-    }
+      if (QFile::exists(m_audioFile)) {
+        this->addInfo("  " + tr("deleting audio file: %1").arg(m_audioFile));
+        if (!QFile::remove(m_audioFile)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(m_audioFile));
+        }
+      }
   }
 
   QMessageBox::information(this, tr("Finished!"),
@@ -1209,6 +1218,8 @@ void MkvCutter::on_nextPushButton_clicked()
 void MkvCutter::buildAndCallMkvMerge()
 {
   this->addInfo(tr("Calling video cutter,.."));
+  this->addInfo(" m_mkvVideoParts:\n"+m_mkvVideoParts.join("\n "));
+
   m_mkvVideoSplitCaller->setKeepIntermediate(ui.keepIntermediateCheckBox->isChecked());
   m_mkvVideoSplitCaller->start(m_currentInput, m_currentOutput, m_mkvVideoParts, m_tempFolder);
 }

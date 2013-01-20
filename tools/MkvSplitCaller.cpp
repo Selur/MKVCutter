@@ -141,7 +141,7 @@ QString MkvSplitCaller::buildCall()
     options <<  "--no-video";
   } else {
     options << "--split";
-    options << "parts:"+m_splitParts.join(",");
+    options << "parts-frames:"+m_splitParts.join(",");
     options << "--no-audio";
     options << "--no-subtitles";
     options << "--no-buttons";

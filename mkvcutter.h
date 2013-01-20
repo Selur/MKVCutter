@@ -37,7 +37,6 @@ class MkvCutter : public QWidget
     QStringList m_reencodedVideoFiles;
     double m_fps;
     QHash<QString, QString> m_trimming;
-    QHash<int, QString> m_matroskaKeyFrameTimes;
     QList<cutTyp1> m_cutList;
     QSet<int> m_mkvmergeIntSplitList;
     MkvInfoSourceAnalyser *m_mkvinfoAnalyser;
@@ -71,7 +70,6 @@ class MkvCutter : public QWidget
     void handleSplitFiles();
     void buildTrimAndPartsList();
     void buildCutList();
-    void calculateMatroskyKeyFrameTimes();
     void cutAudio();
     void startExtraction();
     cutTyp1 findCutForFrame(int frame);

@@ -32,6 +32,7 @@ class MediaInfoAnalyser : public QObject
     void aspectRatio(double aspectRatio);
     void interlaced(QString scanOrder);
     void frameRateMode(bool vfr);
+    void x264Settings(QString settings);
 
 };
 

@@ -3,7 +3,8 @@ TEMPLATE = app
 TARGET = MkvCutter
 QT += core \
     gui
-HEADERS += tools/MkvSplitCaller.h \
+HEADERS += tools/Converter.h \
+    tools/MkvSplitCaller.h \
     tools/FFIndexCaller.h \
     tools/viewer/AVSViewer.h \
     tools/viewer/ImageLabel.h \
@@ -19,7 +20,8 @@ HEADERS += tools/MkvSplitCaller.h \
     tools/MkvVideoExtractor.h \
     DropPushButton.h \
     tools/MkvTimeExtractor.h
-SOURCES += Globals.cpp \
+SOURCES += tools/Converter.cpp \
+    Globals.cpp \
     tools/MkvSplitCaller.cpp \
     tools/FFIndexCaller.cpp \
     tools/viewer/AVSViewer.cpp \

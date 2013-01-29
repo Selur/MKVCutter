@@ -2,6 +2,7 @@
 
 #include <QDir>
 #include <QApplication>
+#include "tools/Converter.h"
 
 MediaInfoAnalyser::MediaInfoAnalyser(QObject *parent) :
     QObject(parent)
@@ -66,6 +67,11 @@ void MediaInfoAnalyser::mediainfoOutput()
       line = line.trimmed();
       //emit sendInfos(tr("MediaInfo out: %1").arg(line));
       if (!audio) {
+        if (line.startsWith("Encoding settings")) {
+          removeStartOfLine(line);
+          emit x264Settings(Converter::encodingSettingsToX264(line));
+          continue;
+        }
         if (line.startsWith("Format profile")) {
           removeStartOfLine(line);
           emit avcProfileLevel(line);
@@ -82,31 +88,31 @@ void MediaInfoAnalyser::mediainfoOutput()
           continue;
         }
         if (line.startsWith("Pixel aspect ratio") && !line.contains("/")) {
-            removeStartOfLine(line);
-            removeInnerWhiteSpace(line);
-            if (line == "1.000") {
-              line = "1";
-            }
-            emit aspectRatio(line.toDouble());
-            continue;
+          removeStartOfLine(line);
+          removeInnerWhiteSpace(line);
+          if (line == "1.000") {
+            line = "1";
+          }
+          emit aspectRatio(line.toDouble());
+          continue;
         }
         if (line.startsWith("Scan type") && line.endsWith("Interlaced")) {
-            scanorder = "TFF";
-            continue;
+          scanorder = "TFF";
+          continue;
         }
         if (line.startsWith("Scan order")) {
-            removeStartOfLine(line);
-            if (line == "Top Field First" || line == "TFF") {
-                scanorder = "TFF";
-            } else if (line == "Bottom Field First" || line == "BFF") {
-                scanorder = "BFF";
-            }
+          removeStartOfLine(line);
+          if (line == "Top Field First" || line == "TFF") {
+            scanorder = "TFF";
+          } else if (line == "Bottom Field First" || line == "BFF") {
+            scanorder = "BFF";
+          }
         }
         if (line.startsWith("Frame rate mode")) {
-            removeStartOfLine(line);
-            if (line == "VFR") {
-                vfr = true;
-            }
+          removeStartOfLine(line);
+          if (line == "VFR") {
+            vfr = true;
+          }
         }
 
         if (line == "Audio") {

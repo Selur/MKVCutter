@@ -577,8 +577,7 @@ void AVSViewer::init(int start)
       return;
     }
 
-    emit
-    sendInfos(tr("created an IScriptEnvironment,.."));
+    emit sendInfos(tr("created an IScriptEnvironment,.."));
     this->send(tr("looking for avisynth version,.."));
     try {
       AVSValue as_version;
@@ -586,8 +585,7 @@ void AVSViewer::init(int start)
       m_version = as_version.AsString(); //save current version for later use
     } catch (...) {
       this->send(tr("Could get the current version,.."));
-      emit
-      finished(-5);
+      emit finished(-5);
       return;
     }
     this->send(tr("current avisynth version: %1").arg(m_version));
@@ -600,7 +598,6 @@ void AVSViewer::init(int start)
     emit
     sendInfos(tr("Importing %1 into environment,..").arg(input));
     input = Globals::shortFileName(input);
-    sendInfos(tr("ShortName").arg(input));
     const char *inputFile = input.toUtf8();
     if (import(inputFile, m_res, m_env) != 0) {
       emit finished(-6);
@@ -611,16 +608,13 @@ void AVSViewer::init(int start)
       QString error = tr("Couldn't import:") + " " + input;
       error += "\r\n";
       error += tr("Script seems not to be a valid avisynth script.");
-      emit
-      sendInfos(error);
-      emit
-      finished(-7);
+      emit sendInfos(error);
+      emit finished(-7);
       return;
     }
 
     m_clip = m_res.AsClip(); //get clip
-    emit
-    sendInfos(" " + tr("grabbing clip infos,.."));
+    emit sendInfos(" " + tr("grabbing clip infos,.."));
     m_inf = m_clip->GetVideoInfo(); //get clip infos
     if (!m_inf.HasVideo()) { //abort if clip has no video
       sendInfos(tr("Input has no video stream -> aborting"));

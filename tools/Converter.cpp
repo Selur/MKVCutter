@@ -134,7 +134,7 @@ bool handleRest(QString line, QStringList &x264)
   }
   if (line.startsWith("deadzone=")) {
     clearStart(line);
-    QStringList elems = line.split(":");
+    QStringList elems = line.split(",");
     x264 << "--deadzone-inter" << elems.at(0);
     x264 << "--deadzone-intra" << elems.at(1);
     return true;
@@ -198,7 +198,21 @@ bool handleRest(QString line, QStringList &x264)
     }
     return true;
   }
-
+  if (line.startsWith("vbv_maxrate")) {
+      clearStart(line);
+      x264 << "--vbv-maxrate" << line;
+      return true;
+  }
+  if (line.startsWith("vbv_bufsize")) {
+      clearStart(line);
+      x264 << "--vbv-bufsize" << line;
+      return true;
+  }
+  if (line.startsWith("nal_hrd")) {
+      clearStart(line);
+      x264 << "--nal-hrd" << line;
+      return true;
+  }
   return false;
 }
 
@@ -253,12 +267,11 @@ bool handleFrame(QString line, QStringList &x264)
   if (line.startsWith("cabac=")) {
     clearStart(line);
     if (line == "1") {
-      clearStart(line);
-      x264 << "--cabac " + line;
-      return true;
+      x264 << "--cabac";
     } else {
-
+      x264 << "--no-cabac";
     }
+    return true;
   }
   if (line.startsWith("trellis=")) {
     clearStart(line);
@@ -340,8 +353,8 @@ bool handleFrame(QString line, QStringList &x264)
     clearStart(line);
     if (line == "0") {
       x264 << "--no-psy " + line;
-      return true;
     }
+    return true;
   }
   if (line.startsWith("psy_rd=")) {
     clearStart(line);
@@ -467,7 +480,6 @@ bool handleBFrames(QString line, QStringList &x264)
     }
     return true;
   }
-
   return false;
 }
 
@@ -477,6 +489,7 @@ QString Converter::encodingSettingsToX264(QString line)
   QStringList lines = line.split("/");
   QStringList ignored;
   foreach(line, lines) {
+    line = line.trimmed();
     if (handleBFrames(line, x264)) {
       continue;
     }
@@ -493,9 +506,6 @@ QString Converter::encodingSettingsToX264(QString line)
       continue;
     }
     ignored << line;
-  }
-  if (!ignored.isEmpty()) {
-    QMessageBox::information(0, "Ignored", ignored.join("\n"));
   }
   return x264.join(" ");
 }

@@ -56,7 +56,7 @@ class MkvCutter : public QWidget
     double m_aspectRatio;
     QString m_interlaced, m_mediaInfoScanorder;
     bool m_vfr;
-    QString m_timecodes;
+    QString m_timecodes, m_x264Settings;
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
     void reset();
@@ -118,7 +118,7 @@ class MkvCutter : public QWidget
     void setFrameRateMode(bool vfr);
     void finishedTimeCodeExtraction(int exitstate);
     void setTimecodes(QString timecodes);
-
+    void setX264Settings(QString settings);
 };
 
 #endif // MKVCUTTER_H

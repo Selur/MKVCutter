@@ -464,10 +464,10 @@ bool handleBFrames(QString line, QStringList &x264)
         line = "temporal";
         break;
       case 3 :
-        line = "optimal";
+        line = "auto";
         break;
       default :
-        line = "auto";
+        line = "none";
         break;
     }
     x264 << "--direct " + line;

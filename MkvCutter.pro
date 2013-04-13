@@ -3,7 +3,9 @@ TEMPLATE = app
 TARGET = MkvCutter
 QT += core \
     gui
-HEADERS += tools/Converter.h \
+isEqual(QT_MAJOR_VERSION, 5):QT += widgets # for all widgets
+HEADERS += mywindows.h \
+    tools/Converter.h \
     tools/MkvSplitCaller.h \
     tools/FFIndexCaller.h \
     tools/viewer/AVSViewer.h \

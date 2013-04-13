@@ -47,7 +47,7 @@ enum { AVISYNTH_INTERFACE_VERSION = 5 };
    Moved from internal.h */
 
 // Win32 API macros, notably the types BYTE, DWORD, ULONG, etc.
-#include <windows.h>
+#include <mywindows.h>
 
 
 // Raster types used by VirtualDub & Avisynth

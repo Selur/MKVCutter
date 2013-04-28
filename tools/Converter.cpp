@@ -187,7 +187,7 @@ bool handleRest(QString line, QStringList &x264)
   if (line.startsWith("mbtree=")) {
     clearStart(line);
     if (line == "0") {
-      x264 << "--no-mbtree" << line;
+      x264 << "--no-mbtree";
     }
     return true;
   }

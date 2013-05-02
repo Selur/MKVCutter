@@ -115,7 +115,7 @@ void MediaInfoAnalyser::mediainfoOutput()
           }
         }
 
-        if (line == "Audio") {
+        if (line == "Audio" || line.startsWith("Audio #")) {
           audio = true;
           emit frameRateMode(vfr);
           continue;

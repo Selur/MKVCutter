@@ -21,7 +21,7 @@ bool handleRest(QString line, QStringList &x264)
     clearStart(line);
     QStringList list = line.split(":");
     QString parameter = list.at(0);
-    //bool adapt = parameter != "0";
+    //bool adapt = parameter != "0"; //0 -> --no-8x8dct
     bool i4x4 = false;
     bool i8x8 = false;
     bool p4x4 = false;

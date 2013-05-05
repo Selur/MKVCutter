@@ -10,7 +10,7 @@
 
 MkvInfoSourceAnalyser::MkvInfoSourceAnalyser(QObject *parent) :
     QObject(parent), m_process(0), m_input(QString()), m_outData(QString()), m_keyFrameInfos(),
-        m_linesread(0)
+        m_linesread(0),m_crashed(false)
 {
   this->setObjectName("MkvInfoSourceAnalyser");
 }

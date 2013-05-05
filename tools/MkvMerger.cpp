@@ -4,7 +4,7 @@
 #include "Globals.h"
 
 MkvMerger::MkvMerger(QObject *parent) :
-    QObject(parent)
+    QObject(parent), m_output(QString())
 {
 }
 

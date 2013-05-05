@@ -22,8 +22,18 @@ void X264Caller::handleX264Output()
   QStringList lines = input.split("\n");
   QString tmp, percentage;
   int index;
-  foreach (QString line, lines) {
+  foreach (QString line, lines)
+  {
     line = line.trimmed();
+    if (line.startsWith("[error", Qt::CaseInsensitive)) {
+      emit sendInfos(line);
+    }
+    if (line.startsWith("[warn", Qt::CaseInsensitive)) {
+      emit sendInfos(line);
+    }
+    if (line.startsWith("[inf", Qt::CaseInsensitive)) {
+      emit sendInfos(line);
+    }
     //[62.0%] 266/429 frames, 225.23 fps, 1371.11 kb/s, eta 0:00:00
     if (line.startsWith("[") && line.contains(" kb/s, eta ")) {
       tmp = line;

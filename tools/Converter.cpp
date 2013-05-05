@@ -97,37 +97,38 @@ bool handleRest(QString line, QStringList &x264)
     if (i4x4) {
       if (!first) {
         parameter += ",";
-        first = false;
+
       }
       parameter += "i4x4";
+      first = false;
     }
     if (i8x8) {
       if (!first) {
         parameter += ",";
-        first = false;
       }
       parameter += "i8x8";
+      first = false;
     }
     if (p8x8) {
       if (!first) {
         parameter += ",";
-        first = false;
       }
       parameter += "p8x8";
+      first = false;
     }
     if (p4x4) {
       if (!first) {
         parameter += ",";
-        first = false;
       }
       parameter += "p4x4";
+      first = false;
     }
     if (b8x8) {
       if (!first) {
         parameter += ",";
-        first = false;
       }
       parameter += "b8x8";
+      first = false;
     }
     x264 << parameter;
     return true;

@@ -57,10 +57,12 @@ class MkvCutter : public QWidget
     QString m_interlaced, m_mediaInfoScanorder;
     bool m_vfr;
     QString m_timecodes, m_x264Settings;
+    bool m_useLibAV;
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
     void reset();
     bool createAVS();
+    bool createLibAVSourceAVS();
     QStringList keyFrameTimes();
     void buildAndCallMkvMerge();
     void createVideoReencodeCall(QString avisynthFile);

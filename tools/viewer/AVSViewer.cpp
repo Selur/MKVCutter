@@ -261,7 +261,10 @@ void AVSViewer::on_setCutStartPushButton_clicked()
   if (!m_cutSupport) {
     return;
   }
-//emit sendInfos(tr("set cut-start to: %1").arg(m_current));
+  if (!isValid(m_current)) {
+    return;
+  }
+  emit sendInfos(tr("set cut-start to: %1").arg(m_current));
   ui.frameHorizontalSlider->setStart(m_current);
   ui.frameHorizontalSlider->setFocus();
 }
@@ -270,9 +273,35 @@ void AVSViewer::on_setCutEndPushButton_clicked()
   if (!m_cutSupport) {
     return;
   }
+  if (!isValid(m_current)) {
+    return;
+  }
 //emit sendInfos(tr("set cut-end to: %1").arg(m_current));
   ui.frameHorizontalSlider->setEnd(m_current);
   ui.frameHorizontalSlider->setFocus();
+}
+
+bool AVSViewer::isValid(int position)
+{
+    int begin, end;
+    QString elem;
+    QStringList cutElems;
+    for (int i = 0, c = ui.cutListWidget->count(); i < c; ++i) {
+      elem = ui.cutListWidget->item(i)->text();
+      elem = elem.trimmed();
+      if (elem.isEmpty()) {
+        continue;
+      }
+      cutElems = elem.split("-");
+      //CUT-START
+      begin = cutElems.at(0).toInt();
+      end = cutElems.at(1).toInt();
+      if (position <= end && position >= begin) {
+        this->send(tr("Ignored %1 since start overlaps with %2.").arg(position).arg(elem));
+        return false;
+      }
+    }
+    return true;
 }
 
 bool AVSViewer::isValidCut(int start, int end)
@@ -588,15 +617,14 @@ void AVSViewer::init(int start)
       emit finished(-5);
       return;
     }
-    this->send(tr("current avisynth version: %1").arg(m_version));
+    this->send(" " + tr("current avisynth version: %1").arg(m_version));
     QString input = m_currentInput;
     bool invokeFFInfo = false;
     if (this->handleFFInfo(input, invokeFFInfo) != 0) {
       return;
     }
 
-    emit
-    sendInfos(tr("Importing %1 into environment,..").arg(input));
+    emit sendInfos(" " + tr("Importing %1 into environment,..").arg(input));
     input = Globals::shortFileName(input);
     const char *inputFile = input.toUtf8();
     if (import(inputFile, m_res, m_env) != 0) {
@@ -618,29 +646,27 @@ void AVSViewer::init(int start)
     m_inf = m_clip->GetVideoInfo(); //get clip infos
     if (!m_inf.HasVideo()) { //abort if clip has no video
       sendInfos(tr("Input has no video stream -> aborting"));
-      emit
-      finished(-8);
+      emit finished(-8);
       return;
     }
 
-    emit
-    sendInfos(" " + tr("checking colorspace,.."));
+    emit  sendInfos("  " + tr("checking colorspace,.."));
     bool reload = false;
     if (m_inf.IsRGB()) {
       this->send(" " + tr("current color space is RGB"));
     } else {
       if (m_inf.IsYV12()) {
-        this->send(" " + tr("current color space is Yv12"));
+        this->send("  " + tr("current color space is Yv12"));
       } else if (m_inf.IsRGB24()) {
-        this->send(" " + tr("current color space is RGB24"));
+        this->send("  " + tr("current color space is RGB24"));
       } else if (m_inf.IsRGB32()) {
-        this->send(" " + tr("current color space is RGB32"));
+        this->send("  " + tr("current color space is RGB32"));
       } else if (m_inf.IsYUY2()) {
-        this->send(" " + tr("current color space is YUY2"));
+        this->send("  " + tr("current color space is YUY2"));
       } else if (m_inf.IsYUV()) {
-        this->send(" " + tr("current color space is YUV"));
+        this->send("  " + tr("current color space is YUV"));
       } else {
-        this->send(" " + tr("current color space is unknown"));
+        this->send("  " + tr("current color space is unknown"));
       }
       if (this->invoke("ConvertToRGB") != 0) {
         this->killEnv();
@@ -668,17 +694,15 @@ void AVSViewer::init(int start)
       m_inf = m_clip->GetVideoInfo(); // update clip info
     }
 
-    //emit sendInfos(" " + tr("grabbing clip length,.."));
+    //emit sendInfos("  " + tr("grabbing clip length,.."));
     m_frameCount = m_inf.num_frames; //get frame count
     ui.jumpToSpinBox->setMaximum(m_frameCount);
     //emit   sendInfos("  -> " + tr("clip contains %1 frames,..").arg(m_frameCount));
-    emit
-    sendInfos(" " + tr("adjusting slider to frame count,.."));
+    emit sendInfos(" " + tr("adjusting slider to frame count,.."));
     ui.frameHorizontalSlider->setMaximum(m_frameCount);
     ui.frameHorizontalSlider->resetMarks();
     ui.showLabel->setFixedSize(m_inf.width, m_inf.height);
-    emit
-    sendInfos(" " + tr("showing first frame,.."));
+    emit sendInfos(" " + tr("showing first frame,.."));
     ui.showLabel->setMaximumSize(32767, 32767);
     this->showFrame(start); //show first frame
   } catch (AvisynthError &err) { //catch AvisynthErrors

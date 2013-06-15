@@ -77,6 +77,7 @@ class MkvCutter : public QWidget
     cutTyp1 findCutForFrame(int frame);
     void extractTimeCodes();
     QString cutTimecodes(QString timecodes);
+    void startViewer();
 
   private slots:
     void on_openSourcePushButton_clicked();

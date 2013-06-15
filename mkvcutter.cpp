@@ -16,7 +16,7 @@ MkvCutter::MkvCutter(QWidget *parent) :
         m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(), m_videoTrackID(-1),
         m_extractor(NULL), m_timeextractor(NULL), m_toDelete(), m_aspectRatio(1),
         m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()),
-        m_x264Settings(QString()), m_useLibAV(false)
+        m_x264Settings(QString())
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -47,11 +47,6 @@ MkvCutter::MkvCutter(QWidget *parent) :
                   SLOT(setInterlaced(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(audioFormat(QString)), this,
                   SLOT(setAudioFormat(QString)));
-  m_ffindexCaller = new FFIndexCaller(this);
-  this->myconnect(m_ffindexCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
-  this->myconnect(m_ffindexCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
-  this->myconnect(m_ffindexCaller, SIGNAL(finished(int)), this, SLOT(ffIndexerFinished(int)));
-  this->myconnect(m_ffindexCaller, SIGNAL(progress(int)), this, SLOT(ffindexProgress(int)));
   m_mkvVideoSplitCaller = new MkvSplitCaller(this);
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -100,7 +95,14 @@ MkvCutter::MkvCutter(QWidget *parent) :
   tmp = QDir::toNativeSeparators(tmp);
   m_useLibAV = QFile::exists(tmp);
   if (!m_useLibAV) {
-    this->addInfo("%1 doesn't exist!");
+      QMessageBox::information(this, "ARGH", tr("%1 doesn't exist!").arg(tmp));
+      m_ffindexCaller = new FFIndexCaller(this);
+      this->myconnect(m_ffindexCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
+      this->myconnect(m_ffindexCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+      this->myconnect(m_ffindexCaller, SIGNAL(finished(int)), this, SLOT(ffIndexerFinished(int)));
+      this->myconnect(m_ffindexCaller, SIGNAL(progress(int)), this, SLOT(ffindexProgress(int)));
+  } else {
+      this->addInfo(tr("found %1").arg(tmp));
   }
 }
 
@@ -245,7 +247,7 @@ bool MkvCutter::createLibAVSourceAVS()
   QString path = QDir::toNativeSeparators(inputPath + "LSMASHSource.dll");
   script << "LoadPlugin(\"" + path + "\")";
   QString call = "LWLibavVideoSource(\"" + shortName + "\"";
-  call += ")";
+  call += ", cache=false)";
   script << call;
   return Globals::saveTextTo(script.join("\n"), m_tempAvs) == 0;
 }
@@ -296,12 +298,12 @@ void MkvCutter::mkvAnalysefinished()
     this->reset();
     return;
   }
-
-  if (m_useLibAV && !this->createLibAVSourceAVS()) {
-    this->reset();
-    return;
-  }
-  if (!this->createAVS()) {
+  if (m_useLibAV) {
+      if (!this->createLibAVSourceAVS()) {
+        this->reset();
+        return;
+      }
+  } else if (!this->createAVS()) {
     this->reset();
     return;
   }
@@ -369,14 +371,21 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
     return;
   }
   QString assume;
-  if (m_interlaced == "bff" || m_interlaced == "BFF") {
+  bool bff = m_interlaced == "bff" || m_interlaced == "BFF";
+  bool tff = m_interlaced == "tff" || m_interlaced == "TFF";
+  if (bff) {
     assume = "AssumeBFF()";
-  } else if (m_interlaced == "tff" || m_interlaced == "TFF") {
+  } else if (tff) {
     assume = "AssumeTFF()";
   }
   script << "LoadPlugin(\"" + path + "\")";
   if (m_useLibAV) {
-    script << "LWLibavVideoSource(\"" + filename + "\", threads=1, cache=false)";
+    QString tmp = "LWLibavVideoSource(\"" + filename + "\"";
+    if (bff || tff) {
+        tmp += ", threads=1";
+    }
+    tmp += ", cache=false)";
+    script << tmp;
   } else {
     script << "FFVideoSource(\"" + filename + "\", threads=1)";
   }
@@ -1124,8 +1133,13 @@ void MkvCutter::finishedTimeCodeExtraction(int state)
     this->reset();
     return;
   }
-  ui.infoLabel->setText(tr("Indexing input file,.."));
-  m_ffindexCaller->index(m_currentInput, m_indexFile);
+
+  if (!m_useLibAV) {
+    ui.infoLabel->setText(tr("Indexing input file,.."));
+    m_ffindexCaller->index(m_currentInput, m_indexFile);
+  } else {
+    this->startViewer();
+  }
 }
 
 void MkvCutter::mediaInfoFinished(int exitstate)
@@ -1141,9 +1155,35 @@ void MkvCutter::mediaInfoFinished(int exitstate)
     this->extractTimeCodes();
     return;
   }
+  if (!m_useLibAV) {
+    ui.infoLabel->setText(tr("Indexing input file,.."));
+    m_ffindexCaller->index(m_currentInput, m_indexFile);
+    return;
+  } else {
+      this->startViewer();
+  }
+}
 
-  ui.infoLabel->setText(tr("Indexing input file,.."));
-  m_ffindexCaller->index(m_currentInput, m_indexFile);
+void MkvCutter::startViewer()
+{
+    delete m_viewer;
+    QStringList keyframes;
+    foreach(QString key, m_keyframes)
+    {
+      key = key.remove(key.indexOf(","), key.size());
+      //this->addInfo("key "+key);
+      keyframes << key;
+    }
+    m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, keyframes);
+    this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
+    this->myconnect(m_viewer, SIGNAL(cuts(QStringList)), this, SLOT(setCutList(QStringList)));
+    this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+    this->myconnect(m_viewer, SIGNAL(setInterlacedMode(QString)), this,
+                    SLOT(setInterlacedMode(QString)));
+    ui.avsViewerVerticalLayout->insertWidget(0, m_viewer);
+    ui.mainStackedWidget->setCurrentIndex(1);
+    ui.infoLabel->setText(tr("- Cut View -"));
+    m_viewer->init();
 }
 
 void MkvCutter::ffIndexerFinished(int exitstate)
@@ -1154,24 +1194,7 @@ void MkvCutter::ffIndexerFinished(int exitstate)
     return;
   }
   ui.infoLabel->setText(tr("Indexing input file finished,.."));
-  delete m_viewer;
-  QStringList keyframes;
-  foreach(QString key, m_keyframes)
-  {
-    key = key.remove(key.indexOf(","), key.size());
-    //this->addInfo("key "+key);
-    keyframes << key;
-  }
-  m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, keyframes);
-  this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
-  this->myconnect(m_viewer, SIGNAL(cuts(QStringList)), this, SLOT(setCutList(QStringList)));
-  this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
-  this->myconnect(m_viewer, SIGNAL(setInterlacedMode(QString)), this,
-                  SLOT(setInterlacedMode(QString)));
-  ui.avsViewerVerticalLayout->insertWidget(0, m_viewer);
-  ui.mainStackedWidget->setCurrentIndex(1);
-  ui.infoLabel->setText(tr("- Cut View -"));
-  m_viewer->init();
+  this->startViewer();
 }
 
 QString MkvCutter::cutTimecodes(QString timecodes)
@@ -1300,13 +1323,13 @@ void MkvCutter::setKeyFrames(QStringList list)
 
 void MkvCutter::setFrameRateMode(bool vfr)
 {
-  this->addInfo(tr("Frame rate mode: %1").arg(vfr ? "vfr" : "cfr"));
+  this->addInfo(" "+tr("frame rate mode: %1").arg(vfr ? "vfr" : "cfr"));
   m_vfr = vfr;
 }
 
 void MkvCutter::setAspectRatio(double aspect)
 {
-  this->addInfo(tr("Aspect ratio of input: %1").arg(aspect));
+  this->addInfo(" "+ tr("aspect ratio of input: %1").arg(aspect));
   m_aspectRatio = aspect;
 }
 
@@ -1390,7 +1413,6 @@ void MkvCutter::setCutList(QStringList cuts)
 void MkvCutter::setFrameCount(int count)
 {
   m_frameCount = count;
-  this->addInfo(tr("Video stream frame count: %1").arg(m_frameCount));
 }
 
 void MkvCutter::setAvcProfileLevel(QString pl)

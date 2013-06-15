@@ -124,7 +124,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
         line = line.remove(0, 6).trimmed();
         videoTrack = line.toInt();
         emit videoTrackID(videoTrack);
-        emit sendInfos(tr("video track numer: %1").arg(videoTrack));
+        emit sendInfos(" " + tr("video track numer: %1").arg(videoTrack));
         int index = videoData.indexOf(" fps");
         if (index == -1) {
           index = videoData.indexOf("frames/fields per second for a video track");

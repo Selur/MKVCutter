@@ -53,6 +53,7 @@ class AVSViewer : public QWidget
     void addCut(int start, int end);
     void setButtonImage(QPushButton *button, QIcon image, const int height);
     void setButtonImages();
+    bool isValid(int position);
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);

@@ -122,6 +122,7 @@ class MkvCutter : public QWidget
     void finishedTimeCodeExtraction(int exitstate);
     void setTimecodes(QString timecodes);
     void setX264Settings(QString settings);
+    void deleteFiles();
 };
 
 #endif // MKVCUTTER_H

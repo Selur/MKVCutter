@@ -878,6 +878,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   } else {
     call << m_x264Settings;
   }
+  call << "--non-deterministic";
   call << "--thread-input";
   call << "--crf 19";
   call << "--demuxer avs";
@@ -955,6 +956,69 @@ void MkvCutter::x264Finished(int exitstate)
   this->startVideoReencoding();
 }
 
+void MkvCutter::deleteFiles()
+{
+    this->addInfo(" " + tr("deleting split list elements,..."));
+    foreach (QString file, m_splitFiles)
+    {
+      if (file.isEmpty() || (file == m_currentInput || !QFile::exists(file))) {
+        continue;
+      }
+      if (QFile::exists(file)) {
+        this->addInfo("  " + tr("deleting video split file: %1").arg(file));
+        if (!QFile::remove(file)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+        }
+      }
+    }
+    this->addInfo(" " + tr("deleting reencoded video files elements,..."));
+    foreach (QString file, m_reencodedVideoFiles)
+    {
+      if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+        continue;
+      }
+      if (QFile::exists(file)) {
+        this->addInfo("  " + tr("deleting video file: %1").arg(file));
+        if (!QFile::remove(file)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+        }
+      }
+    }
+    foreach (QString file, m_toDelete)
+    {
+      if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+        continue;
+      }
+      if (QFile::exists(file)) {
+        this->addInfo("  " + tr("deleting video file: %1").arg(file));
+        if (!QFile::remove(file)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+        }
+      }
+    }
+    foreach (QString file, m_audioSplitFiles)
+    {
+      if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+        continue;
+      }
+      if (QFile::exists(file)) {
+        this->addInfo("  " + tr("deleting audio file: %1").arg(file));
+        if (!QFile::remove(file)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+        }
+      }
+    }
+    if (!m_audioFile.isEmpty() && m_audioFile != m_currentInput) {
+      if (QFile::exists(m_audioFile)) {
+        this->addInfo("  " + tr("deleting audio file: %1").arg(m_audioFile));
+        if (!QFile::remove(m_audioFile)) {
+          this->addInfo("   " + tr("Couldn't delete %1!").arg(m_audioFile));
+        }
+      }
+    }
+
+}
+
 void MkvCutter::mkvMergerFinished(int exitstate)
 {
   this->addInfo(tr("mkvMerge finished,.."));
@@ -970,65 +1034,7 @@ void MkvCutter::mkvMergerFinished(int exitstate)
     return;
   }
 
-  this->addInfo(" " + tr("deleting split list elements,..."));
-  foreach (QString file, m_splitFiles)
-  {
-    if (file.isEmpty() || (file == m_currentInput || !QFile::exists(file))) {
-      continue;
-    }
-    if (QFile::exists(file)) {
-      this->addInfo("  " + tr("deleting video split file: %1").arg(file));
-      if (!QFile::remove(file)) {
-        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
-      }
-    }
-  }
-  this->addInfo(" " + tr("deleting reencoded video files elements,..."));
-  foreach (QString file, m_reencodedVideoFiles)
-  {
-    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
-      continue;
-    }
-    if (QFile::exists(file)) {
-      this->addInfo("  " + tr("deleting video file: %1").arg(file));
-      if (!QFile::remove(file)) {
-        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
-      }
-    }
-  }
-  foreach (QString file, m_toDelete)
-  {
-    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
-      continue;
-    }
-    if (QFile::exists(file)) {
-      this->addInfo("  " + tr("deleting video file: %1").arg(file));
-      if (!QFile::remove(file)) {
-        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
-      }
-    }
-  }
-  foreach (QString file, m_audioSplitFiles)
-  {
-    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
-      continue;
-    }
-    if (QFile::exists(file)) {
-      this->addInfo("  " + tr("deleting audio file: %1").arg(file));
-      if (!QFile::remove(file)) {
-        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
-      }
-    }
-  }
-  if (!m_audioFile.isEmpty() && m_audioFile != m_currentInput) {
-    if (QFile::exists(m_audioFile)) {
-      this->addInfo("  " + tr("deleting audio file: %1").arg(m_audioFile));
-      if (!QFile::remove(m_audioFile)) {
-        this->addInfo("   " + tr("Couldn't delete %1!").arg(m_audioFile));
-      }
-    }
-  }
-
+  this->deleteFiles();
   QMessageBox::information(this, tr("Finished!"),
                            tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
   this->reset();

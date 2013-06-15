@@ -517,9 +517,10 @@ void MkvCutter::buildCutList()
 
     // A: start&end frame are in the same GOP
     this->addInfo(" startCut.prevKey: "+QString::number(startCut.prevKey));
-    this->addInfo(" endCut.prevKey: "+QString::number(endCut.prevKey));
     this->addInfo(" startCut.nextKey: "+QString::number(startCut.nextKey));
+    this->addInfo(" endCut.prevKey: "+QString::number(endCut.prevKey));
     this->addInfo(" endCut.nextKey: "+QString::number(endCut.nextKey));
+    // two cuts in one gop
     if (startCut.prevKey == endCut.prevKey && endCut.nextKey == startCut.nextKey) {
       //CUT LIST
       tempCut.cut.start = start * ((interlaced) ? 2 : 1);
@@ -530,6 +531,7 @@ void MkvCutter::buildCutList()
       m_cutList.append(tempCut);
       continue;
     }
+    // two cuts in two adjacent gops
     if (startCut.nextKey == endCut.prevKey) {
       tempCut.cut.start = start * ((interlaced) ? 2 : 1);
       tempCut.cut.end = end * ((interlaced) ? 2 : 1);
@@ -570,6 +572,10 @@ void MkvCutter::buildCutList()
     this->addInfo(
         " " + tr("B3: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
+    if (end == endCut.prevKey) {
+      this->addInfo(" "+tr("no end cut needed, middle cut ends with end"));
+      return;
+    }
 
     // end cut
     tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);

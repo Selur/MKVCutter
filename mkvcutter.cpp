@@ -574,9 +574,8 @@ void MkvCutter::buildCutList()
     m_cutList.append(tempCut);
     if (end == endCut.prevKey) {
       this->addInfo(" "+tr("no end cut needed, middle cut ends with end"));
-      return;
+      continue;
     }
-
     // end cut
     tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);
     tempCut.cut.end = end * ((interlaced) ? 2 : 1);

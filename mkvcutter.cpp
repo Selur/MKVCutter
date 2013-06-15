@@ -495,7 +495,9 @@ void MkvCutter::buildCutList()
     start = tCuts.at(0).toInt();
     end = tCuts.at(1).toInt();
     startCut = findCutForFrame(start);
+    this->addInfo("start cut: "+Globals::cutTyp1ToString(startCut));
     endCut = findCutForFrame(end);
+    this->addInfo("end cut: "+Globals::cutTyp1ToString(endCut));
 
     // add audio cut
     if (start == 0) {
@@ -514,7 +516,10 @@ void MkvCutter::buildCutList()
     // CUT LIST
 
     // A: start&end frame are in the same GOP
-
+    this->addInfo(" startCut.prevKey: "+QString::number(startCut.prevKey));
+    this->addInfo(" endCut.prevKey: "+QString::number(endCut.prevKey));
+    this->addInfo(" startCut.nextKey: "+QString::number(startCut.nextKey));
+    this->addInfo(" endCut.nextKey: "+QString::number(endCut.nextKey));
     if (startCut.prevKey == endCut.prevKey && endCut.nextKey == startCut.nextKey) {
       //CUT LIST
       tempCut.cut.start = start * ((interlaced) ? 2 : 1);

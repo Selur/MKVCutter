@@ -415,18 +415,18 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
   cut.nextKey = -1;
   cut.cut.start = frame;
   cut.cut.end = -1;
-  //this->addInfo(" "+tr("findCutForFrame(%1)").arg(frame));
+  this->addInfo(" "+tr("findCutForFrame(%1)").arg(frame));
   QString tmp;
   QStringList elems;
   int previousKey = 0, currentKey;
   for (int keyIndex = 0, keyCount = m_keyframes.count(); keyIndex < keyCount; ++keyIndex) {
     tmp = m_keyframes.at(keyIndex);
-    //this->addInfo("  " + tr("looking at m_keyframes.at(%1): %2").arg(keyIndex).arg(tmp));
+    this->addInfo("  " + tr("looking at m_keyframes.at(%1): %2").arg(keyIndex).arg(tmp));
     elems = tmp.split(",");
     currentKey = elems.at(0).toInt();
-    //this->addInfo("  " + tr("looking at current key frame position: %1").arg(currentKey));
+    this->addInfo("  " + tr("looking at current key frame position: %1").arg(currentKey));
     if (currentKey < frame) {
-      //this->addInfo("  -> " + tr("currentKey(%1) < frame(%2) => previousKey(%3) = currentKey(%4)").arg(currentKey).arg(frame).arg(previousKey).arg(currentKey));
+      this->addInfo("  -> " + tr("currentKey(%1) < frame(%2) => previousKey(%3) = currentKey(%4)").arg(currentKey).arg(frame).arg(previousKey).arg(currentKey));
       previousKey = currentKey;
       if (keyIndex + 1 < keyCount) {
         continue;
@@ -435,10 +435,10 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
     if (currentKey == frame) {
       if (keyIndex + 1 < keyCount) {
         previousKey = frame;
-        //this->addInfo("  -> " + tr("currentKey(%1) == frame(%2) -> previousKey(%3) = frame(%2)").arg(currentKey).arg(frame).arg(previousKey));
+        this->addInfo("  -> " + tr("currentKey(%1) == frame(%2) -> previousKey(%3) = frame(%2)").arg(currentKey).arg(frame).arg(previousKey));
         continue;
       }
-      //this->addInfo("  -> " + tr("frame(%2) == lastKey(%1) -> previousKey(%3) = frame(%2) && cut.nextKey(%4) = frameCount && cut.cut.end(%5) = frame(%2)").arg(currentKey).arg(frame).arg(previousKey).arg(cut.nextKey).arg(m_frameCount).arg(cut.cut.end));
+      this->addInfo("  -> " + tr("frame(%2) == lastKey(%1) -> previousKey(%3) = frame(%2) && cut.nextKey(%4) = frameCount && cut.cut.end(%5) = frame(%2)").arg(currentKey).arg(frame).arg(previousKey).arg(cut.nextKey).arg(m_frameCount).arg(cut.cut.end));
       cut.prevKey = currentKey;
       cut.nextKey = m_frameCount;
       cut.cut.end = frame;
@@ -448,10 +448,10 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
     if (currentKey > frame) {
       if (currentKey == m_frameCount) {
         cut.cut.end = currentKey;
-        //this->addInfo("  -> " + tr("currentKey(%1) > frame(%2) == framecount => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = frameCount (%1) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey).arg(cut.cut.end));
+        this->addInfo("  -> " + tr("currentKey(%1) > frame(%2) == framecount => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = frameCount (%1) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey).arg(cut.cut.end));
       } else {
         cut.cut.end = currentKey - 1;
-        //this->addInfo("  -> " + tr("currentKey(%1) > frame(%2) => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = currentKey-1 (%7) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey).arg(cut.cut.end).arg(currentKey - 1));
+        this->addInfo("  -> " + tr("currentKey(%1) > frame(%2) => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = currentKey-1 (%7) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey).arg(cut.cut.end).arg(currentKey - 1));
       }
       cut.prevKey = previousKey;
       cut.nextKey = currentKey;
@@ -459,7 +459,7 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
       break;
     }
 
-    //this->addInfo("  -> " + tr("frame(%1) > lastKey(%2) => cut.prevKey(%3) = currentKey(%2) && cut.nextKey(%4) = frameCount(%5) && cut.cut.start(%6) = currentKey(%2) && cut.cut.end(%7) = frameCount(%5)").arg(frame).arg(currentKey).arg(cut.prevKey).arg(cut.nextKey).arg(m_frameCount).arg(cut.cut.start).arg(cut.cut.end));
+    this->addInfo("  -> " + tr("frame(%1) > lastKey(%2) => cut.prevKey(%3) = currentKey(%2) && cut.nextKey(%4) = frameCount(%5) && cut.cut.start(%6) = currentKey(%2) && cut.cut.end(%7) = frameCount(%5)").arg(frame).arg(currentKey).arg(cut.prevKey).arg(cut.nextKey).arg(m_frameCount).arg(cut.cut.start).arg(cut.cut.end));
     cut.prevKey = currentKey;
     cut.nextKey = m_frameCount;
     cut.cut.start = currentKey;
@@ -469,7 +469,7 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
   if (cut.nextKey == -1) {
     cut.nextKey = m_frameCount;
   }
-  //this->addInfo(" => " + tr("findCutForFrame(%1): %2").arg(frame).arg(Globals::cutTyp1ToString(cut)));
+  this->addInfo(" => " + tr("findCutForFrame(%1): %2").arg(frame).arg(Globals::cutTyp1ToString(cut)));
   return cut;
 }
 
@@ -542,7 +542,7 @@ void MkvCutter::buildCutList()
     tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
     tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
     this->addInfo(
-        " " + tr("B: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+        " " + tr("B1: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
 
     // middle&end cut
@@ -552,7 +552,7 @@ void MkvCutter::buildCutList()
       tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
       tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
       this->addInfo(
-          " " + tr("B: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+          " " + tr("B2: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
       m_cutList.append(tempCut);
       continue;
     }
@@ -563,7 +563,7 @@ void MkvCutter::buildCutList()
     tempCut.prevKey = (startCut.nextKey) * ((interlaced) ? 2 : 1);
     tempCut.nextKey = (endCut.prevKey) * ((interlaced) ? 2 : 1);
     this->addInfo(
-        " " + tr("B: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+        " " + tr("B3: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
 
     // end cut
@@ -571,7 +571,7 @@ void MkvCutter::buildCutList()
     tempCut.cut.end = end * ((interlaced) ? 2 : 1);
     tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
     tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
-    this->addInfo(" " + tr("B: adding endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+    this->addInfo(" " + tr("B4: adding endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
   }
 }

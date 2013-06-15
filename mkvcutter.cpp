@@ -99,6 +99,9 @@ MkvCutter::MkvCutter(QWidget *parent) :
   tmp += "LSMASHSource.dll";
   tmp = QDir::toNativeSeparators(tmp);
   m_useLibAV = QFile::exists(tmp);
+  if (!m_useLibAV) {
+    this->addInfo("%1 doesn't exist!");
+  }
 }
 
 MkvCutter::~MkvCutter()

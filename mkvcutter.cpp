@@ -457,21 +457,25 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
     }
     if (currentKey > frame) {
       if (currentKey == m_frameCount) {
-        cut.cut.end = currentKey;
         this->addInfo(
             "  -> (4)"
                 + tr(
-                    "currentKey(%1) > frame(%2) == framecount => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = frameCount (%1) && previousKey(%4) = currentKey (%1)")
+                    "currentKey(%1) > frame(%2)  && currentKey(%1) == framecount => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = frameCount (%1) && previousKey(%4) = currentKey (%1)")
                     .arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey)
                     .arg(cut.cut.end));
+        cut.cut.end = currentKey;
+        cut.prevKey = previousKey;
+        cut.nextKey = currentKey;
+        previousKey = currentKey;
       } else {
-        cut.cut.end = frame;
         this->addInfo(
             "  -> (5)"
                 + tr(
-                    "currentKey(%1) > previousKey(%2) => cut.prevKey(%3) = frame(%4) && cut.nextKey(%4) = currrentKey(%1) && cut.cut.end(%5) = frame (%4) && previousKey(%4) = currentKey (%1)")
-                    .arg(currentKey).arg(previousKey).arg(cut.prevKey).arg(frame).arg(cut.cut.end)
-                    .arg(cut.nextKey));
+                    "current key(%1) > frame(%2)  => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.start(%6) = currentKey(%2) && cut.cut.end = frame(%2) && previousKey(%4) = currentKey (%1)")
+                    .arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey)
+                    .arg(cut.cut.start).arg(cut.cut.end));
+        cut.cut.start = previousKey;
+        cut.cut.end = frame;
       }
       cut.prevKey = previousKey;
       cut.nextKey = currentKey;

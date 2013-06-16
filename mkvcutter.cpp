@@ -15,8 +15,7 @@ MkvCutter::MkvCutter(QWidget *parent) :
         m_trimming(), m_cutList(), m_mkvVideoParts(), m_mkvAudioParts(), m_audioFile(QString()),
         m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(), m_videoTrackID(-1),
         m_extractor(NULL), m_timeextractor(NULL), m_toDelete(), m_aspectRatio(1),
-        m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()),
-        m_x264Settings(QString())
+        m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()), m_x264Settings(QString())
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -95,14 +94,14 @@ MkvCutter::MkvCutter(QWidget *parent) :
   tmp = QDir::toNativeSeparators(tmp);
   m_useLibAV = QFile::exists(tmp);
   if (!m_useLibAV) {
-      QMessageBox::information(this, "ARGH", tr("%1 doesn't exist!").arg(tmp));
-      m_ffindexCaller = new FFIndexCaller(this);
-      this->myconnect(m_ffindexCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
-      this->myconnect(m_ffindexCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
-      this->myconnect(m_ffindexCaller, SIGNAL(finished(int)), this, SLOT(ffIndexerFinished(int)));
-      this->myconnect(m_ffindexCaller, SIGNAL(progress(int)), this, SLOT(ffindexProgress(int)));
+    QMessageBox::information(this, "ARGH", tr("%1 doesn't exist!").arg(tmp));
+    m_ffindexCaller = new FFIndexCaller(this);
+    this->myconnect(m_ffindexCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
+    this->myconnect(m_ffindexCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+    this->myconnect(m_ffindexCaller, SIGNAL(finished(int)), this, SLOT(ffIndexerFinished(int)));
+    this->myconnect(m_ffindexCaller, SIGNAL(progress(int)), this, SLOT(ffindexProgress(int)));
   } else {
-      this->addInfo(tr("found %1").arg(tmp));
+    this->addInfo(tr("found %1").arg(tmp));
   }
 }
 
@@ -299,10 +298,10 @@ void MkvCutter::mkvAnalysefinished()
     return;
   }
   if (m_useLibAV) {
-      if (!this->createLibAVSourceAVS()) {
-        this->reset();
-        return;
-      }
+    if (!this->createLibAVSourceAVS()) {
+      this->reset();
+      return;
+    }
   } else if (!this->createAVS()) {
     this->reset();
     return;
@@ -382,7 +381,7 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   if (m_useLibAV) {
     QString tmp = "LWLibavVideoSource(\"" + filename + "\"";
     if (bff || tff) {
-        tmp += ", threads=1";
+      tmp += ", threads=1";
     }
     tmp += ", cache=false)";
     script << tmp;
@@ -415,7 +414,7 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
   cut.nextKey = -1;
   cut.cut.start = frame;
   cut.cut.end = -1;
-  this->addInfo(" "+tr("findCutForFrame(%1)").arg(frame));
+  //this->addInfo(" "+tr("findCutForFrame(%1)").arg(frame));
   QString tmp;
   QStringList elems;
   int previousKey = 0, currentKey;
@@ -426,7 +425,10 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
     currentKey = elems.at(0).toInt();
     this->addInfo("  " + tr("looking at current key frame position: %1").arg(currentKey));
     if (currentKey < frame) {
-      this->addInfo("  -> " + tr("currentKey(%1) < frame(%2) => previousKey(%3) = currentKey(%4)").arg(currentKey).arg(frame).arg(previousKey).arg(currentKey));
+      this->addInfo(
+          "  -> (1)"
+              + tr("currentKey(%1) < frame(%2) => previousKey(%3) = currentKey(%4)").arg(currentKey)
+                  .arg(frame).arg(previousKey).arg(currentKey));
       previousKey = currentKey;
       if (keyIndex + 1 < keyCount) {
         continue;
@@ -435,10 +437,18 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
     if (currentKey == frame) {
       if (keyIndex + 1 < keyCount) {
         previousKey = frame;
-        this->addInfo("  -> " + tr("currentKey(%1) == frame(%2) -> previousKey(%3) = frame(%2)").arg(currentKey).arg(frame).arg(previousKey));
+        this->addInfo(
+            "  -> (2)"
+                + tr("currentKey(%1) == frame(%2) -> previousKey(%3) = frame(%2)").arg(currentKey)
+                    .arg(frame).arg(previousKey));
         continue;
       }
-      this->addInfo("  -> " + tr("frame(%2) == lastKey(%1) -> previousKey(%3) = frame(%2) && cut.nextKey(%4) = frameCount && cut.cut.end(%5) = frame(%2)").arg(currentKey).arg(frame).arg(previousKey).arg(cut.nextKey).arg(m_frameCount).arg(cut.cut.end));
+      this->addInfo(
+          "  -> (3)"
+              + tr(
+                  "frame(%2) == lastKey(%1) -> previousKey(%3) = frame(%2) && cut.nextKey(%4) = frameCount && cut.cut.end(%5) = frame(%2)")
+                  .arg(currentKey).arg(frame).arg(previousKey).arg(cut.nextKey).arg(m_frameCount)
+                  .arg(cut.cut.end));
       cut.prevKey = currentKey;
       cut.nextKey = m_frameCount;
       cut.cut.end = frame;
@@ -448,10 +458,20 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
     if (currentKey > frame) {
       if (currentKey == m_frameCount) {
         cut.cut.end = currentKey;
-        this->addInfo("  -> " + tr("currentKey(%1) > frame(%2) == framecount => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = frameCount (%1) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey).arg(cut.cut.end));
+        this->addInfo(
+            "  -> (4)"
+                + tr(
+                    "currentKey(%1) > frame(%2) == framecount => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = frameCount (%1) && previousKey(%4) = currentKey (%1)")
+                    .arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey)
+                    .arg(cut.cut.end));
       } else {
-        cut.cut.end = currentKey - 1;
-        this->addInfo("  -> " + tr("currentKey(%1) > frame(%2) => cut.prevKey(%3) = previousKey(%4) && cut.nextKey(%5) = currrentKey(%1) && cut.cut.end(%6) = currentKey-1 (%7) && previousKey(%4) = currentKey (%1)").arg(currentKey).arg(frame).arg(cut.prevKey).arg(previousKey).arg(cut.nextKey).arg(cut.cut.end).arg(currentKey - 1));
+        cut.cut.end = frame;
+        this->addInfo(
+            "  -> (5)"
+                + tr(
+                    "currentKey(%1) > previousKey(%2) => cut.prevKey(%3) = frame(%4) && cut.nextKey(%4) = currrentKey(%1) && cut.cut.end(%5) = frame (%4) && previousKey(%4) = currentKey (%1)")
+                    .arg(currentKey).arg(previousKey).arg(cut.prevKey).arg(frame).arg(cut.cut.end)
+                    .arg(cut.nextKey));
       }
       cut.prevKey = previousKey;
       cut.nextKey = currentKey;
@@ -459,7 +479,12 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
       break;
     }
 
-    this->addInfo("  -> " + tr("frame(%1) > lastKey(%2) => cut.prevKey(%3) = currentKey(%2) && cut.nextKey(%4) = frameCount(%5) && cut.cut.start(%6) = currentKey(%2) && cut.cut.end(%7) = frameCount(%5)").arg(frame).arg(currentKey).arg(cut.prevKey).arg(cut.nextKey).arg(m_frameCount).arg(cut.cut.start).arg(cut.cut.end));
+    this->addInfo(
+        "  -> (6)"
+            + tr(
+                "frame(%1) > lastKey(%2) => cut.prevKey(%3) = currentKey(%2) && cut.nextKey(%4) = frameCount(%5) && cut.cut.start(%6) = currentKey(%2) && cut.cut.end(%7) = frameCount(%5)")
+                .arg(frame).arg(currentKey).arg(cut.prevKey).arg(cut.nextKey).arg(m_frameCount).arg(
+                cut.cut.start).arg(cut.cut.end));
     cut.prevKey = currentKey;
     cut.nextKey = m_frameCount;
     cut.cut.start = currentKey;
@@ -469,7 +494,8 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
   if (cut.nextKey == -1) {
     cut.nextKey = m_frameCount;
   }
-  this->addInfo(" => " + tr("findCutForFrame(%1): %2").arg(frame).arg(Globals::cutTyp1ToString(cut)));
+  this->addInfo(
+      "  => " + tr("findCutForFrame(%1): %2").arg(frame).arg(Globals::cutTyp1ToString(cut)));
   return cut;
 }
 
@@ -491,13 +517,14 @@ void MkvCutter::buildCutList()
     interlaced = m_interlaced != "progressive";
   }
   for (int i = 0, c = m_cuts.count(); i < c; ++i) {
+    this->addInfo(" current cut: " + m_cuts.at(i));
     tCuts = m_cuts.at(i).split("-");
     start = tCuts.at(0).toInt();
     end = tCuts.at(1).toInt();
     startCut = findCutForFrame(start);
-    this->addInfo("start cut: "+Globals::cutTyp1ToString(startCut));
+    this->addInfo(" -> start cut: " + Globals::cutTyp1ToString(startCut));
     endCut = findCutForFrame(end);
-    this->addInfo("end cut: "+Globals::cutTyp1ToString(endCut));
+    this->addInfo(" -> end cut: " + Globals::cutTyp1ToString(endCut));
 
     // add audio cut
     if (start == 0) {
@@ -516,10 +543,6 @@ void MkvCutter::buildCutList()
     // CUT LIST
 
     // A: start&end frame are in the same GOP
-    this->addInfo(" startCut.prevKey: "+QString::number(startCut.prevKey));
-    this->addInfo(" startCut.nextKey: "+QString::number(startCut.nextKey));
-    this->addInfo(" endCut.prevKey: "+QString::number(endCut.prevKey));
-    this->addInfo(" endCut.nextKey: "+QString::number(endCut.nextKey));
     // two cuts in one gop
     if (startCut.prevKey == endCut.prevKey && endCut.nextKey == startCut.nextKey) {
       //CUT LIST
@@ -527,7 +550,7 @@ void MkvCutter::buildCutList()
       tempCut.cut.end = end * ((interlaced) ? 2 : 1);
       tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
       tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
-      this->addInfo(" " + tr("A1: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+      this->addInfo("   " + tr("A1: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
       m_cutList.append(tempCut);
       continue;
     }
@@ -537,7 +560,7 @@ void MkvCutter::buildCutList()
       tempCut.cut.end = end * ((interlaced) ? 2 : 1);
       tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
       tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
-      this->addInfo(" " + tr("A2: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+      this->addInfo("   " + tr("A2: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
       m_cutList.append(tempCut);
       continue;
     }
@@ -573,7 +596,7 @@ void MkvCutter::buildCutList()
         " " + tr("B3: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
     if (end == endCut.prevKey) {
-      this->addInfo(" "+tr("no end cut needed, middle cut ends with end"));
+      this->addInfo(" " + tr("no end cut needed, middle cut ends with end"));
       continue;
     }
     // end cut
@@ -581,7 +604,8 @@ void MkvCutter::buildCutList()
     tempCut.cut.end = end * ((interlaced) ? 2 : 1);
     tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
     tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
-    this->addInfo(" " + tr("B4: adding endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+    this->addInfo(
+        "   " + tr("B4: adding endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
   }
 }
@@ -968,64 +992,64 @@ void MkvCutter::x264Finished(int exitstate)
 
 void MkvCutter::deleteFiles()
 {
-    this->addInfo(" " + tr("deleting split list elements,..."));
-    foreach (QString file, m_splitFiles)
-    {
-      if (file.isEmpty() || (file == m_currentInput || !QFile::exists(file))) {
-        continue;
-      }
-      if (QFile::exists(file)) {
-        this->addInfo("  " + tr("deleting video split file: %1").arg(file));
-        if (!QFile::remove(file)) {
-          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
-        }
+  this->addInfo(" " + tr("deleting split list elements,..."));
+  foreach (QString file, m_splitFiles)
+  {
+    if (file.isEmpty() || (file == m_currentInput || !QFile::exists(file))) {
+      continue;
+    }
+    if (QFile::exists(file)) {
+      this->addInfo("  " + tr("deleting video split file: %1").arg(file));
+      if (!QFile::remove(file)) {
+        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
       }
     }
-    this->addInfo(" " + tr("deleting reencoded video files elements,..."));
-    foreach (QString file, m_reencodedVideoFiles)
-    {
-      if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
-        continue;
-      }
-      if (QFile::exists(file)) {
-        this->addInfo("  " + tr("deleting video file: %1").arg(file));
-        if (!QFile::remove(file)) {
-          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
-        }
+  }
+  this->addInfo(" " + tr("deleting reencoded video files elements,..."));
+  foreach (QString file, m_reencodedVideoFiles)
+  {
+    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+      continue;
+    }
+    if (QFile::exists(file)) {
+      this->addInfo("  " + tr("deleting video file: %1").arg(file));
+      if (!QFile::remove(file)) {
+        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
       }
     }
-    foreach (QString file, m_toDelete)
-    {
-      if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
-        continue;
-      }
-      if (QFile::exists(file)) {
-        this->addInfo("  " + tr("deleting video file: %1").arg(file));
-        if (!QFile::remove(file)) {
-          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
-        }
+  }
+  foreach (QString file, m_toDelete)
+  {
+    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+      continue;
+    }
+    if (QFile::exists(file)) {
+      this->addInfo("  " + tr("deleting video file: %1").arg(file));
+      if (!QFile::remove(file)) {
+        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
       }
     }
-    foreach (QString file, m_audioSplitFiles)
-    {
-      if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
-        continue;
-      }
-      if (QFile::exists(file)) {
-        this->addInfo("  " + tr("deleting audio file: %1").arg(file));
-        if (!QFile::remove(file)) {
-          this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
-        }
+  }
+  foreach (QString file, m_audioSplitFiles)
+  {
+    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+      continue;
+    }
+    if (QFile::exists(file)) {
+      this->addInfo("  " + tr("deleting audio file: %1").arg(file));
+      if (!QFile::remove(file)) {
+        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
       }
     }
-    if (!m_audioFile.isEmpty() && m_audioFile != m_currentInput) {
-      if (QFile::exists(m_audioFile)) {
-        this->addInfo("  " + tr("deleting audio file: %1").arg(m_audioFile));
-        if (!QFile::remove(m_audioFile)) {
-          this->addInfo("   " + tr("Couldn't delete %1!").arg(m_audioFile));
-        }
+  }
+  if (!m_audioFile.isEmpty() && m_audioFile != m_currentInput) {
+    if (QFile::exists(m_audioFile)) {
+      this->addInfo("  " + tr("deleting audio file: %1").arg(m_audioFile));
+      if (!QFile::remove(m_audioFile)) {
+        this->addInfo("   " + tr("Couldn't delete %1!").arg(m_audioFile));
       }
     }
+  }
 
 }
 
@@ -1176,30 +1200,30 @@ void MkvCutter::mediaInfoFinished(int exitstate)
     m_ffindexCaller->index(m_currentInput, m_indexFile);
     return;
   } else {
-      this->startViewer();
+    this->startViewer();
   }
 }
 
 void MkvCutter::startViewer()
 {
-    delete m_viewer;
-    QStringList keyframes;
-    foreach(QString key, m_keyframes)
-    {
-      key = key.remove(key.indexOf(","), key.size());
-      //this->addInfo("key "+key);
-      keyframes << key;
-    }
-    m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, keyframes);
-    this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
-    this->myconnect(m_viewer, SIGNAL(cuts(QStringList)), this, SLOT(setCutList(QStringList)));
-    this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
-    this->myconnect(m_viewer, SIGNAL(setInterlacedMode(QString)), this,
-                    SLOT(setInterlacedMode(QString)));
-    ui.avsViewerVerticalLayout->insertWidget(0, m_viewer);
-    ui.mainStackedWidget->setCurrentIndex(1);
-    ui.infoLabel->setText(tr("- Cut View -"));
-    m_viewer->init();
+  delete m_viewer;
+  QStringList keyframes;
+  foreach(QString key, m_keyframes)
+  {
+    key = key.remove(key.indexOf(","), key.size());
+    //this->addInfo("key "+key);
+    keyframes << key;
+  }
+  m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, keyframes);
+  this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
+  this->myconnect(m_viewer, SIGNAL(cuts(QStringList)), this, SLOT(setCutList(QStringList)));
+  this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_viewer, SIGNAL(setInterlacedMode(QString)), this,
+                  SLOT(setInterlacedMode(QString)));
+  ui.avsViewerVerticalLayout->insertWidget(0, m_viewer);
+  ui.mainStackedWidget->setCurrentIndex(1);
+  ui.infoLabel->setText(tr("- Cut View -"));
+  m_viewer->init();
 }
 
 void MkvCutter::ffIndexerFinished(int exitstate)
@@ -1339,13 +1363,13 @@ void MkvCutter::setKeyFrames(QStringList list)
 
 void MkvCutter::setFrameRateMode(bool vfr)
 {
-  this->addInfo(" "+tr("frame rate mode: %1").arg(vfr ? "vfr" : "cfr"));
+  this->addInfo(" " + tr("frame rate mode: %1").arg(vfr ? "vfr" : "cfr"));
   m_vfr = vfr;
 }
 
 void MkvCutter::setAspectRatio(double aspect)
 {
-  this->addInfo(" "+ tr("aspect ratio of input: %1").arg(aspect));
+  this->addInfo(" " + tr("aspect ratio of input: %1").arg(aspect));
   m_aspectRatio = aspect;
 }
 

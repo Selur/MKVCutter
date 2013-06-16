@@ -444,7 +444,7 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
     cut.cut.start = previousKey;
     cut.cut.end = frame;
     cut.prevKey = previousKey;
-    cut.nextKey = currentKey;
+    cut.nextKey = currentKey - 1;
     previousKey = currentKey;
     break;
   }

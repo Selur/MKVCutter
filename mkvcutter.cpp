@@ -407,7 +407,7 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   }
 }
 
-cutTyp1 MkvCutter::findCutForFrame(int frame)
+cutTyp1 MkvCutter::findCutForFrame(int frame, const bool start)
 {
   cutTyp1 cut;
   cut.prevKey = -1;
@@ -437,14 +437,24 @@ cutTyp1 MkvCutter::findCutForFrame(int frame)
       } // -> currentKey == frame && key is last key
       cut.prevKey = currentKey;
       cut.nextKey = m_frameCount;
-      cut.cut.end = frame;
+      if (start) {
+        cut.cut.end = frame;
+      } else {
+        continue;
+      }
       break;
     } // -> current Key > frame
 
-    cut.cut.start = previousKey;
-    cut.cut.end = frame;
+
+    if (start) {
+      cut.cut.start = frame;
+      cut.cut.end = currentKey -1;
+    } else {
+      cut.cut.start = previousKey;
+      cut.cut.end = frame;
+    }
     cut.prevKey = previousKey;
-    cut.nextKey = currentKey - 1;
+    cut.nextKey = currentKey;
     previousKey = currentKey;
     break;
   }
@@ -478,8 +488,8 @@ void MkvCutter::buildCutList()
     tCuts = m_cuts.at(i).split("-");
     start = tCuts.at(0).toInt();
     end = tCuts.at(1).toInt();
-    startCut = findCutForFrame(start);
-    endCut = findCutForFrame(end);
+    startCut = findCutForFrame(start, true);
+    endCut = findCutForFrame(end, false);
     this->addInfo(" -> start cut: " + Globals::cutTyp1ToString(startCut));
     this->addInfo(" -> end cut: " + Globals::cutTyp1ToString(endCut));
 

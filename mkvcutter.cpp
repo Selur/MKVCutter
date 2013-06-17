@@ -594,9 +594,9 @@ void MkvCutter::buildTrimAndPartsList()
       //this->addInfo("  " + tr("prevKey >= nextKey"));
       //this->addInfo("   " + tr("nextKey = m_frameCount(%1)").arg(m_frameCount));
     }
-    bool prevKey_LastStartKey = prevKey == lastStartKey;
+    //bool prevKey_LastStartKey = prevKey == lastStartKey;
     //this->addInfo("  " + tr("prevKey == lastStartKey: %1").arg(prevKey_LastStartKey));
-    bool prevKey_LastNextKey = prevKey <= lastNextKey;
+    //bool prevKey_LastNextKey = prevKey <= lastNextKey;
     //this->addInfo("  " + tr("prevKey <= lastNextKey: %1").arg(prevKey_LastNextKey));
     if (prevKey == lastStartKey) {
       //this->addInfo("  " + tr("prevKey == lastStartKey"));

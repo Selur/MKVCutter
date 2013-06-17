@@ -79,6 +79,8 @@ class MkvCutter : public QWidget
     void extractTimeCodes();
     QString cutTimecodes(QString timecodes);
     void startViewer();
+    void addAudioCut(const int &start, const int &end);
+    void addVideoCut(const int &start, const int &end, const bool &interlaced);
 
   private slots:
     void on_openSourcePushButton_clicked();

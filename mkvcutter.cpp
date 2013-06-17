@@ -420,10 +420,9 @@ cutTyp1 MkvCutter::findCutForFrame(int frame, const bool start)
       break;
     } // -> current Key > frame
 
-
     if (start) {
       cut.cut.start = frame;
-      cut.cut.end = currentKey -1;
+      cut.cut.end = currentKey - 1;
     } else {
       cut.cut.start = previousKey;
       cut.cut.end = frame;
@@ -441,6 +440,100 @@ cutTyp1 MkvCutter::findCutForFrame(int frame, const bool start)
   return cut;
 }
 
+void MkvCutter::addAudioCut(const int &start, const int &end)
+{
+  QString startTime, endTime;
+  if (start == 0) {
+    startTime = QString();
+  } else {
+    startTime = Globals::frameToTime(start, m_fps);
+  }
+  if (end == 0) {
+    endTime = QString();
+  } else {
+    endTime = Globals::frameToTime(end, m_fps);
+  }
+  this->addInfo(" -> time cut: " + startTime + "-" + endTime);
+  m_mkvAudioParts << startTime + "-" + endTime;
+}
+
+void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interlaced)
+{
+  cutTyp1 tempCut;
+  cutTyp1 startCut = findCutForFrame(start, true);
+  cutTyp1 endCut = findCutForFrame(end, false);
+  this->addInfo(" -> start cut: " + Globals::cutTyp1ToString(startCut));
+  this->addInfo(" -> end cut: " + Globals::cutTyp1ToString(endCut));
+
+  // CUT LIST
+
+  // A: start&end frame are in the same GOP
+  // two cuts in one gop
+  if (startCut.prevKey == endCut.prevKey && endCut.nextKey == startCut.nextKey) {
+    //CUT LIST
+    tempCut.cut.start = start * ((interlaced) ? 2 : 1);
+    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
+    tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
+    tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
+    this->addInfo("   " + tr("A1: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+    m_cutList.append(tempCut);
+    return;
+  }
+  // two cuts in two adjacent gops
+  if (startCut.nextKey == endCut.prevKey) {
+    tempCut.cut.start = start * ((interlaced) ? 2 : 1);
+    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
+    tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
+    tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
+    this->addInfo("   " + tr("A2: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+    m_cutList.append(tempCut);
+    return;
+  }
+
+  // B: start&end frame are in different GOPs
+  // start cut
+  tempCut.cut.start = start * ((interlaced) ? 2 : 1);
+  tempCut.cut.end = (startCut.nextKey - 1) * ((interlaced) ? 2 : 1);
+  tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
+  tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
+  this->addInfo(
+      "   " + tr("B1: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+  m_cutList.append(tempCut);
+
+  // middle&end cut
+  if (end == endCut.nextKey - 1) {
+    tempCut.cut.start = startCut.nextKey * ((interlaced) ? 2 : 1);
+    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
+    tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
+    tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
+    this->addInfo(
+        "   " + tr("B2: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+    m_cutList.append(tempCut);
+    return;
+  }
+
+  // middle cut
+  tempCut.cut.start = startCut.nextKey;
+  tempCut.cut.end = (endCut.prevKey - 1) * ((interlaced) ? 2 : 1);
+  tempCut.prevKey = (startCut.nextKey) * ((interlaced) ? 2 : 1);
+  tempCut.nextKey = (endCut.prevKey) * ((interlaced) ? 2 : 1);
+  this->addInfo(
+      "   " + tr("B3: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+  m_cutList.append(tempCut);
+  if (end == endCut.prevKey) {
+    tempCut.cut.end = (endCut.prevKey) * ((interlaced) ? 2 : 1);
+    this->addInfo(" " + tr("no end cut needed, middle cut ends with end"));
+    return;
+  }
+  // end cut
+  tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);
+  tempCut.cut.end = end * ((interlaced) ? 2 : 1);
+  tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
+  tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
+  this->addInfo("   " + tr("B4: adding endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+  m_cutList.append(tempCut);
+}
+
 void MkvCutter::buildCutList()
 {
   this->addInfo("collecting cut list and audio cuts,..");
@@ -449,8 +542,7 @@ void MkvCutter::buildCutList()
 
   QStringList tCuts;
   int start, end;
-  QString startTime, endTime;
-  cutTyp1 startCut, endCut, tempCut;
+
   bool interlaced = false;
   if (!m_x264Settings.isEmpty()
       && (m_x264Settings.contains("--bff") || m_x264Settings.contains("--tff"))) {
@@ -463,94 +555,18 @@ void MkvCutter::buildCutList()
     tCuts = m_cuts.at(i).split("-");
     start = tCuts.at(0).toInt();
     end = tCuts.at(1).toInt();
-    startCut = findCutForFrame(start, true);
-    endCut = findCutForFrame(end, false);
-    this->addInfo(" -> start cut: " + Globals::cutTyp1ToString(startCut));
-    this->addInfo(" -> end cut: " + Globals::cutTyp1ToString(endCut));
 
-    // add audio cut
-    if (start == 0) {
-      startTime = QString();
-    } else {
-      startTime = Globals::frameToTime(start, m_fps);
-    }
-    if (end == 0) {
-      endTime = QString();
-    } else {
-      endTime = Globals::frameToTime(end, m_fps);
-    }
-    this->addInfo(" -> time cut: "+startTime + "-" + endTime);
-    m_mkvAudioParts << startTime + "-" + endTime;
-
-    // CUT LIST
-
-    // A: start&end frame are in the same GOP
-    // two cuts in one gop
-    if (startCut.prevKey == endCut.prevKey && endCut.nextKey == startCut.nextKey) {
-      //CUT LIST
-      tempCut.cut.start = start * ((interlaced) ? 2 : 1);
-      tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-      tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
-      tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
-      this->addInfo("   " + tr("A1: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
-      m_cutList.append(tempCut);
-      continue;
-    }
-    // two cuts in two adjacent gops
-    if (startCut.nextKey == endCut.prevKey) {
-      tempCut.cut.start = start * ((interlaced) ? 2 : 1);
-      tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-      tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
-      tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
-      this->addInfo("   " + tr("A2: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
-      m_cutList.append(tempCut);
-      continue;
-    }
-
-    // B: start&end frame are in different GOPs
-    // start cut
-    tempCut.cut.start = start * ((interlaced) ? 2 : 1);
-    tempCut.cut.end = (startCut.nextKey - 1) * ((interlaced) ? 2 : 1);
-    tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
-    tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
-    this->addInfo(
-        "   " + tr("B1: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
-    m_cutList.append(tempCut);
-
-    // middle&end cut
-    if (end == endCut.nextKey - 1) {
-      tempCut.cut.start = startCut.nextKey * ((interlaced) ? 2 : 1);
-      tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-      tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
-      tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
-      this->addInfo(
-          "   " + tr("B2: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
-      m_cutList.append(tempCut);
-      continue;
-    }
-
-    // middle cut
-    tempCut.cut.start = startCut.nextKey;
-    tempCut.cut.end = (endCut.prevKey - 1) * ((interlaced) ? 2 : 1);
-    tempCut.prevKey = (startCut.nextKey) * ((interlaced) ? 2 : 1);
-    tempCut.nextKey = (endCut.prevKey) * ((interlaced) ? 2 : 1);
-    this->addInfo(
-        "   " + tr("B3: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
-    m_cutList.append(tempCut);
-    if (end == endCut.prevKey) {
-      tempCut.cut.end = (endCut.prevKey) * ((interlaced) ? 2 : 1);
-      this->addInfo(" " + tr("no end cut needed, middle cut ends with end"));
-      continue;
-    }
-    // end cut
-    tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);
-    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-    tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
-    tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
-    this->addInfo(
-        "   " + tr("B4: adding endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
-    m_cutList.append(tempCut);
+    this->addAudioCut(start, end);
+    this->addVideoCut(start, end, interlaced);
   }
+  QStringList elems;
+  double audioLength = 0;
+  foreach(QString part, m_mkvAudioParts) {
+    elems = part.split("-");
+    audioLength += Globals::timeToSeconds(elems.at(1));
+    audioLength -= Globals::timeToSeconds(elems.at(0));
+  }
+  this->addInfo(" -> calculated audio length: "+Globals::secondsToHMSZZZ(audioLength));
 }
 
 void MkvCutter::buildTrimAndPartsList()
@@ -873,7 +889,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   } else {
     call << m_x264Settings;
   }
-  call << "--keyint "+QString::number(m_averageKeyDistance);
+  call << "--keyint " + QString::number(m_averageKeyDistance);
   call << "--non-deterministic";
   call << "--thread-input";
   call << "--crf 19";

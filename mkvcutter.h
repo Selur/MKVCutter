@@ -60,6 +60,7 @@ class MkvCutter : public QWidget
     bool m_useLibAV;
     int m_averageKeyDistance;
     bool m_paff;
+    QString m_minKey, m_maxKey;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -127,6 +128,8 @@ class MkvCutter : public QWidget
     void setTimecodes(QString timecodes);
     void setX264Settings(QString settings);
     void deleteFiles();
+    void setMinKeyInt(QString min);
+    void setMaxKeyInt(QString max);
 };
 
 #endif // MKVCUTTER_H

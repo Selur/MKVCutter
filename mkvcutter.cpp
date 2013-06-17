@@ -15,7 +15,8 @@ MkvCutter::MkvCutter(QWidget *parent) :
         m_trimming(), m_cutList(), m_mkvVideoParts(), m_mkvAudioParts(), m_audioFile(QString()),
         m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(), m_videoTrackID(-1),
         m_extractor(NULL), m_timeextractor(NULL), m_toDelete(), m_aspectRatio(1),
-        m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()), m_x264Settings(QString())
+        m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()), m_x264Settings(QString()),
+        m_minKey(QString()), m_maxKey(QString())
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -46,6 +47,11 @@ MkvCutter::MkvCutter(QWidget *parent) :
                   SLOT(setInterlaced(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(audioFormat(QString)), this,
                   SLOT(setAudioFormat(QString)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(minKeyInt(QString)), this,
+                  SLOT(setMinKeyInt(QString)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(maxKeyInt(QString)), this,
+                  SLOT(setMaxKeyInt(QString)));
+
   m_mkvVideoSplitCaller = new MkvSplitCaller(this);
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -109,6 +115,16 @@ MkvCutter::MkvCutter(QWidget *parent) :
 MkvCutter::~MkvCutter()
 {
   this->reset();
+}
+
+void MkvCutter::setMinKeyInt(QString value)
+{
+    m_minKey = value;
+}
+
+void MkvCutter::setMaxKeyInt(QString value)
+{
+    m_maxKey = value;
 }
 
 void MkvCutter::setTimecodes(QString timecodeFile)
@@ -893,7 +909,14 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   } else {
     call << m_x264Settings;
   }
-  call << "--keyint " + QString::number(m_averageKeyDistance);
+  if (m_minKey != QString()) {
+    call << "--min-keyint "+m_minKey;
+  }
+  if (m_maxKey != QString()) {
+    call << "--keyint " + m_maxKey;
+  } else {
+    call << "--keyint " + QString::number(m_averageKeyDistance);
+  }
   call << "--non-deterministic";
   call << "--thread-input";
   call << "--crf 19";
@@ -1428,6 +1451,8 @@ void MkvCutter::reset()
   m_paff = false;
   m_vfr = false;
   m_timecodes = QString();
+  m_minKey = QString();
+  m_maxKey = QString();
 }
 
 void MkvCutter::setCutList(QStringList cuts)

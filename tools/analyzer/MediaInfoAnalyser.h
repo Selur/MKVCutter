@@ -33,6 +33,8 @@ class MediaInfoAnalyser : public QObject
     void interlaced(QString scanOrder);
     void frameRateMode(bool vfr);
     void x264Settings(QString settings);
+    void minKeyInt(QString min);
+    void maxKeyInt(QString max);
 
 };
 

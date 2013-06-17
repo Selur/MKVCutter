@@ -61,7 +61,7 @@ void MediaInfoAnalyser::mediainfoOutput()
   if (!out.isEmpty()) {
     bool audio = false;
     QStringList lines = out.split("\n");
-    QString scanorder = "progressive";
+    QString scanorder = "progressive", tmp;
     bool vfr = false;
     foreach(QString line, lines) {
       line = line.trimmed();
@@ -87,6 +87,28 @@ void MediaInfoAnalyser::mediainfoOutput()
           emit refframes(line.toInt());
           continue;
         }
+        if (line.startsWith("Format settings, GOP")) {
+            removeStartOfLine(line);
+            QStringList elems = line.split(",");
+            if (elems.count() == 2) {
+                QString tmp = elems.at(0);
+                tmp = tmp.remove("M=").trimmed();
+                emit minKeyInt(tmp);
+                tmp = elems.at(1);
+                tmp = tmp.remove("N=").trimmed();
+                emit maxKeyInt(tmp);
+            } else {
+                tmp = elems.at(0).trimmed();
+                if (line.startsWith("M=")) {
+                    tmp = tmp.remove("M=").trimmed();
+                    emit minKeyInt(tmp);
+                } else if (line.startsWith("N=")){
+                    tmp = tmp.remove("N=").trimmed();
+                    emit maxKeyInt(tmp);
+                }
+            }
+        }
+
         if (line.startsWith("Pixel aspect ratio") && !line.contains("/")) {
           removeStartOfLine(line);
           removeInnerWhiteSpace(line);

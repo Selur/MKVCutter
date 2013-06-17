@@ -429,3 +429,99 @@ QString Globals::shortFileName(QString inputFile)
   }
   return inputFile;
 }
+
+
+/**
+ * initializes search lists
+ */
+void Globals::initDecimalFractionHashs()
+{
+  QList<double> fractionParts;
+  fractionParts << 1000 << 1001 << 12000 << 15000;
+  fractionParts << 24000 << 25000 << 30000 << 60000 << 120000 << 240000;
+  fractionParts << 23976 << 29970 << 59940 << 14986 << 11988;
+
+  int i, j, ic = fractionParts.count(), jc = ic;
+  QString label;
+  double value;
+  for (i = 0; i < ic; ++i) {
+    for (j = 0; j < jc; ++j) {
+      value = fractionParts.at(i) / fractionParts.at(j);
+      label = QString::number(fractionParts.at(i)) + "/" + QString::number(fractionParts.at(j));
+      if (!label.contains(".")) {
+        Globals::decimalToFraction.insert(QString::number(value), label);
+        Globals::fractionToDecimal.insert(label, value);
+      }
+    }
+  }
+}
+
+/**
+ * converts a decimal into a fraction
+ */
+QString Globals::decimalToFractionConvert(const double decimal)
+{
+  if (decimal < 0.0001 || qAbs(decimal - 1) < 0.0001) { // difference is too small
+    return "1/1";
+  }
+
+  QString current, ret;
+  QStringList decimals = Globals::decimalToFraction.keys();
+  double precision = 100000.0, myDec = int(decimal * precision + 0.5) / precision, rCurrent;
+  double tolerance = 1000.0;
+  double bestDiff = 1000, diff = 1000;
+  for (int i = 0, c = decimals.count(); i < c; ++i) { // find best match
+    current = decimals.at(i);
+    rCurrent = int(current.toDouble() * precision + 0.5) / precision;
+    //sendMessage(HHELPER, QObject::tr("comparing (%1 vs %2 - %4) = %3 < %5").arg(myDec).arg(rCurrent).arg(qAbs(rCurrent - myDec)).arg(StaticHelper::decimalToFraction.value(current)).arg(1 / precision), qAbs(rCurrent - myDec) <= (1 / tolerance));
+    diff = qAbs(rCurrent - myDec);
+    if ((diff  <= (1 / tolerance)) && diff < bestDiff) { // tolerance check
+      ret = Globals::decimalToFraction.value(current);
+      bestDiff = diff;
+      continue;
+    }
+    diff = qAbs(rCurrent - decimal);
+    if ((diff <= (1 / tolerance)) && diff < bestDiff) { // tolerance check
+      ret = Globals::decimalToFraction.value(current);
+      bestDiff = diff;
+      continue;
+    }
+  }
+  if (ret == QString()) { // not match found
+    QString frac = QString::number(int(myDec * precision + 0.5)) + "/" + QString::number(precision);
+    return frac;
+  }
+  decimals = ret.split("/");
+  if (decimals.at(0) == decimals.at(1)) { // match was x/x
+    return "1/1";
+  }
+  return ret; // return found value
+}
+
+
+/**
+ * converts a fraction into a decimal
+ */
+double Globals::fractionToDecimalConvert(QString fraction)
+{
+  fraction = fraction.replace(":", "/");
+  if (fraction == "1/1" || fraction.isEmpty() || fraction == QObject::tr("?") || fraction.isEmpty()) {
+    return 1;
+  }
+  if (fraction.endsWith("/1000")) {
+    QStringList elems = fraction.split("/");
+    return elems.at(0).toDouble() / elems.at(1).toDouble();
+  }
+  double decimal = Globals::fractionToDecimal.value(fraction);
+  if (decimal == 0 && fraction.contains("/")) { // unknown
+    QStringList elems = fraction.split("/");
+    return elems.at(0).toDouble() / elems.at(1).toDouble();
+  }
+  if (!fraction.contains("/")) {
+    decimal = fraction.toDouble();
+    if (decimal == 0) {
+      decimal = 1;
+    }
+  }
+  return decimal;
+}

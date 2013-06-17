@@ -45,5 +45,11 @@ namespace Globals
   int saveTextTo(QString fileName, QString to);
   double timeToSeconds(QString value);
   double timeToSeconds(QTime time);
+
+  double fractionToDecimalConvert(QString fraction);
+  QString decimalToFractionConvert(const double decimal);
+  void initDecimalFractionHashs();
+  extern QHash<QString, double> fractionToDecimal;
+  extern QHash<QString, QString> decimalToFraction;
 }
 #endif // GLOBALS_H

@@ -3,6 +3,7 @@
 
 #include <QDir>
 #include <QSet>
+#include <QHash>
 #include <QList>
 #include <QTime>
 #include <QTextStream>
@@ -46,10 +47,11 @@ namespace Globals
   double timeToSeconds(QString value);
   double timeToSeconds(QTime time);
 
+  extern QHash<QString, double> fractionToDecimal;
+  extern QHash<QString, QString> decimalToFraction;
   double fractionToDecimalConvert(QString fraction);
   QString decimalToFractionConvert(const double decimal);
   void initDecimalFractionHashs();
-  extern QHash<QString, double> fractionToDecimal;
-  extern QHash<QString, QString> decimalToFraction;
+
 }
 #endif // GLOBALS_H

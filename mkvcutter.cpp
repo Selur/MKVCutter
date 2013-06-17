@@ -103,6 +103,7 @@ MkvCutter::MkvCutter(QWidget *parent) :
   } else {
     this->addInfo(tr("found %1").arg(tmp));
   }
+  Globals::initDecimalFractionHashs();
 }
 
 MkvCutter::~MkvCutter()
@@ -894,6 +895,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << "--thread-input";
   call << "--crf 19";
   call << "--demuxer avs";
+  call << "--fps "+Globals::decimalToFractionConvert(m_fps);
   QString par = QString::number(m_aspectRatio);
   par = adjustParDotToColon(par);
   call << "--sar " + par;

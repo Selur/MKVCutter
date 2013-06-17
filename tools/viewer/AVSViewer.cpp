@@ -383,7 +383,7 @@ void AVSViewer::addCut(int start, int end)
     endPos = "0" + endPos;
   }
   QString cut = startPos + "-" + endPos;
-  emit sendInfos(tr("add cut item: %1").arg(cut));
+  //emit sendInfos(tr("add cut item: %1").arg(cut));
   ui.cutListWidget->addItem(cut);
   ui.cutListWidget->sortItems();
   ui.frameHorizontalSlider->resetMarks();
@@ -414,8 +414,9 @@ void AVSViewer::on_removeCutPushButton_clicked()
   if (row == -1) {
     return;
   }
-  QListWidgetItem *item = ui.cutListWidget->takeItem(row);
-  emit sendInfos(tr("removing %1 from cut-list").arg(item->text()));
+  //QListWidgetItem *item =
+  ui.cutListWidget->takeItem(row);
+  //emit sendInfos(tr("removing %1 from cut-list").arg(item->text()));
 }
 
 void AVSViewer::on_saveImagePushButton_clicked()
@@ -594,7 +595,7 @@ void AVSViewer::init(int start)
       emit finished(-3);
     }
 
-    emit sendInfos(tr("loaded avisynth dll,.."));
+    //emit sendInfos(tr("loaded avisynth dll,.."));
     IScriptEnvironment* (*CreateScriptEnvironment)(
         int version) = (IScriptEnvironment*(*)(int)) avsDLL.resolve("CreateScriptEnvironment"); //resolve CreateScriptEnvironment from the dll
     emit sendInfos(tr("loaded CreateScriptEnvironment definition from dll,.."));
@@ -606,7 +607,7 @@ void AVSViewer::init(int start)
       return;
     }
 
-    emit sendInfos(tr("created an IScriptEnvironment,.."));
+    //emit sendInfos(tr("created an IScriptEnvironment,.."));
     this->send(tr("looking for avisynth version,.."));
     try {
       AVSValue as_version;

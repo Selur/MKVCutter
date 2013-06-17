@@ -59,6 +59,8 @@ class MkvCutter : public QWidget
     QString m_timecodes, m_x264Settings;
     bool m_useLibAV;
     int m_averageKeyDistance;
+    bool m_paff;
+
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
     void reset();

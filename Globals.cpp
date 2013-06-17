@@ -440,21 +440,23 @@ QString Globals::shortFileName(QString inputFile)
 void Globals::initDecimalFractionHashs()
 {
   QList<double> fractionParts;
-  fractionParts << 1000 << 1001 << 12000 << 15000;
-  fractionParts << 24000 << 25000 << 30000 << 60000 << 120000 << 240000;
-  fractionParts << 23976 << 29970 << 59940 << 14986 << 11988;
+  fractionParts << 1000.0 << 1001.0 << 11988.0 << 12000.0 << 14986.0 << 15000.0;
+  fractionParts << 23976.0 << 24000.0 << 25000.0 << 29970.0 << 30000.0 << 59940.0;
+  fractionParts << 60000.0 << 120000.0 << 240000.0;
 
-  int i, j, ic = fractionParts.count(), jc = ic;
+
+  int i, j, count = fractionParts.count();
   QString label;
   double value;
-  for (i = 0; i < ic; ++i) {
-    for (j = 0; j < jc; ++j) {
-      value = fractionParts.at(i) / fractionParts.at(j);
-      label = QString::number(fractionParts.at(i)) + "/" + QString::number(fractionParts.at(j));
-      if (!label.contains(".")) {
-        Globals::decimalToFraction.insert(QString::number(value), label);
-        Globals::fractionToDecimal.insert(label, value);
+  for (i = 0; i < count; ++i) {
+    for (j = 0; j < count; ++j) {
+      if (i == j) {
+        continue;
       }
+      value = fractionParts.at(i) / fractionParts.at(j);
+      label = QString::number(int(fractionParts.at(i))) + "/" + QString::number(int(fractionParts.at(j)));
+      Globals::decimalToFraction.insert(QString::number(value), label);
+      Globals::fractionToDecimal.insert(label, value);
     }
   }
 }

@@ -97,7 +97,7 @@ void MediaInfoAnalyser::mediainfoOutput()
           continue;
         }
         if (line.startsWith("Scan type") && line.endsWith("Interlaced")) {
-          scanorder = "TFF";
+          scanorder = "MBAFF";
           continue;
         }
         if (line.startsWith("Scan order")) {

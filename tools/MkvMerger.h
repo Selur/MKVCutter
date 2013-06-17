@@ -10,13 +10,13 @@ class MkvMerger : public QObject
   Q_OBJECT
   public:
     MkvMerger(QObject *parent = 0);
-    void start(QStringList toMerge, QStringList audioFile2, QString outputFile);
+    void start(QStringList toMerge, QStringList audioFile2, QString outputFile, const double fps, const bool interlaced, const bool paff);
 
   private:
     QProcess *m_process;
     QString m_output;
     void call(QString call);
-    QString buildCall(QStringList splitFiles, QStringList audioFiles);
+    QString buildCall(QStringList splitFiles, QStringList audioFiles, double fps, const bool interlaced, const bool paff);
     QString doubleBackSlash(QString text);
 
   private slots:

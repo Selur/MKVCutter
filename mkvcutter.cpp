@@ -134,7 +134,9 @@ void MkvCutter::setInterlacedMode(QString interlacedMode)
 
 void MkvCutter::setInterlaced(QString interlaced)
 {
-  m_interlaced = interlaced;
+  bool mbaff = interlaced == "MBAFF";
+  m_interlaced = (mbaff) ? "tff" : interlaced;
+  m_paff = interlaced != "progressive" && !mbaff;
   m_mediaInfoScanorder = interlaced;
   this->addInfo(" " + tr("video scan order: %1").arg(interlaced));
 }
@@ -436,8 +438,7 @@ cutTyp1 MkvCutter::findCutForFrame(int frame, const bool start)
   if (cut.nextKey == -1) {
     cut.nextKey = m_frameCount;
   }
-  this->addInfo(
-      "  => " + tr("findCutForFrame(%1): %2").arg(frame).arg(Globals::cutTyp1ToString(cut)));
+  //this->addInfo("  => " + tr("findCutForFrame(%1): %2").arg(frame).arg(Globals::cutTyp1ToString(cut)));
   return cut;
 }
 
@@ -463,8 +464,8 @@ void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interl
   cutTyp1 tempCut;
   cutTyp1 startCut = findCutForFrame(start, true);
   cutTyp1 endCut = findCutForFrame(end, false);
-  this->addInfo(" -> start cut: " + Globals::cutTyp1ToString(startCut));
-  this->addInfo(" -> end cut: " + Globals::cutTyp1ToString(endCut));
+  //this->addInfo(" -> start cut: " + Globals::cutTyp1ToString(startCut));
+  //this->addInfo(" -> end cut: " + Globals::cutTyp1ToString(endCut));
 
   // CUT LIST
 
@@ -501,31 +502,34 @@ void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interl
       "   " + tr("B1: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
   m_cutList.append(tempCut);
 
-  // middle&end cut
-  if (end == endCut.nextKey - 1) {
-    tempCut.cut.start = startCut.nextKey * ((interlaced) ? 2 : 1);
-    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-    tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
-    tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
-    this->addInfo(
-        "   " + tr("B2: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
-    m_cutList.append(tempCut);
-    return;
-  }
-
   // middle cut
   tempCut.cut.start = startCut.nextKey;
   tempCut.cut.end = (endCut.prevKey - 1) * ((interlaced) ? 2 : 1);
   tempCut.prevKey = (startCut.nextKey) * ((interlaced) ? 2 : 1);
   tempCut.nextKey = (endCut.prevKey) * ((interlaced) ? 2 : 1);
   this->addInfo(
-      "   " + tr("B3: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+      "   " + tr("B2: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
   m_cutList.append(tempCut);
+
   if (end == endCut.prevKey) {
     tempCut.cut.end = (endCut.prevKey) * ((interlaced) ? 2 : 1);
     this->addInfo(" " + tr("no end cut needed, middle cut ends with end"));
     return;
   }
+
+  // middle&end cut
+  if (end == endCut.nextKey - 1) {
+    tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);
+    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
+    tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
+    tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
+    this->addInfo(
+        "   " + tr("B3: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+    m_cutList.append(tempCut);
+    return;
+  }
+
+
   // end cut
   tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);
   tempCut.cut.end = end * ((interlaced) ? 2 : 1);
@@ -551,12 +555,13 @@ void MkvCutter::buildCutList()
   } else {
     interlaced = m_interlaced != "progressive";
   }
+  int outputFrameCount = 0;
   for (int i = 0, c = m_cuts.count(); i < c; ++i) {
     this->addInfo(" current cut: " + m_cuts.at(i));
     tCuts = m_cuts.at(i).split("-");
     start = tCuts.at(0).toInt();
     end = tCuts.at(1).toInt();
-
+    outputFrameCount += end - start;
     this->addAudioCut(start, end);
     this->addVideoCut(start, end, interlaced);
   }
@@ -567,7 +572,10 @@ void MkvCutter::buildCutList()
     audioLength += Globals::timeToSeconds(elems.at(1));
     audioLength -= Globals::timeToSeconds(elems.at(0));
   }
-  this->addInfo(" -> calculated audio length: "+Globals::secondsToHMSZZZ(audioLength));
+  double videoLength = outputFrameCount/m_fps;
+
+  this->addInfo(" -> calculated audio length: "+Globals::secondsToHMSZZZ(audioLength)+", in seconds: "+QString::number(audioLength));
+  this->addInfo(" -> calculated video length: "+Globals::secondsToHMSZZZ(videoLength)+", in seconds: "+QString::number(videoLength));
 }
 
 void MkvCutter::buildTrimAndPartsList()
@@ -578,9 +586,8 @@ void MkvCutter::buildTrimAndPartsList()
   int cutStart, cutEnd, prevKey, nextKey, clipStart = 0, clipEnd = m_frameCount, cutLength;
   int lastNextKey = -1, lastStartKey = -1;
   bool append;
-  int fileStartKey = -1, fileEndKey = -1;
   QStringList mkvparts;
-  QString name, trim, negReplace, temp1, temp2;
+  QString name, trim, negReplace;
   cutTyp1 cut;
   int fileIndex = 0;
   for (int i = 0, c = m_cutList.count(); i < c; ++i) {
@@ -600,9 +607,9 @@ void MkvCutter::buildTrimAndPartsList()
       name = Globals::getFileName(m_currentInput) + "_cut_" + numberToLength3String(fileIndex)
           + ".mkv";
       trim = "KEEP";
-      //this->addInfo("  " + tr("adding %1 <> %2").arg(name).arg(trim));
+      this->addInfo("  " + tr("adding %1 <> %2").arg(name).arg(trim));
       m_trimming.insert(name, trim);
-      //this->addInfo("  " + tr("keep: mkv parts append: %1-%2").arg(prevKey).arg(nextKey));
+      this->addInfo("  " + tr("keep: mkv parts append: %1-%2").arg(prevKey).arg(nextKey));
       mkvparts.append(QString::number(prevKey) + "-" + QString::number(nextKey));
       continue;
     }
@@ -620,25 +627,20 @@ void MkvCutter::buildTrimAndPartsList()
       //this->addInfo("   " + tr("append = true"));
       //this->addInfo("   " + tr("fileEndKey && lastNextKey = nextKey(%1)").arg(nextKey));
       append = true;
-      fileEndKey = nextKey;
       lastNextKey = nextKey;
     } else if (prevKey <= lastNextKey) {
       //this->addInfo("  " + tr("prevKey <= lastNextKey"));
       //this->addInfo("   " + tr("append = true"));
       //this->addInfo("   " + tr("prevKey = lastStartKey(%1)").arg(lastStartKey));
-      //this->addInfo("   " + tr("fileEndKey = nextKey(%1)").arg(nextKey));
       if (nextKey > lastNextKey) {
         //this->addInfo("   " + tr(" nextKey > lastNextKey -> lastNextKey = nextKey(%1)").arg(nextKey));
         lastNextKey = nextKey;
       }
       append = true;
-      fileEndKey = nextKey;
       prevKey = lastStartKey;
       negReplace = QString::number(prevKey);
     } else {
       append = false;
-      fileStartKey = prevKey;
-      fileEndKey = nextKey;
       lastStartKey = prevKey;
       lastNextKey = nextKey;
     }
@@ -646,25 +648,26 @@ void MkvCutter::buildTrimAndPartsList()
     //this->addInfo("  " + tr("File start %1, end: %2 key").arg(fileStartKey).arg(fileEndKey));
     if (!append) {
       fileIndex++;
-      //this->addInfo("  " + tr("!append -> fileIndex %1").arg(fileIndex));
       name = Globals::getFileName(m_currentInput) + "_cut_" + numberToLength3String(fileIndex)
           + ".mkv";
+      this->addInfo("  " + tr("!append -> adding %1").arg(name));
     } else if (!mkvparts.isEmpty()) {
       mkvparts.removeLast();
     }
-    mkvparts.append(QString::number(fileStartKey) + "-" + QString::number(fileEndKey));
+    this->addInfo("  " + tr("mkv parts append: %1-%2").arg(prevKey).arg(nextKey));
+    mkvparts.append(QString::number(prevKey) + "-" + QString::number(nextKey));
 
     if (!append && (cutStart == clipStart || cutStart == prevKey)) {
       trim = "Trim(0,";
       if (cutEnd == nextKey || cutEnd == clipEnd) {
         trim = "KEEP";
-        //this->addInfo("  " + tr("adding %1 <> %2").arg(name).arg(trim));
+        this->addInfo("  " + tr("adding %1 <> %2").arg(name).arg(trim));
         m_trimming.insert(name, trim);
         continue;
       }
       //now: cutEnd < nextKey
-      trim += "-" + QString::number(cutLength) + ")";
-      //this->addInfo("  cutEnd < nextKey: " + tr("adding %1 <> %2").arg(name).arg(trim));
+      trim += "length=" + QString::number(cutLength) + ")";
+      this->addInfo("  cutEnd < nextKey: " + tr("adding %1 <> %2").arg(name).arg(trim));
       m_trimming.insert(name, trim);
       continue;
     }
@@ -678,21 +681,21 @@ void MkvCutter::buildTrimAndPartsList()
     trim += QString::number(cutStart - prevKey) + ",";
     if (cutEnd == nextKey || cutEnd == clipEnd) {
       trim += "-1)";
-      //this->addInfo("  cutStart > prevKey/clipStart: " + tr("adding %1 <> %2").arg(name).arg(trim));
+      this->addInfo("  cutStart > prevKey/clipStart: " + tr("adding %1 <> %2").arg(name).arg(trim));
       m_trimming.insert(name, trim);
       continue;
     }
     //now: cutEnd < nextKey
-    trim += "-" + QString::number(cutLength) + ")";
-    //this->addInfo("  cutEnd < nextKey: " + tr("adding %1 <> %2").arg(name).arg(trim));
+    trim += "length=" + QString::number(cutLength) + ")";
+    this->addInfo("  cutEnd < nextKey: " + tr("adding %1 <> %2").arg(name).arg(trim));
     m_trimming.insert(name, trim);
     continue;
   }
   if (m_trimming.count() == 1) {
     QString trim = m_trimming.value(name);
-    //this->addInfo("  single trim: " + tr("removing %1 <> %2 from trim list").arg(name).arg(trim));
+    this->addInfo("  single trim: " + tr("removing %1 <> %2 from trim list").arg(name).arg(trim));
     m_trimming.clear();
-    //this->addInfo("  single trim: " + tr("adding %1 <> %2 to trim list").arg(m_currentInput).arg(trim));
+    this->addInfo("  single trim: " + tr("adding %1 <> %2 to trim list").arg(m_currentInput).arg(trim));
     m_trimming.insert(m_currentInput, trim);
   }
   if (mkvparts.count() == 1) {
@@ -948,7 +951,7 @@ void MkvCutter::cleanUpAndMerge()
     } else {
       this->addInfo(" " + tr("audio file: %1").arg(m_audioFile));
       this->addInfo(" " + tr("Muxing audio&video(1),.."));
-      m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput);
+      m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput, m_fps, m_interlaced != "progressive", m_paff);
     }
     this->reset();
     return;
@@ -956,7 +959,7 @@ void MkvCutter::cleanUpAndMerge()
 
   // generate mkvmerge calls to join all parts
   this->addInfo(" " + tr("Muxing audio&video(2),.."));
-  m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput);
+  m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput, m_fps, m_interlaced != "progressive", m_paff);
 }
 
 void MkvCutter::x264Finished(int exitstate)
@@ -1422,6 +1425,7 @@ void MkvCutter::reset()
   ui.outputLabel->setText(QString());
   ui.tempFolderLabel->setText(QString());
   m_interlaced = "progressive";
+  m_paff = false;
   m_vfr = false;
   m_timecodes = QString();
 }

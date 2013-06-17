@@ -539,7 +539,7 @@ void MkvCutter::buildCutList()
     tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
     tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
     this->addInfo(
-        " " + tr("B1: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+        "   " + tr("B1: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
 
     // middle&end cut
@@ -549,7 +549,7 @@ void MkvCutter::buildCutList()
       tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
       tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
       this->addInfo(
-          " " + tr("B2: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+          "   " + tr("B2: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
       m_cutList.append(tempCut);
       continue;
     }
@@ -560,9 +560,10 @@ void MkvCutter::buildCutList()
     tempCut.prevKey = (startCut.nextKey) * ((interlaced) ? 2 : 1);
     tempCut.nextKey = (endCut.prevKey) * ((interlaced) ? 2 : 1);
     this->addInfo(
-        " " + tr("B3: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
+        "   " + tr("B3: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
     if (end == endCut.prevKey) {
+      tempCut.cut.end = (endCut.prevKey) * ((interlaced) ? 2 : 1);
       this->addInfo(" " + tr("no end cut needed, middle cut ends with end"));
       continue;
     }
@@ -671,7 +672,7 @@ void MkvCutter::buildTrimAndPartsList()
       }
       //now: cutEnd < nextKey
       trim += "length=" + QString::number(cutLength) + ")";
-      this->addInfo("  " + tr("adding %1 <> %2").arg(name).arg(trim));
+      this->addInfo("  cutEnd < nextKey: " + tr("adding %1 <> %2").arg(name).arg(trim));
       m_trimming.insert(name, trim);
       continue;
     }
@@ -685,21 +686,21 @@ void MkvCutter::buildTrimAndPartsList()
     trim += QString::number(cutStart - prevKey) + ",";
     if (cutEnd == nextKey || cutEnd == clipEnd) {
       trim += "-1)";
-      this->addInfo("  " + tr("adding %1 <> %2").arg(name).arg(trim));
+      this->addInfo("  cutStart > prevKey/clipStart: " + tr("adding %1 <> %2").arg(name).arg(trim));
       m_trimming.insert(name, trim);
       continue;
     }
     //now: cutEnd < nextKey
     trim += "length=" + QString::number(cutLength) + ")";
-    this->addInfo("  " + tr("adding %1 <> %2").arg(name).arg(trim));
+    this->addInfo("  cutEnd < nextKey: " + tr("adding %1 <> %2").arg(name).arg(trim));
     m_trimming.insert(name, trim);
     continue;
   }
   if (m_trimming.count() == 1) {
     QString trim = m_trimming.value(name);
-    this->addInfo("  " + tr("removing %1 <> %2 from trim list").arg(name).arg(trim));
+    this->addInfo("  single trim: " + tr("removing %1 <> %2 from trim list").arg(name).arg(trim));
     m_trimming.clear();
-    this->addInfo("  " + tr("adding %1 <> %2 to trim list").arg(m_currentInput).arg(trim));
+    this->addInfo("  single trim: " + tr("adding %1 <> %2 to trim list").arg(m_currentInput).arg(trim));
     m_trimming.insert(m_currentInput, trim);
   }
   if (mkvparts.count() == 1) {

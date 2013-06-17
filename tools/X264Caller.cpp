@@ -38,8 +38,12 @@ void X264Caller::handleX264Output()
     if (line.startsWith("[") && line.contains(" kb/s, eta ")) {
       tmp = line;
       tmp = tmp.remove(0, 1);
-      index = tmp.indexOf("]");
+      index = tmp.indexOf("%");
+      if (index == -1) {
+        index = tmp.indexOf("]");
+      }
       percentage = tmp.remove(index, tmp.size()).trimmed(); //percentage
+
       emit progress(int(percentage.toDouble()));
     }
     emit sendInfos(line);

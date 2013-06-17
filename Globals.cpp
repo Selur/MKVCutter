@@ -8,6 +8,9 @@
 #include "Globals.h"
 #include "Windows.h"
 
+QHash<QString, double> Globals::fractionToDecimal = QHash<QString, double>();
+QHash<QString, QString> Globals::decimalToFraction = QHash<QString, QString>();
+
 QString Globals::cutTypToString(cutTyp cut)
 {
   return QString::number(cut.start) + "-" + QString::number(cut.end);

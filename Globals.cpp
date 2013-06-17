@@ -335,6 +335,78 @@ QString Globals::frameToTime(int number, double fps)
   return secondsToHMSZZZ(seconds);
 }
 
+double Globals::timeToSeconds(QTime time)
+{
+  /*sendMessage(HHELPER, "hour", time.hour());
+   sendMessage(HHELPER, "minute", time.minute());
+   sendMessage(HHELPER, "second", time.second());
+   sendMessage(HHELPER, "milli second", time.msec());*/
+  return ((time.hour() * 60.0 + time.minute()) * 60.0 + time.second()) + (time.msec() / 1000.0);
+}
+
+double Globals::timeToSeconds(QString value)
+{
+  QString tmp = value.trimmed();
+  double dtime = tmp.toDouble();
+  int index = tmp.indexOf(":");
+  if (index == -1) {
+    return dtime;
+  }
+  int colonCount = tmp.count(":");
+  if (index == 1) {
+    tmp = "0" + tmp;
+  }
+  index = tmp.indexOf(".");
+  if (index == -1) {
+    QTime time;
+    switch (colonCount) {
+      case 1 :
+        time = QTime::fromString(tmp, "mm:ss");
+        break;
+      case 2 :
+        time = QTime::fromString(tmp, "hh:mm:ss");
+        break;
+      case 3 :
+        return timeToSeconds(QTime::fromString(tmp, "hh:mm:ss:zzz"));
+        break;
+    }
+    return (time.hour() * 60.0 + time.minute()) * 60.0 + time.second();
+  }
+  int msCount = tmp.length() - index - 1;
+  QString ms;
+  switch (msCount) {
+    case 1 :
+      ms = ".z";
+      break;
+    case 2 :
+      ms = ".zzz";
+      tmp += "0";
+      break;
+    case 3 :
+      ms = ".zzz";
+      break;
+    default :
+
+      break;
+  }
+
+  QString from;
+  switch (colonCount) {
+    case 1 :
+      from = "mm:ss" + ms;
+      break;
+    case 2 :
+      from = "hh:mm:ss" + ms;
+      break;
+  }
+  if (!from.isEmpty()) {
+    dtime = timeToSeconds(QTime::fromString(tmp, from));
+  } else {
+    dtime = 0;
+  }
+  return dtime;
+}
+
 QString Globals::shortFileName(QString inputFile)
 {
   if (inputFile.isEmpty()) {

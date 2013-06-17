@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QSet>
 #include <QList>
+#include <QTime>
 #include <QTextStream>
 #include <QTextCodec>
 
@@ -42,5 +43,7 @@ namespace Globals
   QString getDirectory(const QString input);
   QString readAll(const QString fileName, QString type);
   int saveTextTo(QString fileName, QString to);
+  double timeToSeconds(QString value);
+  double timeToSeconds(QTime time);
 }
 #endif // GLOBALS_H

@@ -319,31 +319,6 @@ QString numberToLength3String(int num)
   return ret;
 }
 
-/**
- * this method creates the segment split time points
- */
-void MkvCutter::createAudioCutCall(QString filename, QString trim)
-{
-  if (m_audioFormat.isEmpty()) {
-    this->cleanUpAndMerge();
-    return;
-  }
-  QStringList call;
-  call << "ffmpeg";
-  call << "-vn"; // disable video
-  call << "-acodec copy"; // copy audio
-  QStringList startTimes;
-  QStringList endTimes;
-  QStringList frames;
-  for (int i = 0, c = m_cuts.count(); i < c; ++i) {
-    frames = m_cuts.at(i).split("-");
-    startTimes << Globals::frameToTime(frames.at(0).toInt(), m_fps);
-    endTimes << Globals::frameToTime(frames.at(1).toInt(), m_fps);
-  }
-  QMessageBox::critical(this, tr("StartTimes"), startTimes.join("\n"));
-  QMessageBox::critical(this, tr("EndTimes"), endTimes.join("\n"));
-}
-
 void MkvCutter::createAvisynthSkript(QString filename, QString trim)
 {
   this->addInfo(" " + tr("createAvisynthSkript(%1, %2)").arg(filename).arg(trim));
@@ -504,7 +479,7 @@ void MkvCutter::buildCutList()
     } else {
       endTime = Globals::frameToTime(end, m_fps);
     }
-
+    this->addInfo(" -> time cut: "+startTime + "-" + endTime);
     m_mkvAudioParts << startTime + "-" + endTime;
 
     // CUT LIST

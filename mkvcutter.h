@@ -102,7 +102,6 @@ class MkvCutter : public QWidget
     void mkvAudioCutFinished(int exitstate);
     void mkvsplitProgress(int percent);
     void setSplitFiles(QStringList splitFiles);
-    void createAudioCutCall(QString filename, QString trim);
     void setAvcProfileLevel(QString pl);
     void setAvcCabac(bool cabac);
     void setAvcRefFrames(int frames);

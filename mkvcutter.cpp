@@ -905,6 +905,8 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
         call << "--tff";
       }
     }
+    call << "--bframes 0";
+    call << "--weightp 0";
     //TODO: bluray check
   } else {
     call << m_x264Settings;

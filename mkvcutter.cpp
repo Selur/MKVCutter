@@ -131,18 +131,22 @@ MkvCutter::~MkvCutter()
 void MkvCutter::setWeightedP(int value)
 {
   m_weightedP = value;
+  this->addInfo(" " + tr("weigthed p-frames: %1").arg(value));
 }
 void MkvCutter::setWeightedB(int value)
 {
   m_weightedB = value;
+  this->addInfo(" " + tr("weigthed p-frames: %1").arg(value));
 }
 void MkvCutter::setBFrames(int value)
 {
   m_bframes = value;
+  this->addInfo(" " + tr("b-frames: %1").arg(value));
 }
 void MkvCutter::setQPmin(int value)
 {
   m_qpMin = value;
+  this->addInfo(" " + tr("qpMin: %1").arg(value));
 }
 
 void MkvCutter::setMinKeyInt(QString value)
@@ -1219,9 +1223,6 @@ void MkvCutter::handleSplitFiles()
     if (trim == "KEEP" || trim.isEmpty()) {
       m_reencodedVideoFiles << file;
       m_extractionFiles << file;
-      if (m_toAnalyse.isEmpty()) {
-        m_toAnalyse = file;
-      }
       continue;
     }
     this->createAvisynthSkript(file, trim);
@@ -1241,6 +1242,9 @@ void MkvCutter::startExtraction()
   filename += ".264";
   filename = m_tempFolder + QDir::separator() + Globals::getWholeFileName(filename);
   filename = QDir::toNativeSeparators(filename);
+  if (m_toAnalyse.isEmpty()) {
+    m_toAnalyse = filename;
+  }
   m_toDelete << filename;
   m_reencodedVideoFiles.replace(m_reencodedVideoFiles.indexOf(input), filename);
   m_extractor->startExtraction(input, QString::number(m_videoTrackID), "264", m_tempFolder);

@@ -97,7 +97,7 @@ void H264Parser::analyse(QString input)
 void H264Parser::h264ParseFinished(int exitState, QProcess::ExitStatus status)
 {
   if (exitState < 0) {
-    emit sendInfo(tr("h264_parse crashed(%1, %2)!").arg(exitState).arg(status));
+    emit sendInfo(" "+tr("h264_parse finished(%1, %2).").arg(exitState).arg(status));
   }
   QString output = m_process->readAllStandardOutput();
   output += m_process->readAllStandardError();

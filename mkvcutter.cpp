@@ -913,6 +913,10 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
         call << "--ref 1";
     }
     //call << "--chroma-qp-offset 2";
+    if (m_avcRefFrames > 1) {
+        call << "--bframes "+QString::number(m_avcRefFrames -1);
+        call << "--b-pyramid none";
+    }
     call << "--weightp 0";
     call << "--stitchable";
     //TODO: bluray check

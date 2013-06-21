@@ -4,7 +4,8 @@ TARGET = MkvCutter
 QT += core \
     gui
 isEqual(QT_MAJOR_VERSION, 5):QT += widgets # for all widgets
-HEADERS += mywindows.h \
+HEADERS += tools/analyzer/H264Parser.h \
+    mywindows.h \
     tools/Converter.h \
     tools/MkvSplitCaller.h \
     tools/FFIndexCaller.h \
@@ -22,7 +23,8 @@ HEADERS += mywindows.h \
     tools/MkvVideoExtractor.h \
     DropPushButton.h \
     tools/MkvTimeExtractor.h
-SOURCES += tools/Converter.cpp \
+SOURCES += tools/analyzer/H264Parser.cpp \
+    tools/Converter.cpp \
     Globals.cpp \
     tools/MkvSplitCaller.cpp \
     tools/FFIndexCaller.cpp \

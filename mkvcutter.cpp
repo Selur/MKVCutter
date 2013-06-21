@@ -2,6 +2,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QScrollbar>
+#include <QApplication>
 #include <iostream>
 #include "Globals.h"
 using namespace std;
@@ -15,8 +16,9 @@ MkvCutter::MkvCutter(QWidget *parent) :
         m_trimming(), m_cutList(), m_mkvVideoParts(), m_mkvAudioParts(), m_audioFile(QString()),
         m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(), m_videoTrackID(-1),
         m_extractor(NULL), m_timeextractor(NULL), m_toDelete(), m_aspectRatio(1),
-        m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()), m_x264Settings(QString()),
-        m_minKey(QString()), m_maxKey(QString())
+        m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()),
+        m_x264Settings(QString()), m_minKey(QString()), m_maxKey(QString()), m_weightedP(0),
+        m_weightedB(0), m_bframes(0), m_qpMin(0)
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -88,6 +90,15 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_timeextractor, SIGNAL(finished(int)), this,
                   SLOT(finishedTimeCodeExtraction(int)));
   this->myconnect(m_timeextractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+  m_h264Parser = new H264Parser(this);
+  this->myconnect(m_h264Parser, SIGNAL(sendInfo(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_h264Parser, SIGNAL(finished()), this, SLOT(h264ParseFinished()));
+  this->myconnect(m_h264Parser, SIGNAL(refframes(int)), this, SLOT(setAvcRefFrames(int)));
+  this->myconnect(m_h264Parser, SIGNAL(weightedP(int)), this, SLOT(setWeightedP(int)));
+  this->myconnect(m_h264Parser, SIGNAL(weightedB(int)), this, SLOT(setWeightedB(int)));
+  this->myconnect(m_h264Parser, SIGNAL(bframes(int)), this, SLOT(setBFrames(int)));
+  this->myconnect(m_h264Parser, SIGNAL(qpMin(int)), this, SLOT(setQPmin(int)));
+
   m_viewer = 0;
   ui.setupUi(this);
   ui.mainStackedWidget->setCurrentIndex(0);
@@ -117,16 +128,33 @@ MkvCutter::~MkvCutter()
   this->reset();
 }
 
+void MkvCutter::setWeightedP(int value)
+{
+  m_weightedP = value;
+}
+void MkvCutter::setWeightedB(int value)
+{
+  m_weightedB = value;
+}
+void MkvCutter::setBFrames(int value)
+{
+  m_bframes = value;
+}
+void MkvCutter::setQPmin(int value)
+{
+  m_qpMin = value;
+}
+
 void MkvCutter::setMinKeyInt(QString value)
 {
-    m_minKey = value;
-    this->addInfo(" " + tr("min gop size: %1").arg(value));
+  m_minKey = value;
+  this->addInfo(" " + tr("min gop size: %1").arg(value));
 }
 
 void MkvCutter::setMaxKeyInt(QString value)
 {
-    m_maxKey = value;
-    this->addInfo(" " + tr("max gop size: %1").arg(value));
+  m_maxKey = value;
+  this->addInfo(" " + tr("max gop size: %1").arg(value));
 }
 
 void MkvCutter::setTimecodes(QString timecodeFile)
@@ -195,7 +223,7 @@ void MkvCutter::setAudioSplitFiles(QStringList splitFiles)
 void MkvCutter::setFPS(double framerate)
 {
   m_fps = framerate;
-  this->addInfo(" "+tr("video stream frame rate: %1").arg(m_fps));
+  this->addInfo(" " + tr("video stream frame rate: %1").arg(m_fps));
 }
 
 void MkvCutter::setInput(QString input)
@@ -547,7 +575,6 @@ void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interl
     return;
   }
 
-
   // end cut
   tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);
   tempCut.cut.end = end * ((interlaced) ? 2 : 1);
@@ -585,15 +612,20 @@ void MkvCutter::buildCutList()
   }
   QStringList elems;
   double audioLength = 0;
-  foreach(QString part, m_mkvAudioParts) {
+  foreach(QString part, m_mkvAudioParts)
+  {
     elems = part.split("-");
     audioLength += Globals::timeToSeconds(elems.at(1));
     audioLength -= Globals::timeToSeconds(elems.at(0));
   }
-  double videoLength = outputFrameCount/m_fps;
+  double videoLength = outputFrameCount / m_fps;
 
-  this->addInfo(" -> calculated audio length: "+Globals::secondsToHMSZZZ(audioLength)+", in seconds: "+QString::number(audioLength));
-  this->addInfo(" -> calculated video length: "+Globals::secondsToHMSZZZ(videoLength)+", in seconds: "+QString::number(videoLength));
+  this->addInfo(
+      " -> calculated audio length: " + Globals::secondsToHMSZZZ(audioLength) + ", in seconds: "
+          + QString::number(audioLength));
+  this->addInfo(
+      " -> calculated video length: " + Globals::secondsToHMSZZZ(videoLength) + ", in seconds: "
+          + QString::number(videoLength));
 }
 
 void MkvCutter::buildTrimAndPartsList()
@@ -713,7 +745,8 @@ void MkvCutter::buildTrimAndPartsList()
     QString trim = m_trimming.value(name);
     this->addInfo("  single trim: " + tr("removing %1 <> %2 from trim list").arg(name).arg(trim));
     m_trimming.clear();
-    this->addInfo("  single trim: " + tr("adding %1 <> %2 to trim list").arg(m_currentInput).arg(trim));
+    this->addInfo(
+        "  single trim: " + tr("adding %1 <> %2 to trim list").arg(m_currentInput).arg(trim));
     m_trimming.insert(m_currentInput, trim);
   }
   if (mkvparts.count() == 1) {
@@ -908,25 +941,35 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
       }
     }
     if (m_avcRefFrames != 0) {
-        call << "--ref " + QString::number(m_avcRefFrames);
+      call << "--ref " + QString::number(m_avcRefFrames);
     } else {
-        call << "--ref 1";
+      call << "--ref 1";
     }
     //call << "--chroma-qp-offset 2";
-    if (m_avcRefFrames > 1) {
-        call << "--bframes "+QString::number(m_avcRefFrames -1);
+    call << "--bframes " + QString::number(m_bframes);
+
+    if (m_bframes > 0) {
+      if (m_weightedB == 0) {
         call << "--b-pyramid none";
+      } else if (m_weightedB == 1) {
+        call << "--b-pyramid normal";
+      } else {
+        call << "--b-pyramid strict";
+      }
     }
-    call << "--weightp 0";
+    call << "--weightp " + QString::number(m_weightedP);
     call << "--stitchable";
     //TODO: bluray check
     if (m_minKey != QString()) {
-      call << "--min-keyint "+m_minKey;
+      call << "--min-keyint " + m_minKey;
     }
     if (m_maxKey != QString()) {
       call << "--keyint " + m_maxKey;
     } else {
       call << "--keyint " + QString::number(m_averageKeyDistance);
+    }
+    if (m_qpMin > 0) {
+      call << "--qpmin " + QString::number(m_qpMin);
     }
   } else {
     call << m_x264Settings;
@@ -935,7 +978,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << "--thread-input";
   call << "--crf 19";
   call << "--demuxer avs";
-  call << "--fps "+Globals::decimalToFractionConvert(m_fps);
+  call << "--fps " + Globals::decimalToFractionConvert(m_fps);
   QString par = QString::number(m_aspectRatio);
   par = adjustParDotToColon(par);
   if (par != "1:1") {
@@ -990,7 +1033,8 @@ void MkvCutter::cleanUpAndMerge()
     } else {
       this->addInfo(" " + tr("audio file: %1").arg(m_audioFile));
       this->addInfo(" " + tr("Muxing audio&video(1),.."));
-      m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput, m_fps, m_interlaced != "progressive", m_paff);
+      m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput, m_fps,
+                         m_interlaced != "progressive", m_paff);
     }
     this->reset();
     return;
@@ -998,7 +1042,8 @@ void MkvCutter::cleanUpAndMerge()
 
   // generate mkvmerge calls to join all parts
   this->addInfo(" " + tr("Muxing audio&video(2),.."));
-  m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput, m_fps, m_interlaced != "progressive", m_paff);
+  m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput, m_fps,
+                     m_interlaced != "progressive", m_paff);
 }
 
 void MkvCutter::x264Finished(int exitstate)
@@ -1009,6 +1054,21 @@ void MkvCutter::x264Finished(int exitstate)
     this->reset();
     return;
   }
+  this->startVideoReencoding();
+}
+
+void MkvCutter::parseOriginal()
+{
+  if (m_toAnalyse.isEmpty()) {
+    this->startVideoReencoding();
+    return;
+  }
+  m_h264Parser->analyse(m_toAnalyse);
+}
+
+void MkvCutter::h264ParseFinished()
+{
+  this->addInfo(" " + tr("h264_parse finished analysing the input,.."));
   this->startVideoReencoding();
 }
 
@@ -1159,6 +1219,9 @@ void MkvCutter::handleSplitFiles()
     if (trim == "KEEP" || trim.isEmpty()) {
       m_reencodedVideoFiles << file;
       m_extractionFiles << file;
+      if (m_toAnalyse.isEmpty()) {
+        m_toAnalyse = file;
+      }
       continue;
     }
     this->createAvisynthSkript(file, trim);
@@ -1169,7 +1232,7 @@ void MkvCutter::handleSplitFiles()
 void MkvCutter::startExtraction()
 {
   if (m_extractionFiles.isEmpty()) {
-    this->startVideoReencoding();
+    this->parseOriginal();
     return;
   }
   QString input = m_extractionFiles.takeFirst();
@@ -1381,7 +1444,8 @@ void MkvCutter::setKeyFrames(QStringList list)
   int dist = m_frameCount / count;
   m_keyframes = list;
   m_averageKeyDistance = dist;
-  this->addInfo(" "+ tr("video stream key frame count: %1, average distance: %2").arg(count).arg(dist));
+  this->addInfo(
+      " " + tr("video stream key frame count: %1, average distance: %2").arg(count).arg(dist));
 }
 
 void MkvCutter::setFrameRateMode(bool vfr)
@@ -1469,6 +1533,10 @@ void MkvCutter::reset()
   m_timecodes = QString();
   m_minKey = QString();
   m_maxKey = QString();
+  m_weightedP = 0;
+  m_weightedB = 0;
+  m_bframes = 0;
+  m_qpMin = 0;
 }
 
 void MkvCutter::setCutList(QStringList cuts)
@@ -1497,7 +1565,7 @@ void MkvCutter::setAvcCabac(bool cabac)
 void MkvCutter::setAvcRefFrames(int frames)
 {
   m_avcRefFrames = frames;
-  this->addInfo(" "+tr("reference frames: %1").arg(frames));
+  this->addInfo(" " + tr("reference frames: %1").arg(frames));
 }
 
 void MkvCutter::setAudioFormat(QString format)

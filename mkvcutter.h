@@ -9,6 +9,7 @@
 
 #include "tools/analyzer/MkvInfoSourceAnalyser.h"
 #include "tools/analyzer/MediaInfoAnalyser.h"
+#include "tools/analyzer/H264Parser.h"
 #include "tools/viewer/AVSViewer.h"
 #include "tools/FFindexCaller.h"
 #include "tools/MkvSplitCaller.h"
@@ -16,6 +17,7 @@
 #include "tools/MkvMerger.h"
 #include "tools/MkvVideoExtractor.h"
 #include "tools/MkvTimeExtractor.h"
+
 #include "ui_mkvcutter.h"
 
 struct cutTyp1;
@@ -61,6 +63,9 @@ class MkvCutter : public QWidget
     int m_averageKeyDistance;
     bool m_paff;
     QString m_minKey, m_maxKey;
+    H264Parser *m_h264Parser;
+    int m_weightedP, m_weightedB, m_bframes, m_qpMin;
+    QString m_toAnalyse;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -84,6 +89,7 @@ class MkvCutter : public QWidget
     void startViewer();
     void addAudioCut(const int &start, const int &end);
     void addVideoCut(const int &start, const int &end, const bool &interlaced);
+    void parseOriginal();
 
   private slots:
     void on_openSourcePushButton_clicked();
@@ -130,6 +136,11 @@ class MkvCutter : public QWidget
     void deleteFiles();
     void setMinKeyInt(QString min);
     void setMaxKeyInt(QString max);
+    void h264ParseFinished();
+    void setWeightedP(int value);
+    void setWeightedB(int value);
+    void setBFrames(int value);
+    void setQPmin(int value);
 };
 
 #endif // MKVCUTTER_H

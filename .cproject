@@ -100,7 +100,51 @@
 		</profile>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
+		<buildTargets>
+			<target name="Qt Release Build" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+				<buildCommand>nmake</buildCommand>
+				<buildTarget>release</buildTarget>
+				<stopOnError>false</stopOnError>
+				<useDefaultCommand>false</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+			<target name="Qt Debug Build" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
+				<buildCommand>nmake</buildCommand>
+				<buildTarget>debug</buildTarget>
+				<stopOnError>false</stopOnError>
+				<useDefaultCommand>false</useDefaultCommand>
+				<runAllBuilders>true</runAllBuilders>
+			</target>
+		</buildTargets>
+	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.pathentry">
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="ActiveQt" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="phonon" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="phonon_compat" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="Qt" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="Qt3Support" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtCore" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtDBus" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtDeclarative" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtDesigner" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtGui" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtHelp" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtMeeGoGraphicsSystemHelper" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtMultimedia" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtNetwork" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtOpenGL" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtOpenVG" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtScript" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtScriptTools" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtSql" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtSvg" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtTest" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtUiTools" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtWebKit" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtXml" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="QtXmlPatterns" kind="inc" path="" system="true"/>
 		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.0.2/qtbase/include" include="" kind="inc" path="" system="true"/>
 		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.0.2/qtbase/include" include="ActiveQt" kind="inc" path="" system="true"/>
 		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.0.2/qtbase/include" include="QtCLucene" kind="inc" path="" system="true"/>
@@ -139,25 +183,5 @@
 		<pathentry include="C:/Program Files/Microsoft SDKs/Windows/v7.1/Include" kind="inc" path="" system="true"/>
 		<pathentry excluding="audio/|vp8/" kind="src" path=""/>
 		<pathentry kind="out" path=""/>
-	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
-		<buildTargets>
-			<target name="Qt Release Build" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
-				<buildCommand>nmake</buildCommand>
-				<buildArguments/>
-				<buildTarget>release</buildTarget>
-				<stopOnError>false</stopOnError>
-				<useDefaultCommand>false</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-			<target name="Qt Debug Build" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
-				<buildCommand>nmake</buildCommand>
-				<buildArguments/>
-				<buildTarget>debug</buildTarget>
-				<stopOnError>false</stopOnError>
-				<useDefaultCommand>false</useDefaultCommand>
-				<runAllBuilders>true</runAllBuilders>
-			</target>
-		</buildTargets>
 	</storageModule>
 </cproject>

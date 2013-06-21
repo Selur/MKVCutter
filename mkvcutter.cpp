@@ -120,11 +120,13 @@ MkvCutter::~MkvCutter()
 void MkvCutter::setMinKeyInt(QString value)
 {
     m_minKey = value;
+    this->addInfo(" " + tr("min gop size: %1").arg(value));
 }
 
 void MkvCutter::setMaxKeyInt(QString value)
 {
     m_maxKey = value;
+    this->addInfo(" " + tr("max gop size: %1").arg(value));
 }
 
 void MkvCutter::setTimecodes(QString timecodeFile)
@@ -193,7 +195,7 @@ void MkvCutter::setAudioSplitFiles(QStringList splitFiles)
 void MkvCutter::setFPS(double framerate)
 {
   m_fps = framerate;
-  this->addInfo(tr("Video stream frame rate: %1").arg(m_fps));
+  this->addInfo(" "+tr("video stream frame rate: %1").arg(m_fps));
 }
 
 void MkvCutter::setInput(QString input)
@@ -905,19 +907,25 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
         call << "--tff";
       }
     }
-    call << "--bframes 0";
+    if (m_avcRefFrames != 0) {
+        call << "--ref " + QString::number(m_avcRefFrames);
+    } else {
+        call << "--ref 1";
+    }
+    //call << "--chroma-qp-offset 2";
     call << "--weightp 0";
+    call << "--stitchable";
     //TODO: bluray check
+    if (m_minKey != QString()) {
+      call << "--min-keyint "+m_minKey;
+    }
+    if (m_maxKey != QString()) {
+      call << "--keyint " + m_maxKey;
+    } else {
+      call << "--keyint " + QString::number(m_averageKeyDistance);
+    }
   } else {
     call << m_x264Settings;
-  }
-  if (m_minKey != QString()) {
-    call << "--min-keyint "+m_minKey;
-  }
-  if (m_maxKey != QString()) {
-    call << "--keyint " + m_maxKey;
-  } else {
-    call << "--keyint " + QString::number(m_averageKeyDistance);
   }
   call << "--non-deterministic";
   call << "--thread-input";
@@ -926,7 +934,9 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << "--fps "+Globals::decimalToFractionConvert(m_fps);
   QString par = QString::number(m_aspectRatio);
   par = adjustParDotToColon(par);
-  call << "--sar " + par;
+  if (par != "1:1") {
+    call << "--sar " + par;
+  }
   tmp = avisynthFile;
   tmp = tmp.remove(tmp.indexOf("."), tmp.size());
   tmp += "_reencode.264";
@@ -1365,21 +1375,21 @@ void MkvCutter::setKeyFrames(QStringList list)
   ui.infoLabel->setText(tr("Got key frame list from mkvinfo analyzer."));
   int count = list.count();
   int dist = m_frameCount / count;
-  this->addInfo(tr("Video stream key frame count: %1, average distance: %2").arg(count).arg(dist));
   m_keyframes = list;
   m_averageKeyDistance = dist;
+  this->addInfo(" "+ tr("video stream key frame count: %1, average distance: %2").arg(count).arg(dist));
 }
 
 void MkvCutter::setFrameRateMode(bool vfr)
 {
-  this->addInfo(" " + tr("frame rate mode: %1").arg(vfr ? "vfr" : "cfr"));
   m_vfr = vfr;
+  this->addInfo(" " + tr("frame rate mode: %1").arg(vfr ? "vfr" : "cfr"));
 }
 
 void MkvCutter::setAspectRatio(double aspect)
 {
-  this->addInfo(" " + tr("aspect ratio of input: %1").arg(aspect));
   m_aspectRatio = aspect;
+  this->addInfo(" " + tr("aspect ratio of input: %1").arg(aspect));
 }
 
 void MkvCutter::enableGui(bool enable)
@@ -1465,26 +1475,31 @@ void MkvCutter::setCutList(QStringList cuts)
 void MkvCutter::setFrameCount(int count)
 {
   m_frameCount = count;
+  this->addInfo(" " + tr("frame count: %1").arg(count));
 }
 
 void MkvCutter::setAvcProfileLevel(QString pl)
 {
   m_avcProfileLevel = pl;
+  this->addInfo(" " + tr("profile@Level: %1").arg(pl));
 }
 
 void MkvCutter::setAvcCabac(bool cabac)
 {
   m_avcCabac = cabac;
+  this->addInfo(" " + tr("cabac: %1").arg(cabac));
 }
 
 void MkvCutter::setAvcRefFrames(int frames)
 {
   m_avcRefFrames = frames;
+  this->addInfo(" "+tr("reference frames: %1").arg(frames));
 }
 
 void MkvCutter::setAudioFormat(QString format)
 {
   m_audioFormat = format;
+  this->addInfo(" " + tr("audio format: %1").arg(format));
 }
 
 void MkvCutter::myconnect(const QObject * sender, const char * signal, const QObject * receiver,

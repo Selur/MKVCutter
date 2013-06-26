@@ -84,7 +84,10 @@ void MediaInfoAnalyser::mediainfoOutput()
         }
         if (line.startsWith("Format settings, ReFrames")) {
           removeStartOfLine(line);
-          emit refframes(line.toInt());
+          int num =  line.toInt();
+          if (num > 0) {
+            emit refframes(num);
+          }
           continue;
         }
         if (line.startsWith("Format settings, GOP")) {

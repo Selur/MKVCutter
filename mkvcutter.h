@@ -65,7 +65,9 @@ class MkvCutter : public QWidget
     QString m_minKey, m_maxKey;
     H264Parser *m_h264Parser;
     int m_weightedP, m_weightedB, m_bframes, m_qpMin;
+    int m_chromaOffset;
     QString m_toAnalyse;
+
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -141,6 +143,7 @@ class MkvCutter : public QWidget
     void setWeightedB(int value);
     void setBFrames(int value);
     void setQPmin(int value);
+    void setChromaOffset(int value);
 };
 
 #endif // MKVCUTTER_H

@@ -15,6 +15,7 @@ class MkvMerger : public QObject
   private:
     QProcess *m_process;
     QString m_output;
+    QString m_optionsFile;
     void call(QString call);
     QString buildCall(QStringList splitFiles, QStringList audioFiles, double fps, const bool interlaced, const bool paff);
     QString doubleBackSlash(QString text);

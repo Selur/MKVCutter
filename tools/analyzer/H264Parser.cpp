@@ -59,12 +59,12 @@ void H264Parser::analyseOutput(QString output)
     }
     if (line.startsWith("pic_init_qp_minus26")) {
       this->removeStartOfLine(line);
-      emit qpMin(line.toInt() * -1);
+      emit qpMin(line.toInt());
       continue;
     }
     if (line.startsWith("chroma_qp_index_offset")) {
       this->removeStartOfLine(line);
-      emit qpMin(line.toInt() * -1);
+      emit chromaOffset(line.toInt());
       continue;
     }
   }

@@ -34,18 +34,15 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
   if (exitCode < 0) {
     emit sendInfos(tr("ExitCode: %1, ExitStatus: %2").arg(exitCode).arg(exitStatus));
-    emit
-    finished(-1);
+    emit finished(-1);
     return;
   }
-  QString optionFile = m_output;
-  optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
-  optionFile += "_mkvOptions.txt";
-  if (QFile::remove(optionFile)) {
-    this->sendInfos(tr("deleted %1").arg(optionFile));
+  if (QFile::remove(m_optionsFile)) {
+    this->sendInfos(tr("deleted %1").arg(m_optionsFile));
   } else {
-    this->sendInfos(tr("only one output file: %1").arg(m_output));
+    this->sendInfos(tr("coudln't delete %1").arg(m_optionsFile));
   }
+  m_optionsFile = QString();
   emit finished(0);
 }
 
@@ -86,50 +83,63 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles, dou
   options << "-o";
   options << doubleBackSlash(m_output);
   QStringList files;
-  options << "--disable-lacing";
   options << "--clusters-in-meta-seek";
   options << "--engage";
   options << "no_simpleblocks";
+  options << "--disable-lacing";
   options << "--engage";
   options << "no_cue_duration";
   options << "--engage";
   options << "no_cue_relative_position";
-  if (audioFiles.count() > 0) {
-   options << "--compression";
-   options << "-1:none";
-  }
-  foreach (QString file, audioFiles) {
-    files << doubleBackSlash(file);
-  }
-  options << files.join("\n+");
-  files.clear();
-  if (splitFiles.count() > 0) {
-   options << "--compression";
-   options << "-1:none";
-  }
-  foreach (QString file, splitFiles) {
-      files << doubleBackSlash(file);
-  }
-  options << files.join("\n+");
-  QString optionFile;
-  if (!files.isEmpty()) {
-      optionFile = files.at(0);
-  }
-  QString fpsValue;
-  QString fpsExtension = "fps";
-  if (interlaced && !paff) {
+
+// VIDEO FILES
+  int splitfileCount = splitFiles.count();
+  QString fpsValue = Globals::decimalToFractionConvert(fps);
+  QString fpsExtension = "p";
+  if (interlaced) {
     fpsExtension = "i";
-    fpsValue = Globals::decimalToFractionConvert(fps*2);
-  } else {
-    fpsValue = Globals::decimalToFractionConvert(fps);
+    if (!paff) {
+        fpsValue = Globals::decimalToFractionConvert(fps*2);
+    }
   }
-  options << "--default-duration";
-  options << "0:" + fpsValue + fpsExtension;
-  if (optionFile.isEmpty() && !files.isEmpty()) {
-      optionFile = files.at(0);
+  QString file;
+  QString optionFile;
+  for (int i = 0; i < splitfileCount; ++i) {
+    file = splitFiles.at(i);
+    options << "--default-duration";
+    options << "0:" + fpsValue + fpsExtension;
+    options << "--compression";
+    options << "-1:none";
+    options << "--forced-track";
+    options << "0:yes";
+    options << "--default-track";
+    options << "0";
+    options << "--no-audio";
+    options << "--no-subtitles";
+    options << "--no-chapters";
+    options << "--no-attachments";
+    options << "--no-buttons";
+    if (i == 0) {
+      optionFile = file;
+    } else {
+      options << "--append-to";
+      options << QString::number(i)+":0:"+QString::number(i-1)+":0";
+    }
+    options << doubleBackSlash(file);
   }
+
+// OPTION FILE
   optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
   optionFile += "_mkvOptions.txt";
+
+// AUDIO FILES
+  foreach (QString file, audioFiles) {
+    options << "--compression";
+    options << "-1:none";
+    options << "--no-video";
+    options << doubleBackSlash(file);
+  }
+
   if (Globals::saveTextTo(options.join("\n"), optionFile) != 0) {
     emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));
   } else {
@@ -141,6 +151,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles, dou
   while (optionFile.contains("\\\\")) {
     optionFile = optionFile.replace("\\\\","\\");
   }
+  m_optionsFile = Globals::removeQuotes(optionFile);
   call += " @\"" + optionFile + "\"";
   return call;
 }

@@ -1531,9 +1531,12 @@ void MkvCutter::reset()
   ui.infoLabel->setText(QString());
   ui.outputLabel->setText(QString());
   ui.tempFolderLabel->setText(QString());
+  m_aspectRatio = 1;
   m_interlaced = "progressive";
+  m_mediaInfoScanorder = QString();
   m_paff = false;
   m_vfr = false;
+  m_x264Settings = QString();
   m_timecodes = QString();
   m_minKey = QString();
   m_maxKey = QString();
@@ -1541,6 +1544,8 @@ void MkvCutter::reset()
   m_weightedB = 0;
   m_bframes = 0;
   m_qpMin = 0;
+  m_averageKeyDistance = 0;
+  m_toAnalyse = QString();
 }
 
 void MkvCutter::setCutList(QStringList cuts)

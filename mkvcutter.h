@@ -11,7 +11,6 @@
 #include "tools/analyzer/MediaInfoAnalyser.h"
 #include "tools/analyzer/H264Parser.h"
 #include "tools/viewer/AVSViewer.h"
-#include "tools/FFindexCaller.h"
 #include "tools/MkvSplitCaller.h"
 #include "tools/X264Caller.h"
 #include "tools/MkvMerger.h"
@@ -31,7 +30,7 @@ class MkvCutter : public QWidget
 
   private:
     Ui::MkvCutterClass ui;
-    QString m_currentInput, m_tempAvs, m_indexFile, m_currentOutput, m_tempFolder;
+    QString m_currentInput, m_tempAvs, m_currentOutput, m_tempFolder;
     QString m_avcProfileLevel, m_audioFormat;
     bool m_avcCabac;
     int m_avcRefFrames, m_enabled, m_frameCount;
@@ -44,7 +43,6 @@ class MkvCutter : public QWidget
     MkvInfoSourceAnalyser *m_mkvinfoAnalyser;
     MediaInfoAnalyser *m_mediaInfoAnalyser;
     AVSViewer *m_viewer;
-    FFIndexCaller *m_ffindexCaller;
     MkvSplitCaller *m_mkvVideoSplitCaller, *m_mkvAudioCutCaller;
     MkvMerger *m_mkvMerger;
     X264Caller *m_x264;
@@ -59,7 +57,6 @@ class MkvCutter : public QWidget
     QString m_interlaced, m_mediaInfoScanorder;
     bool m_vfr;
     QString m_timecodes, m_x264Settings;
-    bool m_useLibAV;
     int m_averageKeyDistance;
     bool m_paff;
     QString m_minKey, m_maxKey;
@@ -72,7 +69,6 @@ class MkvCutter : public QWidget
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
     void reset();
-    bool createAVS();
     bool createLibAVSourceAVS();
     QStringList keyFrameTimes();
     void buildAndCallMkvMerge();
@@ -106,10 +102,8 @@ class MkvCutter : public QWidget
     void mkvAnalysefinished();
     void mkvAnalyseProgress(int linesRead);
     void setFrameCount(int count);
-    void ffIndexerFinished(int state);
     void avsViewerFinished(int state);
     void setCutList(QStringList cuts);
-    void ffindexProgress(int percent);
     void setFPS(double framerate);
     void mkvSplitFinished(int exitstate);
     void mkvAudioCutFinished(int exitstate);

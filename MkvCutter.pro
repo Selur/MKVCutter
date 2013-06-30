@@ -8,7 +8,6 @@ HEADERS += tools/analyzer/H264Parser.h \
     mywindows.h \
     tools/Converter.h \
     tools/MkvSplitCaller.h \
-    tools/FFIndexCaller.h \
     tools/viewer/AVSViewer.h \
     tools/viewer/ImageLabel.h \
     tools/viewer/MarkSlider.h \
@@ -27,7 +26,6 @@ SOURCES += tools/analyzer/H264Parser.cpp \
     tools/Converter.cpp \
     Globals.cpp \
     tools/MkvSplitCaller.cpp \
-    tools/FFIndexCaller.cpp \
     tools/viewer/AVSViewer.cpp \
     tools/viewer/ImageLabel.cpp \
     tools/viewer/MarkSlider.cpp \

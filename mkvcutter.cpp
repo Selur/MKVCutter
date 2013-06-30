@@ -17,8 +17,9 @@ MkvCutter::MkvCutter(QWidget *parent) :
         m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(), m_videoTrackID(-1),
         m_extractor(NULL), m_timeextractor(NULL), m_toDelete(), m_aspectRatio(1),
         m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()),
-        m_x264Settings(QString()), m_minKey(QString()), m_maxKey(QString()), m_weightedP(0),
-        m_weightedB(0), m_bframes(0), m_qpMin(0), m_chromaOffset(0)
+        m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
+        m_maxKey(QString()), m_h264Parser(NULL), m_weightedP(0), m_weightedB(0), m_bframes(0),
+        m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString())
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);

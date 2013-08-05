@@ -103,16 +103,14 @@
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
 		<buildTargets>
 			<target name="Qt Release Build" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
-				<buildCommand>nmake</buildCommand>
-				<buildArguments/>
+				<buildCommand>make</buildCommand>
 				<buildTarget>release</buildTarget>
 				<stopOnError>false</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
 				<runAllBuilders>true</runAllBuilders>
 			</target>
 			<target name="Qt Debug Build" path="" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
-				<buildCommand>nmake</buildCommand>
-				<buildArguments/>
+				<buildCommand>make</buildCommand>
 				<buildTarget>debug</buildTarget>
 				<stopOnError>false</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
@@ -121,6 +119,43 @@
 		</buildTargets>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.pathentry">
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="ActiveQt" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtANGLE" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtCLucene" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtConcurrent" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtCore" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtDBus" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtDeclarative" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtDesigner" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtDesignerComponents" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtGui" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtHelp" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtMultimedia" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtMultimediaQuick_p" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtMultimediaWidgets" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtNetwork" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtOpenGL" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtOpenGLExtensions" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtPlatformSupport" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtPrintSupport" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtQml" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtQuick" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtQuickParticles" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtQuickTest" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtScript" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtScriptTools" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtSensors" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtSerialPort" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtSql" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtSvg" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtTest" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtUiTools" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtV8" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtWidgets" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtXml" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtXmlPatterns" kind="inc" path="" system="true"/>
+		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-5.1.0/qtbase/include" include="QtZlib" kind="inc" path="" system="true"/>
 		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="" kind="inc" path="" system="true"/>
 		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="ActiveQt" kind="inc" path="" system="true"/>
 		<pathentry base-path="C:/Qt/qt-everywhere-opensource-src-4.8.4/include" include="phonon" kind="inc" path="" system="true"/>

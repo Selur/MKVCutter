@@ -9,17 +9,18 @@ using namespace std;
 
 MkvCutter::MkvCutter(QWidget *parent) :
     QWidget(parent), m_currentInput(QString()), m_tempAvs(QString()),
-        m_currentOutput(QString()), m_tempFolder(QString()),
-        m_avcProfileLevel(QString("High@L4.1")), m_audioFormat(QString()), m_avcCabac(true),
-        m_avcRefFrames(1), m_enabled(0), m_frameCount(0), m_keyframes(), m_cuts(), m_splitFiles(),
-        m_tempReencodeAvs(), m_videoEncodingCalls(), m_reencodedVideoFiles(), m_fps(-1),
-        m_trimming(), m_cutList(), m_mkvVideoParts(), m_mkvAudioParts(), m_audioFile(QString()),
-        m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(), m_videoTrackID(-1),
-        m_extractor(NULL), m_timeextractor(NULL), m_toDelete(), m_aspectRatio(1),
-        m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()),
-        m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
-        m_maxKey(QString()), m_h264Parser(NULL), m_weightedP(0), m_weightedB(0), m_bframes(0),
-        m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString())
+    m_currentOutput(QString()), m_tempFolder(QString()),
+    m_avcProfileLevel(QString("High@L4.1")), m_audioFormat(QString()), m_avcCabac(true),
+    m_avcRefFrames(1), m_enabled(0), m_frameCount(0), m_keyframes(), m_cuts(), m_splitFiles(),
+    m_tempReencodeAvs(), m_videoEncodingCalls(), m_reencodedVideoFiles(), m_fps(-1),
+    m_trimming(), m_cutList(), m_mkvVideoParts(), m_mkvAudioAndSubtitleParts(), m_audioFile(QString()),
+    m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(), m_videoTrackID(-1),
+    m_extractor(NULL), m_timeextractor(NULL), m_toDelete(), m_aspectRatio(1),
+    m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()),
+    m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
+    m_maxKey(QString()), m_h264Parser(NULL), m_weightedP(0), m_weightedB(0), m_bframes(0),
+    m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(), m_cutSubtitles(),
+    m_subtitleToCut()
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -32,6 +33,8 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(progress(int)), this, SLOT(mkvAnalyseProgress(int)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(frameCount(int)), this, SLOT(setFrameCount(int)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(fps(double)), this, SLOT(setFPS(double)));
+  this->myconnect(m_mkvinfoAnalyser, SIGNAL(subtitleTrack(SubtitleTrack)), this, SLOT(subtitleTrack(SubtitleTrack)));
+
   m_mediaInfoAnalyser = new MediaInfoAnalyser(this);
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -100,6 +103,18 @@ MkvCutter::MkvCutter(QWidget *parent) :
   this->myconnect(m_h264Parser, SIGNAL(qpMin(int)), this, SLOT(setQPmin(int)));
   this->myconnect(m_h264Parser, SIGNAL(chromaOffset(int)), this, SLOT(setChromaOffset(int)));
 
+  m_mkvSubtitleExtractor = new MkvSubtitleExtractor(this);
+  this->myconnect(m_mkvSubtitleExtractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
+  this->myconnect(m_mkvSubtitleExtractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_mkvSubtitleExtractor, SIGNAL(finished(int)), this, SLOT(mkvSubtitleExtractorFinished(int)));
+  this->myconnect(m_mkvSubtitleExtractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+
+  m_subtitleCutter = new SubtitleCutter(this);
+  this->myconnect(m_subtitleCutter, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
+  this->myconnect(m_subtitleCutter, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_subtitleCutter, SIGNAL(finished(int)), this, SLOT(mkvSubtitleCutterFinished(int)));
+  this->myconnect(m_subtitleCutter, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+
   m_viewer = 0;
   ui.setupUi(this);
   ui.mainStackedWidget->setCurrentIndex(0);
@@ -112,6 +127,11 @@ MkvCutter::MkvCutter(QWidget *parent) :
 MkvCutter::~MkvCutter()
 {
   this->reset();
+}
+
+void MkvCutter::subtitleTrack(SubtitleTrack track)
+{
+    m_subtitles.append(track);
 }
 
 void MkvCutter::setWeightedP(int value)
@@ -429,7 +449,7 @@ cutTyp1 MkvCutter::findCutForFrame(int frame, const bool start)
   return cut;
 }
 
-void MkvCutter::addAudioCut(const int &start, const int &end)
+void MkvCutter::addAudioAndSubtitleCuts(const int &start, const int &end)
 {
   QString startTime, endTime;
   if (start == 0) {
@@ -443,7 +463,7 @@ void MkvCutter::addAudioCut(const int &start, const int &end)
     endTime = Globals::frameToTime(end, m_fps);
   }
   this->addInfo(" -> time cut: " + startTime + "-" + endTime);
-  m_mkvAudioParts << startTime + "-" + endTime;
+  m_mkvAudioAndSubtitleParts << startTime + "-" + endTime;
 }
 
 void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interlaced)
@@ -526,7 +546,7 @@ void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interl
 void MkvCutter::buildCutList()
 {
   this->addInfo("collecting cut list and audio cuts,..");
-  m_mkvAudioParts.clear();
+  m_mkvAudioAndSubtitleParts.clear();
   m_cutList.clear();
 
   QStringList tCuts;
@@ -546,12 +566,12 @@ void MkvCutter::buildCutList()
     start = tCuts.at(0).toInt();
     end = tCuts.at(1).toInt();
     outputFrameCount += end - start;
-    this->addAudioCut(start, end);
+    this->addAudioAndSubtitleCuts(start, end);
     this->addVideoCut(start, end, interlaced);
   }
   QStringList elems;
   double audioLength = 0;
-  foreach(QString part, m_mkvAudioParts)
+  foreach(QString part, m_mkvAudioAndSubtitleParts)
   {
     elems = part.split("-");
     audioLength += Globals::timeToSeconds(elems.at(1));
@@ -951,13 +971,16 @@ void MkvCutter::cleanUpAndMerge()
   this->addInfo(tr("cleanUpAndMerge,..."));
   int videoFileCount = m_reencodedVideoFiles.count();
   int audioFileCount = m_audioSplitFiles.count();
+  int subtitleCount = m_cutSubtitles.count();
+
   this->addInfo(" " + tr("video file count: %1").arg(videoFileCount));
   this->addInfo(" " + tr("audio file count: %1").arg(audioFileCount));
+  this->addInfo(" " + tr("subtitle file count: %1").arg(subtitleCount));
 
   //QMessageBox::information(this, tr("PING"), tr("videoFileCount,.."));
   if (videoFileCount == 1) {
-    if (m_audioFile.isEmpty()) {
-      this->addInfo(" " + tr("no audio file present -> renaming videoFile,.."));
+    if (audioFileCount == 0 && subtitleCount == 0) {
+      this->addInfo(" " + tr("no audio&subtitle files present -> renaming videoFile,.."));
       QString tmp = m_reencodedVideoFiles.first();
       if (!QFile::rename(tmp, m_currentOutput)) {
         QMessageBox::critical(this, tr("Error"),
@@ -969,7 +992,7 @@ void MkvCutter::cleanUpAndMerge()
     } else {
       this->addInfo(" " + tr("audio file: %1").arg(m_audioFile));
       this->addInfo(" " + tr("Muxing audio&video(1),.."));
-      m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput, m_fps,
+      m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput, m_fps,
                          m_interlaced != "progressive", m_paff);
     }
     this->reset();
@@ -978,7 +1001,7 @@ void MkvCutter::cleanUpAndMerge()
 
   // generate mkvmerge calls to join all parts
   this->addInfo(" " + tr("Muxing audio&video(2),.."));
-  m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_currentOutput, m_fps,
+  m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput, m_fps,
                      m_interlaced != "progressive", m_paff);
 }
 
@@ -1068,7 +1091,30 @@ void MkvCutter::deleteFiles()
       }
     }
   }
-
+  foreach (QString file, m_subtitleToCut)
+  {
+    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+      continue;
+    }
+    if (QFile::exists(file)) {
+      this->addInfo(" " + tr("deleting subtitle file: %1").arg(file));
+      if (!QFile::remove(file)) {
+        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+      }
+    }
+  }
+  foreach (QString file, m_cutSubtitles)
+  {
+    if (file.isEmpty() || (file == m_currentInput && !QFile::exists(file))) {
+      continue;
+    }
+    if (QFile::exists(file)) {
+      this->addInfo(" " + tr("deleting cut-subtitle file: %1").arg(file));
+      if (!QFile::remove(file)) {
+        this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
+      }
+    }
+  }
 }
 
 void MkvCutter::mkvMergerFinished(int exitstate)
@@ -1127,6 +1173,10 @@ void MkvCutter::mkvAudioCutFinished(int exitstate)
     this->addInfo(tr("Resetting since mkv split caller crashed,.."));
     this->reset();
     return;
+  }
+  if (!m_subtitles.isEmpty()) {
+      m_mkvSubtitleExtractor->startExtraction(m_currentInput, m_subtitles, m_tempFolder);
+      return;
   }
   this->cleanUpAndMerge();
 }
@@ -1187,6 +1237,33 @@ void MkvCutter::extractTimeCodes()
   m_timeextractor->startExtraction(m_currentInput, QString::number(m_videoTrackID), m_tempFolder);
 }
 
+void MkvCutter::mkvSubtitleCutterFinished(int state)
+{
+    if (state < 0) {
+      this->addInfo(tr("Resetting since subtitle cutter crashed,.."));
+      this->reset();
+      return;
+    }
+    m_cutSubtitles = m_subtitleCutter->getCutSubtitles();
+    this->addInfo("mkvSubtitleCutterFinished, output:\r\n"+m_cutSubtitles.join("\r\n"));
+    this->cleanUpAndMerge();
+}
+
+void MkvCutter::mkvSubtitleExtractorFinished(int state)
+{
+    if (state < 0) {
+      this->addInfo(tr("Resetting since subtitle extraction crashed,.."));
+      this->reset();
+      return;
+    }
+    m_subtitleToCut = m_mkvSubtitleExtractor->getOutputFiles();
+    if (m_subtitleToCut.isEmpty()) {
+        this->cleanUpAndMerge();
+        return;
+    }
+    m_subtitleCutter->cutSubtitles(m_subtitleToCut, m_mkvAudioAndSubtitleParts, m_tempFolder);
+}
+
 void MkvCutter::finishedTimeCodeExtraction(int state)
 {
   if (state < 0) {
@@ -1238,7 +1315,7 @@ QString MkvCutter::cutTimecodes(QString timecodes)
 {
   QStringList outputLines;
   QStringList lines = timecodes.split("\n");
-  //TODO: cut timecodes based on m_mkvAudioParts
+  //TODO: cut timecodes based on m_mkvAudioAndSubtitleParts
   foreach (QString line, lines)
   {
     this->addInfo("Looking at: " + line);
@@ -1346,7 +1423,7 @@ void MkvCutter::cutAudio()
   m_audioFile = m_audioFile.insert(m_audioFile.lastIndexOf("."), "_AudioCut");
   m_audioFile = QDir::toNativeSeparators(m_audioFile);
   m_mkvAudioCutCaller->setKeepIntermediate(ui.keepIntermediateCheckBox->isChecked());
-  m_mkvAudioCutCaller->start(m_currentInput, m_currentOutput, m_mkvAudioParts, m_tempFolder, true);
+  m_mkvAudioCutCaller->start(m_currentInput, m_currentOutput, m_mkvAudioAndSubtitleParts, m_tempFolder, true);
 }
 
 void MkvCutter::setKeyFrames(QStringList list)
@@ -1422,7 +1499,7 @@ void MkvCutter::reset()
   m_cutList.clear();
   m_mkvmergeIntSplitList.clear();
   m_mkvVideoParts.clear();
-  m_mkvAudioParts.clear();
+  m_mkvAudioAndSubtitleParts.clear();
   m_audioFile = QString();
   m_averageBitrate = -1;
   m_audioSplitFiles.clear();
@@ -1448,6 +1525,7 @@ void MkvCutter::reset()
   m_qpMin = 0;
   m_averageKeyDistance = 0;
   m_toAnalyse = QString();
+  m_subtitles.clear();
 }
 
 void MkvCutter::setCutList(QStringList cuts)

@@ -46,10 +46,10 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
   emit finished(0);
 }
 
-void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QString outputFile, const double fps, const bool interlaced, const bool paff)
+void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles, QString outputFile, const double fps, const bool interlaced, const bool paff)
 {
   m_output = outputFile;
-  this->call(this->buildCall(splitFiles, audioFiles, fps, interlaced, paff));
+  this->call(this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff));
 }
 
 void MkvMerger::call(QString call)
@@ -69,7 +69,7 @@ QString MkvMerger::doubleBackSlash(QString text)
   return text.replace("\\", "\\\\");
 }
 
-QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles, double fps, const bool interlaced, const bool paff)
+QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles, double fps, const bool interlaced, const bool paff)
 {
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -132,6 +132,13 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles, dou
 // AUDIO FILES
   foreach (QString file, audioFiles) {
     options << "--no-video";
+    options << doubleBackSlash(file);
+  }
+
+// SUBTITLE FILES
+  foreach(QString file, subtitleFiles) {
+    options << "--compression";
+    options << "-1:none";
     options << doubleBackSlash(file);
   }
 

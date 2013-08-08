@@ -16,6 +16,8 @@
 #include "tools/MkvMerger.h"
 #include "tools/MkvVideoExtractor.h"
 #include "tools/MkvTimeExtractor.h"
+#include "tools/MkvSubtitleExtractor.h"
+#include "tools/SubtitleCutter.h"
 
 #include "ui_mkvcutter.h"
 
@@ -46,7 +48,7 @@ class MkvCutter : public QWidget
     MkvSplitCaller *m_mkvVideoSplitCaller, *m_mkvAudioCutCaller;
     MkvMerger *m_mkvMerger;
     X264Caller *m_x264;
-    QStringList m_mkvVideoParts, m_mkvAudioParts;
+    QStringList m_mkvVideoParts, m_mkvAudioAndSubtitleParts;
     QString m_audioFile;
     int m_averageBitrate;
     QStringList m_audioSplitFiles, m_extractionFiles, m_toDelete;
@@ -64,6 +66,11 @@ class MkvCutter : public QWidget
     int m_weightedP, m_weightedB, m_bframes, m_qpMin;
     int m_chromaOffset;
     QString m_toAnalyse;
+    QList<SubtitleTrack> m_subtitles;
+    MkvSubtitleExtractor *m_mkvSubtitleExtractor;
+    SubtitleCutter *m_subtitleCutter;
+    QStringList m_cutSubtitles;
+    QStringList m_subtitleToCut;
 
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
@@ -85,11 +92,11 @@ class MkvCutter : public QWidget
     void extractTimeCodes();
     QString cutTimecodes(QString timecodes);
     void startViewer();
-    void addAudioCut(const int &start, const int &end);
+    void addAudioAndSubtitleCuts(const int &start, const int &end);
     void addVideoCut(const int &start, const int &end, const bool &interlaced);
     void parseOriginal();
 
-  private slots:
+  protected slots:
     void on_openSourcePushButton_clicked();
     void setInput(QString input);
     void on_outputPushButton_clicked();
@@ -138,6 +145,9 @@ class MkvCutter : public QWidget
     void setBFrames(int value);
     void setQPmin(int value);
     void setChromaOffset(int value);
+    void subtitleTrack(SubtitleTrack track);
+    void mkvSubtitleExtractorFinished(int state);
+    void mkvSubtitleCutterFinished(int state);
 };
 
 #endif // MKVCUTTER_H

@@ -12,6 +12,12 @@
 #include <QString>
 #include <QProcess>
 
+struct SubtitleTrack
+{
+    int trackID;
+    QString type;
+};
+
 class MkvInfoSourceAnalyser : public QObject
 {
   Q_OBJECT
@@ -44,6 +50,7 @@ class MkvInfoSourceAnalyser : public QObject
     void finished();
     void fps(double framerate);
     void videoTrackID(int videoTrack);
+    void subtitleTrack(SubtitleTrack track);
 };
 
 #endif /* MKVINFOSOURCEANALYSER_H_ */

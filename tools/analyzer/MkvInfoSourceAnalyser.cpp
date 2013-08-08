@@ -88,10 +88,27 @@ void MkvInfoSourceAnalyser::mkvinfoFinished(int exitState, QProcess::ExitStatus 
   this->analyseOutput();
 }
 
-void MkvInfoSourceAnalyser::checkMediaInfo(QString mediaInfo)
+void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
 {
-  emit
-  sendInfos(mediaInfo);
+    QString trackID, type;
+    SubtitleTrack track;
+    QStringList lines = medaiInfo.split("\r\n");
+    foreach(QString line, lines) {
+        if (!line.contains(": subtitles")) {
+            continue;
+        }
+        trackID = line;
+        trackID = trackID.remove(0, trackID.lastIndexOf(":")+1);
+        trackID = trackID.trimmed();
+        type = line;
+        type = type.remove(0, type.indexOf("codec ID:")+10);
+        type = type.remove(type.indexOf(","), type.size());
+        track.trackID = trackID.toInt();
+        track.type = type;
+        emit subtitleTrack(track);
+    }
+
+  emit sendInfos(medaiInfo);
   //TODO: Check MediaInfo data for compatibility
   // video needs to be AVC
   // audio needs to be delayCut compatible

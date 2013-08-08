@@ -4,8 +4,8 @@
 SubtitleCutter::SubtitleCutter(QObject *parent) :
     QObject(parent), m_cutSubtitles(), m_tempFolder(QString())
 {
-    m_assCutter = new AssCutter(this, true);
-    m_srtCutter = new SrtCutter(this, true);
+    m_assCutter = new AssCutter(this, false);
+    m_srtCutter = new SrtCutter(this, false);
 }
 
 QStringList SubtitleCutter::getCutSubtitles()

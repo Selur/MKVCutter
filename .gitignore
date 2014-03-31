@@ -1,0 +1,8 @@
+
+# /
+/debug
+/release
+/ui_*.h
+/Makefile*
+/*.pdb
+/*_plugin_import.cpp

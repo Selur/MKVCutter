@@ -12,7 +12,7 @@
 
 MkvSplitCaller::MkvSplitCaller(QObject *parent) :
     QObject(parent), m_process(NULL), m_input(QString()), m_output(QString()), m_splitParts(),
-    m_outputFolder(QString()), m_tempFiles(), m_audio(false), m_keepIntermediate(false)
+    m_outputFolder(QString()), m_tempFiles(), m_audio(false), m_keepIntermediate(false), m_keyframeonly(false)
 {
 
 }
@@ -34,7 +34,7 @@ void MkvSplitCaller::handleMkvmergeOutput()
     int index;
     foreach(QString line, lines) {
       line = line.trimmed();
-      //emit sendInfos("MkvMerge output: " + line);
+      emit sendInfos("MkvMerge output: " + line);
       if (line.startsWith("Progress:")) {
         line = line.remove(0, 10);
         line = line.remove("%").trimmed();
@@ -66,12 +66,11 @@ void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitSta
 {
   if (exitCode < 0) {
     emit sendInfos(tr("ExitCode: %1, ExitStatus: %2").arg(exitCode).arg(exitStatus));
-    emit
-    finished(-1);
+    emit finished(-1);
     return;
   }
   if (m_tempFiles.isEmpty() && QFile::exists(m_output)) {
-    //this->sendInfos(tr("only one output file: %1").arg(m_output));
+    this->sendInfos(tr("only one output file: %1").arg(m_output));
     m_tempFiles << m_output;
   }
   QString optionFile = m_output;
@@ -88,7 +87,7 @@ void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitSta
 }
 
 void MkvSplitCaller::start(QString inputFile, QString outputFile, QStringList splitParts,
-                           QString outputFolder, bool audio)
+                           QString outputFolder, bool audio, bool keyframeonly)
 {
   m_audio = audio;
   m_output = outputFile;
@@ -96,6 +95,7 @@ void MkvSplitCaller::start(QString inputFile, QString outputFile, QStringList sp
   m_splitParts.clear();
   m_splitParts = splitParts;
   m_outputFolder = outputFolder;
+  m_keyframeonly = keyframeonly;
   this->call(this->buildCall());
 }
 
@@ -142,8 +142,12 @@ QString MkvSplitCaller::buildCall()
     options <<  "--no-subtitles";
   } else {
     options << "--split";
-    options << "parts-frames:"+m_splitParts.join(",");
-    options << "--no-audio";
+    if (m_keyframeonly) {
+      options << "parts-frames:"+m_splitParts.join(",+");
+    } else {
+      options << "parts-frames:"+m_splitParts.join(",");
+      options << "--no-audio";
+    }
     options << "--no-subtitles";
     options << "--no-buttons";
     options << "--no-track-tags";

@@ -20,7 +20,7 @@ MkvCutter::MkvCutter(QWidget *parent) :
     m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
     m_maxKey(QString()), m_h264Parser(NULL), m_weightedP(0), m_weightedB(0), m_bframes(0),
     m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(), m_cutSubtitles(),
-    m_subtitleToCut()
+    m_subtitleToCut(), m_keyframeonly(false)
 {
   this->setObjectName("MkvCutter-Main");
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
@@ -599,7 +599,7 @@ void MkvCutter::buildTrimAndPartsList()
   QString name, trim, negReplace;
   cutTyp1 cut;
   int fileIndex = 0;
-
+  m_keyframeonly = true;
   for (int i = 0, c = m_cutList.count(); i < c; ++i) {
     cut = m_cutList.at(i);
     cutStart = cut.cut.start;
@@ -635,6 +635,7 @@ void MkvCutter::buildTrimAndPartsList()
       mkvparts.append(QString::number(prevKey) + "-" + QString::number(nextKey));
       continue;
     }
+    m_keyframeonly = false;
     if (prevKey >= nextKey) {
       nextKey = m_frameCount;
     }
@@ -958,6 +959,10 @@ void MkvCutter::startVideoReencoding()
   if (m_videoEncodingCalls.isEmpty()) { //encodings finished
     this->addInfo(tr("Finished all the video reencoding,..."));
     //QMessageBox::information(this, tr("PING"), tr("Finished all the video reencoding,..."));
+    if (m_keyframeonly) {
+       this->cleanUpAndMerge();
+       return;
+    }
     this->cutAudio();
     return;
   }
@@ -1186,6 +1191,14 @@ void MkvCutter::handleSplitFiles()
   m_reencodedVideoFiles.clear();
   m_extractionFiles.clear();
   m_toDelete.clear();
+  if (m_keyframeonly) {
+      foreach (QString file, m_splitFiles)
+      {
+        m_reencodedVideoFiles << file;
+      }
+      this->startExtraction();
+      return;
+  }
   this->addInfo("handling split files,...");
   //handle splitFiles
   QString toDelete, trim;
@@ -1413,7 +1426,7 @@ void MkvCutter::buildAndCallMkvMerge()
   this->addInfo(" m_mkvVideoParts:\n" + m_mkvVideoParts.join("\n "));
 
   m_mkvVideoSplitCaller->setKeepIntermediate(ui.keepIntermediateCheckBox->isChecked());
-  m_mkvVideoSplitCaller->start(m_currentInput, m_currentOutput, m_mkvVideoParts, m_tempFolder);
+  m_mkvVideoSplitCaller->start(m_currentInput, m_currentOutput, m_mkvVideoParts, m_tempFolder, false, m_keyframeonly);
 }
 
 void MkvCutter::cutAudio()

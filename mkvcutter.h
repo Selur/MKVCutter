@@ -71,7 +71,7 @@ class MkvCutter : public QWidget
     SubtitleCutter *m_subtitleCutter;
     QStringList m_cutSubtitles;
     QStringList m_subtitleToCut;
-
+    bool m_keyframeonly;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);

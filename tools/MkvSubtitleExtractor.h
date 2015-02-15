@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QList>
 #include <QStringList>
-#include <tools/analyzer/MkvInfoSourceAnalyser.h>
+#include "tools/analyzer/MkvInfoSourceAnalyser.h"
 
 class MkvSubtitleExtractor : public QObject
 {

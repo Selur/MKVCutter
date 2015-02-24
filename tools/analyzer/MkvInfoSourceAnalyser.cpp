@@ -97,14 +97,21 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
         if (!line.contains(": subtitles")) {
             continue;
         }
+        emit sendInfos("Looking at: "+line);
         trackID = line;
         trackID = trackID.remove(0, trackID.lastIndexOf(":")+1);
+        emit sendInfos("PING1: "+trackID);
         trackID = trackID.trimmed();
+        emit sendInfos("PING2: "+trackID);
         type = line;
         type = type.remove(0, type.indexOf("codec ID:")+10);
+        emit sendInfos("PING3: "+trackID);
         type = type.remove(type.indexOf(","), type.size());
+        emit sendInfos("PING4: "+trackID);
         track.trackID = trackID.toInt();
         track.type = type;
+        emit sendInfos("PING5: "+type);
+        emit sendInfos("PING5: "+QString::number(trackID.toInt()));
         emit subtitleTrack(track);
     }
 

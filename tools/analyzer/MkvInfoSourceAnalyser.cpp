@@ -8,9 +8,9 @@
 #include "MkvInfoSourceAnalyser.h"
 #include <QHash>
 
-MkvInfoSourceAnalyser::MkvInfoSourceAnalyser(QObject *parent) :
-    QObject(parent), m_process(0), m_input(QString()), m_outData(QString()), m_keyFrameInfos(),
-        m_linesread(0),m_crashed(false)
+MkvInfoSourceAnalyser::MkvInfoSourceAnalyser(QObject *parent)
+    : QObject(parent), m_process(0), m_input(QString()), m_outData(QString()), m_keyFrameInfos(),
+        m_linesread(0), m_crashed(false)
 {
   this->setObjectName("MkvInfoSourceAnalyser");
 }
@@ -46,14 +46,12 @@ void MkvInfoSourceAnalyser::analyse(QString input)
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
-                   SLOT(mkvinfoFinished(int, QProcess::ExitStatus)));
+      SLOT(mkvinfoFinished(int, QProcess::ExitStatus)));
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this, SLOT(handleMkvInfoOutput()));
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleMkvInfoError()));
   QString call = buildCall(input);
-  emit
-  enableGui(false);
-  emit
-  sendInfos(tr("MkvInfoAnalyszer call: %1").arg(call));
+  emit enableGui(false);
+  emit sendInfos(tr("MkvInfoAnalyszer call: %1").arg(call));
   m_process->start(call);
 }
 
@@ -79,8 +77,7 @@ void MkvInfoSourceAnalyser::mkvinfoFinished(int exitState, QProcess::ExitStatus 
   if (exitState < 0) {
     emit sendInfos(tr("mkvinfo crashed for %1: %2 - %3").arg(m_input).arg(exitState).arg(status));
     this->reset();
-    emit
-    enableGui(true);
+    emit enableGui(true);
     emit
     finished();
     return;
@@ -90,30 +87,27 @@ void MkvInfoSourceAnalyser::mkvinfoFinished(int exitState, QProcess::ExitStatus 
 
 void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
 {
-    QString trackID, type;
-    SubtitleTrack track;
-    QStringList lines = medaiInfo.split("\r\n");
-    foreach(QString line, lines) {
-        if (!line.contains(": subtitles")) {
-            continue;
-        }
-        emit sendInfos("Looking at: "+line);
-        trackID = line;
-        trackID = trackID.remove(0, trackID.lastIndexOf(":")+1);
-        emit sendInfos("PING1: "+trackID);
-        trackID = trackID.trimmed();
-        emit sendInfos("PING2: "+trackID);
-        type = line;
-        type = type.remove(0, type.indexOf("codec ID:")+10);
-        emit sendInfos("PING3: "+trackID);
-        type = type.remove(type.indexOf(","), type.size());
-        emit sendInfos("PING4: "+trackID);
-        track.trackID = trackID.toInt();
-        track.type = type;
-        emit sendInfos("PING5: "+type);
-        emit sendInfos("PING5: "+QString::number(trackID.toInt()));
-        emit subtitleTrack(track);
+  QString trackID, type;
+  SubtitleTrack track;
+  QStringList lines = medaiInfo.split("\r\n");
+  foreach(QString line, lines) {
+    if (!line.contains(": subtitles")) { // Track 5: subtitles, codec ID: S_VOBSUB, mkvmerge/mkvextract track ID: 4, language: dan
+      continue;
     }
+    index = line.indexOf(", langauge");
+    if (index != -1) {
+      line = line.remove(index, line.size());
+    }
+    trackID = line;
+    trackID = trackID.remove(0, trackID.lastIndexOf(":")+1);
+    trackID = trackID.trimmed();
+    type = line;
+    type = type.remove(0, type.indexOf("codec ID:")+10);
+    type = type.remove(type.indexOf(","), type.size());
+    track.trackID = trackID.toInt();
+    track.type = type;
+    emit subtitleTrack(track);
+  }
 
   emit sendInfos(medaiInfo);
   //TODO: Check MediaInfo data for compatibility
@@ -172,8 +166,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
     }
   }
   this->checkMediaInfo(mediaInfo);
-  emit
-  frameCount(infos.length());
+  emit frameCount(infos.length());
   QStringList keyFrames;
   QString iframe = "I frame, track " + QString::number(videoTrack) + ", ";
   int currentFrame = -1;
@@ -198,8 +191,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
           keyFrames.count()));
 
   keyFrameInfos(keyFrames);
-  emit
-  enableGui(true);
+  emit enableGui(true);
   emit finished();
 }
 

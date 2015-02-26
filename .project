@@ -28,7 +28,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.build.command</key>
-					<value>nmake</value>
+					<value>jom</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.build.location</key>
@@ -64,7 +64,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.environment</key>
-					<value>QMAKESPEC=win32-msvc2010|TMP=c:\\temp|FrameworkDir=C:\\Windows\\Microsoft.NET\\Framework64|FrameworkVersion=v4.0.30319|DevEnvDir=C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\IDE|SystemRoot=C:\\Windows|PATH=C:\\Qt\\qt-everywhere-opensource-src-5.1.0\\qtbase\\bin;${env_var:PATH};;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Bin;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\IDE;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\bin\\amd64;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\Common7\\Tools|VCINSTALLDIR=c:\\Programme\\Microsoft Visual Studio 10.0\\VC|VSINSTALLDIR=c:\\Programme\\Microsoft Visual Studio 10.0|LIBPATH=${env_var::LIBPATH};C:\\Windows\\Microsoft.NET\\Framework64\\${FrameworkVersion};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\LIB\\amd64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib\\x64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\lib;C:\\OpenSSL-Win64\\lib\\VC\\static;|LIB=${env_var:LIB};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\LIB\\amd64;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Lib\\x64;C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\lib;C:\\OpenSSL-Win64\\lib\\VC\\static;|INCLUDE=${env_var:INCLUDE};C:\\Program Files (x86)\\Microsoft Visual Studio 10.0\\VC\\include;C:\\Program Files\\Microsoft SDKs\\Windows\\v7.1\\Include;C:\\OpenSSL-Win64\\include;|</value>
+					<value>QMAKESPEC=win32-msvc2013|TMP=c:\\temp|FrameworkDir=C:\\Windows\\Microsoft.NET\\Framework64|FrameworkVersion=v4.0.30319|SystemRoot=C:\\Windows|PATH=C:\\Qt\\Qt5.4.0\\5.4\\msvc2013_64_opengl\\bin;${env_var:PATH};C:\\Program Files (x86)\\Windows Kits\\8.1\\bin\\x64;C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\bin\\amd64;C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\bin;C:\\Qt\\Qt5.4.0\\Tools\\QtCreator\\bin|LIBPATH=${env_var::LIBPATH};C:\\Windows\\Microsoft.NET\\Framework64\\${FrameworkVersion};C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\bin;C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\lib\\amd64;C:\\Program Files (x86)\\Windows Kits\\8.1\\Lib\\winv6.3\\um\\x64;C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\lib;C:\\OpenSSL-Win64\\lib\\VC\\static;|LIB=${env_var:LIB};C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\lib\\amd64;C:\\Program Files (x86)\\Windows Kits\\8.1\\Lib\\winv6.3\\um\\x64;C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\lib;C:\\OpenSSL-Win64\\lib\\VC\\static;|INCLUDE=${env_var:INCLUDE};C:\\Program Files (x86)\\Microsoft Visual Studio 12.0\\VC\\include;C:\\Program Files (x86)\\Windows Kits\\8.1\\Include\\um;C:\\Program Files (x86)\\Windows Kits\\8.1\\Include\\shared;C:\\OpenSSL-Win64\\include;|</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.stopOnError</key>

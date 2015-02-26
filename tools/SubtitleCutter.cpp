@@ -16,6 +16,7 @@ QStringList SubtitleCutter::getCutSubtitles()
 QString SubtitleCutter::cutPGSSubtitle(const QString &input, const QString &output, const QStringList &cutList)
 {
     QString out = output;
+    emit sendInfos(" ignored subtitles since pgs cutting is not implemented");
     //TODO: implement cutPGSSubtitle
     return QString(); //out;
 }
@@ -37,6 +38,7 @@ QString SubtitleCutter::cutAssSubtitle(const QString &input, const QString &outp
 QString SubtitleCutter::cutIdxSubtitle(const QString &input, const QString &output, const QStringList &cutList)
 {
     QString out = output;
+    emit sendInfos(" ignored subtitles since idx cutting is not implemented");
     //TODO: implement cutIDXSubtitle
     return QString(); //out;
 }
@@ -82,7 +84,7 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
         } else if (outputName.endsWith("ass", Qt::CaseInsensitive) || outputName.endsWith("ssa", Qt::CaseInsensitive)) {
             emit sendInfos(" cutting ass subtitle");
             outputName = this->cutAssSubtitle(subtitle, outputName, cutList);
-        } else if (outputName.endsWith("ix", Qt::CaseInsensitive)) {
+        } else if (outputName.endsWith("idx", Qt::CaseInsensitive)) {
             emit sendInfos(" cutting idx/sub subtitle");
             outputName = this->cutIdxSubtitle(subtitle, outputName, cutList);
         } else {

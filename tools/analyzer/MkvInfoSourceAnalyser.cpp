@@ -90,11 +90,12 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
   QString trackID, type;
   SubtitleTrack track;
   QStringList lines = medaiInfo.split("\r\n");
+  int index;
   foreach(QString line, lines) {
     if (!line.contains(": subtitles")) { // Track 5: subtitles, codec ID: S_VOBSUB, mkvmerge/mkvextract track ID: 4, language: dan
       continue;
     }
-    index = line.indexOf(", langauge");
+    index = line.indexOf(", language");
     if (index != -1) {
       line = line.remove(index, line.size());
     }

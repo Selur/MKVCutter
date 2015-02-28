@@ -12,7 +12,7 @@
 #include <QApplication>
 
 H264Parser::H264Parser(QObject *parent) :
-    QObject(parent), m_process(NULL)
+    QObject(parent), m_process(nullptr)
 {
   this->setObjectName("H264Parser");
   m_process = new QProcess(this);

@@ -4,7 +4,8 @@ TARGET = MkvCutter
 QT += core \
     gui
 isEqual(QT_MAJOR_VERSION, 5):QT += widgets # for all widgets
-HEADERS += tools/MkvSubtitleExtractor.h \
+HEADERS += tools/subtitlecutters/IdxSubCutter.h \
+    tools/MkvSubtitleExtractor.h \
     tools/SubtitleCutter.h \
     tools/subtitlecutters/AssCutter.h \
     tools/subtitlecutters/Cutter.h \
@@ -27,7 +28,8 @@ HEADERS += tools/MkvSubtitleExtractor.h \
     tools/MkvVideoExtractor.h \
     DropPushButton.h \
     tools/MkvTimeExtractor.h
-SOURCES += tools/MkvSubtitleExtractor.cpp \
+SOURCES += tools/subtitlecutters/IdxSubCutter.cpp \
+    tools/MkvSubtitleExtractor.cpp \
     tools/SubtitleCutter.cpp \
     tools/subtitlecutters/AssCutter.cpp \
     tools/subtitlecutters/Cutter.cpp \

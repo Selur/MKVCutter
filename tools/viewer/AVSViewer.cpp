@@ -61,7 +61,7 @@ void AVSViewer::setButtonImages()
 
 void AVSViewer::setButtonImage(QPushButton *button, QIcon image, const int height)
 {
-  if (button == NULL || image.isNull()) {
+  if (button == nullptr || image.isNull()) {
     return;
   }
   QString toolTip = button->text();

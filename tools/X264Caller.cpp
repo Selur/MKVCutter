@@ -1,7 +1,7 @@
 #include "X264Caller.h"
 
 X264Caller::X264Caller(QObject *parent) :
-    QObject(parent), m_process(NULL)
+    QObject(parent), m_process(nullptr)
 {
 }
 

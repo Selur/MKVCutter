@@ -421,7 +421,7 @@ QString Globals::shortFileName(QString inputFile)
     wchar_t* input = new wchar_t[inputFile.size() + 1];
     inputFile.toWCharArray(input);
     input[inputFile.size()] = L'\0';
-    long length = GetShortPathName(input, NULL, 0);
+    long length = GetShortPathName(input, nullptr, 0);
     wchar_t* output = new wchar_t[length];
     GetShortPathName(input, output, length);
     inputFile = QString::fromWCharArray(output, length - 1);

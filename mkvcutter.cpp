@@ -14,10 +14,10 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_splitFiles(), m_tempReencodeAvs(), m_videoEncodingCalls(), m_reencodedVideoFiles(),
         m_fps(-1), m_trimming(), m_cutList(), m_mkvVideoParts(), m_mkvAudioAndSubtitleParts(),
         m_audioFile(QString()), m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(),
-        m_videoTrackID(-1), m_extractor(NULL), m_timeextractor(NULL), m_toDelete(),
+        m_videoTrackID(-1), m_extractor(nullptr), m_timeextractor(nullptr), m_toDelete(),
         m_aspectRatio(1), m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()),
         m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
-        m_maxKey(QString()), m_h264Parser(NULL), m_weightedP(0), m_weightedB(0), m_bframes(0),
+        m_maxKey(QString()), m_h264Parser(nullptr), m_weightedP(0), m_weightedB(0), m_bframes(0),
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(), m_cutSubtitles(),
         m_subtitleToCut(), m_keyframeonly(false)
 {

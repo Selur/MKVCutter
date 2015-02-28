@@ -11,7 +11,7 @@
 #include "Globals.h"
 
 MkvSplitCaller::MkvSplitCaller(QObject *parent) :
-    QObject(parent), m_process(NULL), m_input(QString()), m_output(QString()), m_splitParts(),
+    QObject(parent), m_process(nullptr), m_input(QString()), m_output(QString()), m_splitParts(),
     m_outputFolder(QString()), m_tempFiles(), m_audio(false), m_keepIntermediate(false), m_keyframeonly(false)
 {
 

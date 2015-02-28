@@ -5,7 +5,7 @@
 #include <QApplication>
 
 MkvSubtitleExtractor::MkvSubtitleExtractor(QObject *parent) :
-    QObject(parent), m_process(NULL), m_outputFiles()
+    QObject(parent), m_process(nullptr), m_outputFiles()
 {
 }
 

@@ -114,7 +114,11 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
     return;
   }
   emit sendInfos(" cutting idx/sub subtitle");
-  this->cutIdxSubtitle(m_idxSubtitle.takeFirst(), cutList, outputName);
+  subtitle = m_idxSubtitle.takeFirst();
+  outputName = subtitle;
+  outputName = outputName.insert(outputName.lastIndexOf("."), "_cut");
+  outputName = outputName.trimmed();
+  this->cutIdxSubtitle(subtitle, cutList, outputName);
 }
 
 void SubtitleCutter::passThrougInfos(QString infos)

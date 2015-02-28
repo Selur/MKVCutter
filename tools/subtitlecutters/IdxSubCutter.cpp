@@ -27,8 +27,8 @@ void IdxSubCutter::cut(const QString &input, const QStringList& cutList, const Q
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
       SLOT(idxCutterFinished(int, QProcess::ExitStatus)));
-  //QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this, SLOT(idxCutterOutput()));
-  //QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(idxCutterOutput()));
+  QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this, SLOT(idxCutterOutput()));
+  QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(idxCutterOutput()));
 
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -47,6 +47,7 @@ void IdxSubCutter::cut(const QString &input, const QStringList& cutList, const Q
   call += " \"";
   call += QDir::toNativeSeparators(tempFolder);
   call += "\"";
+  emit sendInfos(tr("IdxSubCutter call: %1").arg(call));
   m_process->start(call);
 }
 

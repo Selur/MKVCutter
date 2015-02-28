@@ -1121,6 +1121,11 @@ void MkvCutter::deleteFiles()
       if (!QFile::remove(file)) {
         this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
       }
+      if (file.endsWith(".idx", Qt::CaseInsensitive)) {
+        file = file.remove(file.lastIndexOf("."), file.size());
+        file += ".sub";
+        QFile::remove(file);
+      }
     }
   }
   foreach (QString file, m_cutSubtitles)
@@ -1133,7 +1138,13 @@ void MkvCutter::deleteFiles()
       if (!QFile::remove(file)) {
         this->addInfo("   " + tr("Couldn't delete %1!").arg(file));
       }
+      if (file.endsWith(".idx", Qt::CaseInsensitive)) {
+        file = file.remove(file.lastIndexOf("."), file.size());
+        file += ".sub";
+        QFile::remove(file);
+      }
     }
+
   }
 }
 

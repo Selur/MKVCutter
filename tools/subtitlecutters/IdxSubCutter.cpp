@@ -42,7 +42,12 @@ void IdxSubCutter::cut(const QString &input, const QStringList& cutList, const Q
   call += QDir::toNativeSeparators(input);
   call += "\"";
   call += " \"";
-  call += cutList.join(",");
+  QString list = cutList.join(",");
+  if (list.startsWith("-")) {
+    list = "00:00:00:000" + list;
+  }
+  list = list.replace(".", ":");
+  call += list;
   call += "\"";
   call += " \"";
   call += QDir::toNativeSeparators(tempFolder);

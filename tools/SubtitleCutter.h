@@ -22,6 +22,7 @@ class SubtitleCutter : public QObject
     AssCutter *m_assCutter;
     SrtCutter *m_srtCutter;
     IdxSubCutter *m_idxsubCutter;
+    QStringList m_inputSubtitles;
     QString cutPGSSubtitle(const QString &input, const QString &output, const QStringList &cutList);
     QString cutSrtSubtitle(const QString &input, const QString &output, const QStringList &cutList);
     QString cutAssSubtitle(const QString &input, const QString &output, const QStringList &cutList);

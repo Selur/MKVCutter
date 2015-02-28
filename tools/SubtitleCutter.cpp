@@ -2,7 +2,7 @@
 #include "Globals.h"
 
 SubtitleCutter::SubtitleCutter(QObject *parent)
-    : QObject(parent), m_cutSubtitles(), m_tempFolder(QString())
+    : QObject(parent), m_cutSubtitles(), m_tempFolder(QString()), m_inputSubtitles()
 {
   m_assCutter = new AssCutter(this, false);
   m_srtCutter = new SrtCutter(this, false);
@@ -80,9 +80,10 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
   }
 
   m_tempFolder = tempFolder;
-  QString outputName;
-  foreach(QString subtitle, elements)
-  {
+  QString outputName, subtitle;
+  m_inputSubtitles = elements;
+  for (int i = 0, c = m_inputSubtitles.count(); i < c; ++i) {
+    subtitle = m_inputSubtitles.takeFirst();
     outputName = subtitle;
     outputName = outputName.insert(outputName.lastIndexOf("."), "_cut");
     outputName = outputName.trimmed();
@@ -100,6 +101,7 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
     } else if (outputName.endsWith("idx", Qt::CaseInsensitive)) {
       emit sendInfos(" cutting idx/sub subtitle");
       this->cutIdxSubtitle(subtitle, cutList, outputName);
+      continue;
     } else {
       emit sendInfos(tr("Ignoring %1 since I don't know it's format.").arg(outputName));
     }
@@ -108,7 +110,9 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
       m_cutSubtitles << outputName;
     }
   }
-  emit finished(0);
+  if (m_inputSubtitles.isEmpty()) {
+    emit finished(0);
+  }
 }
 
 void SubtitleCutter::passThrougInfos(QString infos)
@@ -126,4 +130,7 @@ void SubtitleCutter::idxSubCutterFinished(const QString& outputfile)
     return;
   }
   m_cutSubtitles << outputfile;
+  if (m_inputSubtitles.isEmpty()) {
+    emit finished(0);
+  }
 }

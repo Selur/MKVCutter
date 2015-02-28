@@ -100,7 +100,6 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
     } else if (outputName.endsWith("idx", Qt::CaseInsensitive)) {
       emit sendInfos(" cutting idx/sub subtitle");
       this->cutIdxSubtitle(subtitle, cutList, outputName);
-      return;
     } else {
       emit sendInfos(tr("Ignoring %1 since I don't know it's format.").arg(outputName));
     }
@@ -124,9 +123,7 @@ void SubtitleCutter::passThrougProgress(int position)
 void SubtitleCutter::idxSubCutterFinished(const QString& outputfile)
 {
   if (outputfile.isEmpty()) {
-    emit finished(1);
     return;
   }
   m_cutSubtitles << outputfile;
-  emit finished(0);
 }

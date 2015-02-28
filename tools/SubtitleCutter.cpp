@@ -2,7 +2,8 @@
 #include "Globals.h"
 
 SubtitleCutter::SubtitleCutter(QObject *parent)
-    : QObject(parent), m_cutSubtitles(), m_tempFolder(QString()), m_inputSubtitles()
+    : QObject(parent), m_cutSubtitles(), m_tempFolder(QString()), m_inputSubtitles(),
+        m_idxIsRunning(false)
 {
   m_assCutter = new AssCutter(this, false);
   m_srtCutter = new SrtCutter(this, false);
@@ -99,7 +100,11 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
       emit sendInfos(" cutting ass subtitle");
       outputName = this->cutAssSubtitle(subtitle, outputName, cutList);
     } else if (outputName.endsWith("idx", Qt::CaseInsensitive)) {
+      while (m_idxIsRunning) {
+        // waiting
+      }
       emit sendInfos(" cutting idx/sub subtitle");
+      m_idxIsRunning = true;
       this->cutIdxSubtitle(subtitle, cutList, outputName);
       continue;
     } else {
@@ -110,7 +115,7 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
       m_cutSubtitles << outputName;
     }
   }
-  if (m_inputSubtitles.isEmpty()) {
+  if (m_inputSubtitles.isEmpty() && !m_idxIsRunning) {
     emit finished(0);
   }
 }
@@ -126,6 +131,7 @@ void SubtitleCutter::passThrougProgress(int position)
 
 void SubtitleCutter::idxSubCutterFinished(const QString& outputfile)
 {
+  m_idxIsRunning = false;
   if (outputfile.isEmpty()) {
     return;
   }

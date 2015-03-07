@@ -654,13 +654,6 @@ void AVSViewer::init(int start)
       emit finished(-8);
       return;
     }
-    QString resizer = "Resize(Ceil(last.Width*" + QString::number(m_mult) + ")-(Ceil(last.Width*"
-        + QString::number(m_mult) + ")) % 4, last.Height)";
-    if (this->invoke(resizer) != 0) {
-      this->killEnv();
-      emit finished(-9);
-      return;
-    }
     emit sendInfos("  " + tr("checking colorspace,.."));
     bool reload = false;
     if (m_inf.IsRGB()) {

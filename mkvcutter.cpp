@@ -313,6 +313,9 @@ bool MkvCutter::createLibAVSourceAVS()
   QString call = "LWLibavVideoSource(\"" + shortName + "\"";
   call += ", cache=false, repeat=true)";
   script << call;
+  QString resizer = "BicubicResize(Ceil(last.Width*" + QString::number(m_aspectRatio)
+      + ")-(Ceil(last.Width*" + QString::number(m_aspectRatio) + ")) % 4, last.Height)";
+  script << resizer;
   return Globals::saveTextTo(script.join("\n"), m_tempAvs) == 0;
 }
 

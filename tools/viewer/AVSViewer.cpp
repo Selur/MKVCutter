@@ -19,8 +19,8 @@
 using namespace std;
 
 AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport,
-                     QStringList keyFrames) :
-    QWidget(parent), m_env(0), m_inf(), m_clip(), m_frameCount(100), m_current(-1),
+    QStringList keyFrames)
+    : QWidget(parent), m_env(0), m_inf(), m_clip(), m_frameCount(100), m_current(-1),
         m_currentInput(path), m_version(QString()), m_avsModified(QString()), m_res(0),
         m_mult(mult), m_currentImage(), m_cutSupport(cutSupport), m_keyFrames(keyFrames)
 {
@@ -102,7 +102,8 @@ void AVSViewer::on_previousKeyPushButton_clicked()
     return;
   }
   int previous = 0;
-  foreach (QString key, m_keyFrames) {
+  foreach (QString key, m_keyFrames)
+  {
     if (key.toInt() < m_current) {
       previous = key.toInt();
       continue;
@@ -117,7 +118,8 @@ void AVSViewer::on_nextKeyPushButton_clicked()
     return;
   }
   int next = m_frameCount;
-  foreach (QString key, m_keyFrames) {
+  foreach (QString key, m_keyFrames)
+  {
     if (key.toInt() > m_current) {
       next = key.toInt();
       break;
@@ -201,7 +203,7 @@ void AVSViewer::on_savePushButton_clicked()
   }
   QString tmp = tr("Save cut-list");
   QString text = QFileDialog::getSaveFileName(0, tmp, Globals::getDirectory(m_currentInput),
-                                              tr("cut-lists (*.cut)"));
+      tr("cut-lists (*.cut)"));
   if (text.isEmpty()) {
     return;
   }
@@ -234,7 +236,8 @@ void AVSViewer::on_loadPushButton_clicked()
   QString content = file.readAll();
   int start, end;
   QStringList lines = content.split("\n"), startEnd;
-  foreach(QString line, lines) {
+  foreach(QString line, lines)
+  {
     line = line.trimmed();
     if (line.isEmpty()) {
       continue;
@@ -283,25 +286,25 @@ void AVSViewer::on_setCutEndPushButton_clicked()
 
 bool AVSViewer::isValid(int position)
 {
-    int begin, end;
-    QString elem;
-    QStringList cutElems;
-    for (int i = 0, c = ui.cutListWidget->count(); i < c; ++i) {
-      elem = ui.cutListWidget->item(i)->text();
-      elem = elem.trimmed();
-      if (elem.isEmpty()) {
-        continue;
-      }
-      cutElems = elem.split("-");
-      //CUT-START
-      begin = cutElems.at(0).toInt();
-      end = cutElems.at(1).toInt();
-      if (position <= end && position >= begin) {
-        this->send(tr("Ignored %1 since start overlaps with %2.").arg(position).arg(elem));
-        return false;
-      }
+  int begin, end;
+  QString elem;
+  QStringList cutElems;
+  for (int i = 0, c = ui.cutListWidget->count(); i < c; ++i) {
+    elem = ui.cutListWidget->item(i)->text();
+    elem = elem.trimmed();
+    if (elem.isEmpty()) {
+      continue;
     }
-    return true;
+    cutElems = elem.split("-");
+    //CUT-START
+    begin = cutElems.at(0).toInt();
+    end = cutElems.at(1).toInt();
+    if (position <= end && position >= begin) {
+      this->send(tr("Ignored %1 since start overlaps with %2.").arg(position).arg(elem));
+      return false;
+    }
+  }
+  return true;
 }
 
 bool AVSViewer::isValidCut(int start, int end)
@@ -484,7 +487,8 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
   if (!content.contains("FFInfo()")) {
     bool ffmpegSource = false;
     bool ffms2Avs = false;
-    foreach(QString line, content.split("\n")) {
+    foreach(QString line, content.split("\n"))
+    {
       if (line.contains("FFMpegSource2(", Qt::CaseInsensitive)
           || line.contains("FFVideoSource(", Qt::CaseInsensitive)) {
         ffmpegSource = true;
@@ -650,8 +654,14 @@ void AVSViewer::init(int start)
       emit finished(-8);
       return;
     }
-
-    emit  sendInfos("  " + tr("checking colorspace,.."));
+    QString resizer = "Resize(Ceil(last.Width*" + QString::number(m_mult) + ")-(Ceil(last.Width*"
+        + QString::number(m_mult) + ")) % 4, last.Height)";
+    if (this->invoke(resizer) != 0) {
+      this->killEnv();
+      emit finished(-9);
+      return;
+    }
+    emit sendInfos("  " + tr("checking colorspace,.."));
     bool reload = false;
     if (m_inf.IsRGB()) {
       this->send(" " + tr("current color space is RGB"));

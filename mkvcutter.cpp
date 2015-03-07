@@ -380,6 +380,9 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   tmp += ", cache=false)";
   script << tmp;
 
+  tmp = "Resize(Ceil(last.Width*" + QString::number(m_aspectRatio) + ")-(Ceil(last.Width*"
+      + QString::number(m_aspectRatio) + ")) % 4, last.Height)";
+  script << tmp;
   script << assume;
   script << trim;
   trim = script.join("\n");

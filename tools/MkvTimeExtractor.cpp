@@ -4,7 +4,7 @@
 #include <QDir>
 
 MkvTimeExtractor::MkvTimeExtractor(QObject *parent) :
-    QObject(parent), m_timecodeFile(QString())
+    QObject(parent), m_process(nullptr), m_timecodeFile(QString())
 {
 }
 

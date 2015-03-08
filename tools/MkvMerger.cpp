@@ -10,6 +10,9 @@ MkvMerger::MkvMerger(QObject *parent) :
 
 void MkvMerger::handleMkvmergeOutput()
 {
+  if (m_process == nullptr) {
+    return;
+  }
   QString out = m_process->readAllStandardOutput().data();
   if (!out.isEmpty()) {
     //emit sendInfos("MkvMerge out: " + out.trimmed());
@@ -32,6 +35,7 @@ void MkvMerger::handleMkvmergeOutput()
 
 void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+  emit sendInfos("MkvMerge finished");
   if (exitCode < 0) {
     emit sendInfos(tr("ExitCode: %1, ExitStatus: %2").arg(exitCode).arg(exitStatus));
     emit finished(-1);

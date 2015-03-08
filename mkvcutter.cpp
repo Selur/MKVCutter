@@ -26,17 +26,20 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_subtitleToCut(), m_keyframeonly(false)
 {
   this->setObjectName("MkvCutter-Main");
-  this->initTools();
   ui.setupUi(this);
   ui.mainStackedWidget->setCurrentIndex(0);
   this->myconnect(ui.openSourcePushButton, SIGNAL(droppedInput(QString)), this,
       SLOT(setInput(QString)));
   ui.openSourcePushButton->acceptDrops(true);
   Globals::initDecimalFractionHashs();
+  this->initTools();
 }
 
 void MkvCutter::initTools()
 {
+  cout << " init tools" << endl;
+
+  cout << "  init m_mkvinfoAnalyser" << endl;
   delete m_mkvinfoAnalyser;
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
@@ -50,7 +53,7 @@ void MkvCutter::initTools()
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(fps(double)), this, SLOT(setFPS(double)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(subtitleTrack(SubtitleTrack)), this,
       SLOT(subtitleTrack(SubtitleTrack)));
-
+  cout << "  init m_mediaInfoAnalyser" << endl;
   delete m_mediaInfoAnalyser;
   m_mediaInfoAnalyser = new MediaInfoAnalyser(this);
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
@@ -74,7 +77,7 @@ void MkvCutter::initTools()
       SLOT(setMinKeyInt(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(maxKeyInt(QString)), this,
       SLOT(setMaxKeyInt(QString)));
-
+  cout << "  init m_mkvVideoSplitCaller" << endl;
   delete m_mkvVideoSplitCaller;
   m_mkvVideoSplitCaller = new MkvSplitCaller(this);
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
@@ -83,6 +86,7 @@ void MkvCutter::initTools()
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(progress(int)), this, SLOT(mkvsplitProgress(int)));
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(splitFiles(QStringList)), this,
       SLOT(setSplitFiles(QStringList)));
+  cout << "  init m_mkvAudioCutCaller" << endl;
   delete m_mkvAudioCutCaller;
   m_mkvAudioCutCaller = new MkvSplitCaller(this);
   this->myconnect(m_mkvAudioCutCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
@@ -91,25 +95,28 @@ void MkvCutter::initTools()
   this->myconnect(m_mkvAudioCutCaller, SIGNAL(progress(int)), this, SLOT(mkvsplitProgress(int)));
   this->myconnect(m_mkvAudioCutCaller, SIGNAL(splitFiles(QStringList)), this,
       SLOT(setAudioSplitFiles(QStringList)));
+  cout << "  init m_mkvMerger" << endl;
   delete m_mkvMerger;
   m_mkvMerger = new MkvMerger(this);
   this->myconnect(m_mkvMerger, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvMerger, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_mkvMerger, SIGNAL(finished(int)), this, SLOT(mkvMergerFinished(int)));
   this->myconnect(m_mkvMerger, SIGNAL(progress(int)), this, SLOT(mkvMergerProgress(int)));
-
+  cout << "  init m_x264" << endl;
   delete m_x264;
   m_x264 = new X264Caller(this);
   this->myconnect(m_x264, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_x264, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_x264, SIGNAL(finished(int)), this, SLOT(x264Finished(int)));
   this->myconnect(m_x264, SIGNAL(progress(int)), this, SLOT(x264Progress(int)));
+  cout << "  init m_extractor" << endl;
   delete m_extractor;
   m_extractor = new MkvVideoExtractor(this);
   this->myconnect(m_extractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_extractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_extractor, SIGNAL(finished(int)), this, SLOT(mkvExtractorFinished(int)));
   this->myconnect(m_extractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+  cout << "  init m_timeextractor" << endl;
   delete m_timeextractor;
   m_timeextractor = new MkvTimeExtractor(this);
   this->myconnect(m_timeextractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
@@ -118,6 +125,7 @@ void MkvCutter::initTools()
   this->myconnect(m_timeextractor, SIGNAL(finished(int)), this,
       SLOT(finishedTimeCodeExtraction(int)));
   this->myconnect(m_timeextractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+  cout << "  init m_h264Parser" << endl;
   delete m_h264Parser;
   m_h264Parser = new H264Parser(this);
   this->myconnect(m_h264Parser, SIGNAL(sendInfo(QString)), this, SLOT(addInfo(QString)));
@@ -128,6 +136,7 @@ void MkvCutter::initTools()
   this->myconnect(m_h264Parser, SIGNAL(bframes(int)), this, SLOT(setBFrames(int)));
   this->myconnect(m_h264Parser, SIGNAL(qpMin(int)), this, SLOT(setQPmin(int)));
   this->myconnect(m_h264Parser, SIGNAL(chromaOffset(int)), this, SLOT(setChromaOffset(int)));
+  cout << "  init m_mkvSubtitleExtractor" << endl;
   delete m_mkvSubtitleExtractor;
   m_mkvSubtitleExtractor = new MkvSubtitleExtractor(this);
   this->myconnect(m_mkvSubtitleExtractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
@@ -136,6 +145,7 @@ void MkvCutter::initTools()
       SLOT(mkvSubtitleExtractorFinished(int)));
   this->myconnect(m_mkvSubtitleExtractor, SIGNAL(progress(int)), this,
       SLOT(mkvExtractorProgress(int)));
+  cout << "  init m_subtitleCutter" << endl;
   delete m_subtitleCutter;
   m_subtitleCutter = new SubtitleCutter(this);
   this->myconnect(m_subtitleCutter, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
@@ -143,6 +153,12 @@ void MkvCutter::initTools()
   this->myconnect(m_subtitleCutter, SIGNAL(finished(int)), this,
       SLOT(mkvSubtitleCutterFinished(int)));
   this->myconnect(m_subtitleCutter, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+  if (m_viewer != nullptr) {
+      cout << "  reset m_viewer" << endl;
+      delete m_viewer;
+      m_viewer = nullptr;
+  }
+  cout << " finished initializing tools" << endl;
 }
 
 MkvCutter::~MkvCutter()
@@ -1350,6 +1366,7 @@ void MkvCutter::mediaInfoFinished(int exitstate)
 
 void MkvCutter::startViewer()
 {
+  cout << "init viewer" << endl;
   delete m_viewer;
   QStringList keyframes;
   foreach(QString key, m_keyframes)
@@ -1525,6 +1542,8 @@ void MkvCutter::addInfo(QString infos)
 
 void MkvCutter::reset(bool andInit)
 {
+  ui.infoTextBrowser->clear();
+  cout << " reset and init " << andInit << endl;
   bool keepIntermediate = ui.keepIntermediateCheckBox->isChecked();
   if (!m_tempAvs.isEmpty() && !keepIntermediate) {
     this->addInfo(tr("Deleting %1,..").arg(m_tempAvs));

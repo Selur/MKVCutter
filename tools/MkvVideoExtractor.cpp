@@ -4,7 +4,7 @@
 #include <QDir>
 
 MkvVideoExtractor::MkvVideoExtractor(QObject *parent) :
-    QObject(parent)
+    QObject(parent), m_process(nullptr)
 {
 }
 
@@ -16,13 +16,13 @@ void MkvVideoExtractor::startExtraction(QString filename, QString track, QString
 
 void MkvVideoExtractor::call(QString call)
 {
-  this->sendInfos("Mkv extractor call: " + call);
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
                    SLOT(mkvextractFinished(int, QProcess::ExitStatus)));
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this,
                    SLOT(handleMkvExtractOutput()));
+  this->sendInfos("Mkv extractor call: " + call);
   m_process->start(call);
 }
 
@@ -57,10 +57,10 @@ void MkvVideoExtractor::handleMkvExtractOutput()
 
 void MkvVideoExtractor::mkvextractFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+  emit sendInfos("mkvextractFinished: "+QString::number(exitCode)+", status "+QString::number(exitStatus));
   if (exitCode < 0) {
     emit sendInfos(tr("ExitCode: %1, ExitStatus: %2").arg(exitCode).arg(exitStatus));
-    emit
-    finished(-1);
+    emit finished(-1);
     return;
   }
   emit finished(0);

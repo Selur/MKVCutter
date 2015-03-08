@@ -12,16 +12,32 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_tempFolder(QString()), m_avcProfileLevel(QString("High@L4.1")), m_audioFormat(QString()),
         m_avcCabac(true), m_avcRefFrames(1), m_enabled(0), m_frameCount(0), m_keyframes(), m_cuts(),
         m_splitFiles(), m_tempReencodeAvs(), m_videoEncodingCalls(), m_reencodedVideoFiles(),
-        m_fps(-1), m_trimming(), m_cutList(), m_mkvVideoParts(), m_mkvAudioAndSubtitleParts(),
-        m_audioFile(QString()), m_averageBitrate(-1), m_audioSplitFiles(), m_extractionFiles(),
-        m_videoTrackID(-1), m_extractor(nullptr), m_timeextractor(nullptr), m_toDelete(),
-        m_aspectRatio(1), m_interlaced("progressive"), m_vfr(false), m_timecodes(QString()),
+        m_fps(-1), m_trimming(), m_cutList(), m_mkvmergeIntSplitList(), m_mkvinfoAnalyser(nullptr),
+        m_mediaInfoAnalyser(nullptr), m_viewer(nullptr), m_mkvVideoSplitCaller(nullptr),
+        m_mkvAudioCutCaller(nullptr), m_mkvMerger(nullptr), m_x264(nullptr), m_mkvVideoParts(),
+        m_mkvAudioAndSubtitleParts(), m_audioFile(QString()), m_averageBitrate(-1),
+        m_audioSplitFiles(), m_extractionFiles(), m_toDelete(), m_videoTrackID(-1),
+        m_extractor(nullptr), m_timeextractor(nullptr), m_aspectRatio(1),
+        m_interlaced("progressive"), m_mediaInfoScanorder(), m_vfr(false), m_timecodes(QString()),
         m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
         m_maxKey(QString()), m_h264Parser(nullptr), m_weightedP(0), m_weightedB(0), m_bframes(0),
-        m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(), m_cutSubtitles(),
+        m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
+        m_mkvSubtitleExtractor(nullptr), m_subtitleCutter(nullptr), m_cutSubtitles(),
         m_subtitleToCut(), m_keyframeonly(false)
 {
   this->setObjectName("MkvCutter-Main");
+  this->initTools();
+  ui.setupUi(this);
+  ui.mainStackedWidget->setCurrentIndex(0);
+  this->myconnect(ui.openSourcePushButton, SIGNAL(droppedInput(QString)), this,
+      SLOT(setInput(QString)));
+  ui.openSourcePushButton->acceptDrops(true);
+  Globals::initDecimalFractionHashs();
+}
+
+void MkvCutter::initTools()
+{
+  delete m_mkvinfoAnalyser;
   m_mkvinfoAnalyser = new MkvInfoSourceAnalyser(this);
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -35,6 +51,7 @@ MkvCutter::MkvCutter(QWidget *parent)
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(subtitleTrack(SubtitleTrack)), this,
       SLOT(subtitleTrack(SubtitleTrack)));
 
+  delete m_mediaInfoAnalyser;
   m_mediaInfoAnalyser = new MediaInfoAnalyser(this);
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -58,6 +75,7 @@ MkvCutter::MkvCutter(QWidget *parent)
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(maxKeyInt(QString)), this,
       SLOT(setMaxKeyInt(QString)));
 
+  delete m_mkvVideoSplitCaller;
   m_mkvVideoSplitCaller = new MkvSplitCaller(this);
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -65,6 +83,7 @@ MkvCutter::MkvCutter(QWidget *parent)
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(progress(int)), this, SLOT(mkvsplitProgress(int)));
   this->myconnect(m_mkvVideoSplitCaller, SIGNAL(splitFiles(QStringList)), this,
       SLOT(setSplitFiles(QStringList)));
+  delete m_mkvAudioCutCaller;
   m_mkvAudioCutCaller = new MkvSplitCaller(this);
   this->myconnect(m_mkvAudioCutCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvAudioCutCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -72,21 +91,26 @@ MkvCutter::MkvCutter(QWidget *parent)
   this->myconnect(m_mkvAudioCutCaller, SIGNAL(progress(int)), this, SLOT(mkvsplitProgress(int)));
   this->myconnect(m_mkvAudioCutCaller, SIGNAL(splitFiles(QStringList)), this,
       SLOT(setAudioSplitFiles(QStringList)));
+  delete m_mkvMerger;
   m_mkvMerger = new MkvMerger(this);
   this->myconnect(m_mkvMerger, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvMerger, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_mkvMerger, SIGNAL(finished(int)), this, SLOT(mkvMergerFinished(int)));
   this->myconnect(m_mkvMerger, SIGNAL(progress(int)), this, SLOT(mkvMergerProgress(int)));
+
+  delete m_x264;
   m_x264 = new X264Caller(this);
   this->myconnect(m_x264, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_x264, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_x264, SIGNAL(finished(int)), this, SLOT(x264Finished(int)));
   this->myconnect(m_x264, SIGNAL(progress(int)), this, SLOT(x264Progress(int)));
+  delete m_extractor;
   m_extractor = new MkvVideoExtractor(this);
   this->myconnect(m_extractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_extractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_extractor, SIGNAL(finished(int)), this, SLOT(mkvExtractorFinished(int)));
   this->myconnect(m_extractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+  delete m_timeextractor;
   m_timeextractor = new MkvTimeExtractor(this);
   this->myconnect(m_timeextractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_timeextractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -94,6 +118,7 @@ MkvCutter::MkvCutter(QWidget *parent)
   this->myconnect(m_timeextractor, SIGNAL(finished(int)), this,
       SLOT(finishedTimeCodeExtraction(int)));
   this->myconnect(m_timeextractor, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
+  delete m_h264Parser;
   m_h264Parser = new H264Parser(this);
   this->myconnect(m_h264Parser, SIGNAL(sendInfo(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_h264Parser, SIGNAL(finished()), this, SLOT(h264ParseFinished()));
@@ -103,7 +128,7 @@ MkvCutter::MkvCutter(QWidget *parent)
   this->myconnect(m_h264Parser, SIGNAL(bframes(int)), this, SLOT(setBFrames(int)));
   this->myconnect(m_h264Parser, SIGNAL(qpMin(int)), this, SLOT(setQPmin(int)));
   this->myconnect(m_h264Parser, SIGNAL(chromaOffset(int)), this, SLOT(setChromaOffset(int)));
-
+  delete m_mkvSubtitleExtractor;
   m_mkvSubtitleExtractor = new MkvSubtitleExtractor(this);
   this->myconnect(m_mkvSubtitleExtractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_mkvSubtitleExtractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -111,26 +136,18 @@ MkvCutter::MkvCutter(QWidget *parent)
       SLOT(mkvSubtitleExtractorFinished(int)));
   this->myconnect(m_mkvSubtitleExtractor, SIGNAL(progress(int)), this,
       SLOT(mkvExtractorProgress(int)));
-
+  delete m_subtitleCutter;
   m_subtitleCutter = new SubtitleCutter(this);
   this->myconnect(m_subtitleCutter, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_subtitleCutter, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_subtitleCutter, SIGNAL(finished(int)), this,
       SLOT(mkvSubtitleCutterFinished(int)));
   this->myconnect(m_subtitleCutter, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
-
-  m_viewer = 0;
-  ui.setupUi(this);
-  ui.mainStackedWidget->setCurrentIndex(0);
-  QObject::connect(ui.openSourcePushButton, SIGNAL(droppedInput(QString)), this,
-      SLOT(setInput(QString)));
-  ui.openSourcePushButton->acceptDrops(true);
-  Globals::initDecimalFractionHashs();
 }
 
 MkvCutter::~MkvCutter()
 {
-  this->reset();
+  this->reset(false);
 }
 
 void MkvCutter::subtitleTrack(SubtitleTrack track)
@@ -1506,40 +1523,40 @@ void MkvCutter::addInfo(QString infos)
   cout << qPrintable(infos) << endl;
 }
 
-void MkvCutter::reset()
+void MkvCutter::reset(bool andInit)
 {
   bool keepIntermediate = ui.keepIntermediateCheckBox->isChecked();
-  if (!m_tempAvs.isEmpty()) {
-    if (!keepIntermediate) {
-      this->addInfo(tr("Deleting %1,..").arg(m_tempAvs));
-      QFile::remove(m_tempAvs);
-    }
-    m_tempAvs = QString();
+  if (!m_tempAvs.isEmpty() && !keepIntermediate) {
+    this->addInfo(tr("Deleting %1,..").arg(m_tempAvs));
+    QFile::remove(m_tempAvs);
   }
+  m_tempAvs = QString();
   foreach(QString file, m_tempReencodeAvs)
   {
     if (!keepIntermediate) {
       QFile::remove(file);
     }
   }
+  m_tempReencodeAvs.clear();
   m_currentInput = QString();
   m_currentOutput = QString();
   m_tempFolder = QString();
+
   m_avcProfileLevel = QString();
   m_audioFormat = QString();
   m_avcCabac = true;
-  m_avcRefFrames = -1;
+  m_avcRefFrames = 1;
   m_enabled = 0;
   m_frameCount = -1;
   m_keyframes.clear();
   m_cuts.clear();
   m_splitFiles.clear();
-  m_tempReencodeAvs.clear();
   m_videoEncodingCalls.clear();
   m_reencodedVideoFiles.clear();
   m_fps = -1;
   m_trimming.clear();
   m_cutList.clear();
+
   m_mkvmergeIntSplitList.clear();
   m_mkvVideoParts.clear();
   m_mkvAudioAndSubtitleParts.clear();
@@ -1569,6 +1586,9 @@ void MkvCutter::reset()
   m_averageKeyDistance = 0;
   m_toAnalyse = QString();
   m_subtitles.clear();
+  if (andInit) {
+    this->initTools();
+  }
 }
 
 void MkvCutter::setCutList(QStringList cuts)

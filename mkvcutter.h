@@ -75,7 +75,8 @@ class MkvCutter : public QWidget
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
-    void reset();
+    void reset(bool andInit=true);
+    void initTools();
     bool createLibAVSourceAVS();
     QStringList keyFrameTimes();
     void buildAndCallMkvMerge();

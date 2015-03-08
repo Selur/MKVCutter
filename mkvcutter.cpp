@@ -1542,7 +1542,6 @@ void MkvCutter::addInfo(QString infos)
 
 void MkvCutter::reset(bool andInit)
 {
-  ui.infoTextBrowser->clear();
   cout << " reset and init " << andInit << endl;
   bool keepIntermediate = ui.keepIntermediateCheckBox->isChecked();
   if (!m_tempAvs.isEmpty() && !keepIntermediate) {

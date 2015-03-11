@@ -154,9 +154,9 @@ void MkvCutter::initTools()
       SLOT(mkvSubtitleCutterFinished(int)));
   this->myconnect(m_subtitleCutter, SIGNAL(progress(int)), this, SLOT(mkvExtractorProgress(int)));
   if (m_viewer != nullptr) {
-      cout << "  reset m_viewer" << endl;
-      delete m_viewer;
-      m_viewer = nullptr;
+    cout << "  reset m_viewer" << endl;
+    delete m_viewer;
+    m_viewer = nullptr;
   }
   cout << " finished initializing tools" << endl;
 }
@@ -1011,7 +1011,7 @@ void MkvCutter::startVideoReencoding()
     //QMessageBox::information(this, tr("PING"), tr("Finished all the video reencoding,..."));
     if (m_keyframeonly) {
       if (!m_subtitles.isEmpty()) {
-        m_mkvSubtitleExtractor->startExtraction(m_currentInput, m_subtitles, m_tempFolder);
+        m_mkvSubtitleExtractor->startExtraction(m_currentOutput, m_subtitles, m_tempFolder);
         return;
       }
       this->cleanUpAndMerge();
@@ -1035,6 +1035,14 @@ void MkvCutter::cleanUpAndMerge()
   this->addInfo(" " + tr("video file count: %1").arg(videoFileCount));
   this->addInfo(" " + tr("audio file count: %1").arg(audioFileCount));
   this->addInfo(" " + tr("subtitle file count: %1").arg(subtitleCount));
+
+  if (m_keyframeonly && subtitleCount != 0) {
+    QString output = m_currentOutput;
+    output = QDir::toNativeSeparators(output.insert(output.lastIndexOf("."), "_withoutSubs"));
+    videoFileCount = 1;
+    m_reencodedVideoFiles.clear();
+    m_reencodedVideoFiles << output;
+  }
 
   //QMessageBox::information(this, tr("PING"), tr("videoFileCount,.."));
   if (videoFileCount == 1) {
@@ -1492,6 +1500,10 @@ void MkvCutter::buildAndCallMkvMerge()
   this->addInfo(" m_mkvVideoParts:\n" + m_mkvVideoParts.join("\n "));
 
   m_mkvVideoSplitCaller->setKeepIntermediate(ui.keepIntermediateCheckBox->isChecked());
+  QString output = m_currentOutput;
+  if (!m_subtitles.isEmpty()) {
+    output = output.insert(output.lastIndexOf("."), "_withoutSubs");
+  }
   m_mkvVideoSplitCaller->start(m_currentInput, m_currentOutput, m_mkvVideoParts, m_tempFolder,
       false, m_keyframeonly);
 }

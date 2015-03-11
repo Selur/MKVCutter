@@ -66,6 +66,9 @@ void MediaInfoAnalyser::mediainfoOutput()
     foreach(QString line, lines) {
       line = line.trimmed();
       //emit sendInfos(tr("MediaInfo out: %1").arg(line));
+      if (line.startsWith("Text #") || line.startsWith("Text")) {
+        break;
+      }
       if (!audio) {
         if (line.startsWith("Encoding settings")) {
           removeStartOfLine(line);

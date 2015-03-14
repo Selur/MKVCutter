@@ -136,7 +136,12 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     }
   }
 // OPTION FILE
-  optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
+  int index = optionFile.indexOf("_withoutSubs");
+  if (index != -1) {
+    optionFile = optionFile.remove(index), optionFile.size());
+  } else {
+    optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
+  }
   optionFile += "_mkvOptions.txt";
 
 // AUDIO FILES

@@ -1034,25 +1034,16 @@ void MkvCutter::cleanUpAndMerge()
 
   this->addInfo(" " + tr("video file count: %1").arg(videoFileCount));
   if (videoFileCount > 0) {
-    this->addInfo(" " + tr("video files:") + m_reencodedVideoFiles.join("\n   "));
+    this->addInfo(" " + tr("video files:\n") + m_reencodedVideoFiles.join("\n   "));
   }
   this->addInfo(" " + tr("audio file count: %1").arg(audioFileCount));
   if (audioFileCount > 0) {
-    this->addInfo("  " + tr("audio files:") + m_audioSplitFiles.join("\n   "));
+    this->addInfo("  " + tr("audio files:\n") + m_audioSplitFiles.join("\n   "));
   }
-  this->addInfo("  " + tr("subtitle file count: %1").arg(subtitleCount));
+  this->addInfo(" " + tr("subtitle file count: %1").arg(subtitleCount));
   if (subtitleCount > 0) {
-    this->addInfo("  " + tr("subtitle files:") + m_cutSubtitles.join("\n   "));
+    this->addInfo("  " + tr("subtitle files:\n") + m_cutSubtitles.join("\n   "));
   }
-  if (m_keyframeonly && subtitleCount != 0) {
-    QString output = m_currentOutput;
-    output = QDir::toNativeSeparators(output.insert(output.lastIndexOf("."), "_withoutSubs"));
-    videoFileCount = 1;
-    m_reencodedVideoFiles.clear();
-    m_reencodedVideoFiles << output;
-  }
-
-  //QMessageBox::information(this, tr("PING"), tr("videoFileCount,.."));
   if (videoFileCount == 1) {
     if (audioFileCount == 0 && subtitleCount == 0) {
       this->addInfo(" " + tr("no audio&subtitle files present -> renaming videoFile,.."));

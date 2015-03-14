@@ -1055,6 +1055,7 @@ void MkvCutter::cleanUpAndMerge()
         QMessageBox::information(this, tr("Finished!"),
             tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
       }
+      this->reset();
     } else {
       if (audioFileCount != 0) {
         this->addInfo(" " + tr("audio file: %1").arg(m_audioFile));
@@ -1063,7 +1064,6 @@ void MkvCutter::cleanUpAndMerge()
       m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
           m_fps, m_interlaced != "progressive", m_paff);
     }
-    this->reset();
     return;
   }
 

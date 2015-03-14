@@ -60,7 +60,10 @@ void IdxSubCutter::idxCutterOutput()
 {
   QString out = m_process->readAllStandardOutput().data();
   out += m_process->readAllStandardError().data();
-  emit sendInfos(out);
+  out = out.trimmed();
+  if (!out.isEmpty()) {
+    emit sendInfos(out);
+  }
 }
 
 void IdxSubCutter::idxCutterFinished(int exitState, QProcess::ExitStatus status)

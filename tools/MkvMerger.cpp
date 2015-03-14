@@ -101,9 +101,11 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
 
 // VIDEO FILES
   int splitfileCount = splitFiles.count();
-  QString optionFile;
+  QString optionFile, file;
   if (splitfileCount == 1 && splitFiles.at(0).endsWith(".mkv")) {
+    file = splitFiles.at(0);
     options << doubleBackSlash(splitFiles.at(0));
+    optionFile = file;
   } else {
     QString fpsValue = Globals::decimalToFractionConvert(fps);
     QString fpsExtension = "p";
@@ -113,7 +115,6 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
         fpsValue = Globals::decimalToFractionConvert(fps * 2);
       }
     }
-    QString file;
     if (splitfileCount > 0) {
       options << "--no-audio";
       options << "--default-duration";
@@ -138,7 +139,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
 // OPTION FILE
   int index = optionFile.indexOf("_withoutSubs");
   if (index != -1) {
-    optionFile = optionFile.remove(index), optionFile.size());
+    optionFile = optionFile.remove(index, optionFile.size());
   } else {
     optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
   }

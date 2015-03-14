@@ -33,6 +33,7 @@ MkvCutter::MkvCutter(QWidget *parent)
   ui.openSourcePushButton->acceptDrops(true);
   Globals::initDecimalFractionHashs();
   this->initTools();
+  this->setWindowTitle("Mkv Cutter - "+QString::fromLocal8Bit(BUILDDATE));
 }
 
 void MkvCutter::initTools()

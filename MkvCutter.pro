@@ -5,10 +5,10 @@ QT += core \
     gui
 win32 {
   DEFINES += BUILDTIME=\\\"$$system('echo %time%')\\\"
-  DEFINES += BUILDDATE=\\\"$$system('echo %date%')\\\"
+  DEFINES += BUILDDATE=\\\"$$system('echo %date:~6,4%%date:~3,2%%date:~0,2%')\\\"
 } else {
   DEFINES += BUILDTIME=\\\"$$system(date '+%H:%M.%s')\\\"
-  DEFINES += BUILDDATE=\\\"$$system(date '+%d/%m/%y')\\\"
+  DEFINES += BUILDDATE=\\\"$$system(date '+%y.%m.%d')\\\"
 } 
 isEqual(QT_MAJOR_VERSION, 5):QT += widgets # for all widgets
 win32-msvc* { 

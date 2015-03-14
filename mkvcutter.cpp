@@ -1504,7 +1504,7 @@ void MkvCutter::buildAndCallMkvMerge()
   if (!m_subtitles.isEmpty()) {
     output = output.insert(output.lastIndexOf("."), "_withoutSubs");
   }
-  m_mkvVideoSplitCaller->start(m_currentInput, m_currentOutput, m_mkvVideoParts, m_tempFolder,
+  m_mkvVideoSplitCaller->start(m_currentInput, output, m_mkvVideoParts, m_tempFolder,
       false, m_keyframeonly);
 }
 

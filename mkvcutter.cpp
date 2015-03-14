@@ -1011,7 +1011,7 @@ void MkvCutter::startVideoReencoding()
     //QMessageBox::information(this, tr("PING"), tr("Finished all the video reencoding,..."));
     if (m_keyframeonly) {
       if (!m_subtitles.isEmpty()) {
-        m_mkvSubtitleExtractor->startExtraction(m_currentOutput, m_subtitles, m_tempFolder);
+        m_mkvSubtitleExtractor->startExtraction(m_currentInput, m_subtitles, m_tempFolder);
         return;
       }
       this->cleanUpAndMerge();

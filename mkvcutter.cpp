@@ -1033,9 +1033,17 @@ void MkvCutter::cleanUpAndMerge()
   int subtitleCount = m_cutSubtitles.count();
 
   this->addInfo(" " + tr("video file count: %1").arg(videoFileCount));
+  if (videoFileCount > 0) {
+    this->addInfo(" " + tr("video files:") + m_reencodedVideoFiles.join("\n   "));
+  }
   this->addInfo(" " + tr("audio file count: %1").arg(audioFileCount));
-  this->addInfo(" " + tr("subtitle file count: %1").arg(subtitleCount));
-
+  if (audioFileCount > 0) {
+    this->addInfo("  " + tr("audio files:") + m_audioSplitFiles.join("\n   "));
+  }
+  this->addInfo("  " + tr("subtitle file count: %1").arg(subtitleCount));
+  if (subtitleCount > 0) {
+    this->addInfo("  " + tr("subtitle files:") + m_cutSubtitles.join("\n   "));
+  }
   if (m_keyframeonly && subtitleCount != 0) {
     QString output = m_currentOutput;
     output = QDir::toNativeSeparators(output.insert(output.lastIndexOf("."), "_withoutSubs"));
@@ -1057,8 +1065,10 @@ void MkvCutter::cleanUpAndMerge()
             tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
       }
     } else {
-      this->addInfo(" " + tr("audio file: %1").arg(m_audioFile));
-      this->addInfo(" " + tr("Muxing audio&video(1),.."));
+      if (audioFileCount != 0) {
+        this->addInfo(" " + tr("audio file: %1").arg(m_audioFile));
+      }
+      this->addInfo(" " + tr("Muxing content,.."));
       m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
           m_fps, m_interlaced != "progressive", m_paff);
     }
@@ -1504,8 +1514,8 @@ void MkvCutter::buildAndCallMkvMerge()
   if (!m_subtitles.isEmpty()) {
     output = output.insert(output.lastIndexOf("."), "_withoutSubs");
   }
-  m_mkvVideoSplitCaller->start(m_currentInput, output, m_mkvVideoParts, m_tempFolder,
-      false, m_keyframeonly);
+  m_mkvVideoSplitCaller->start(m_currentInput, output, m_mkvVideoParts, m_tempFolder, false,
+      m_keyframeonly);
 }
 
 void MkvCutter::cutAudio()

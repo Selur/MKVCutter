@@ -101,6 +101,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
 
 // VIDEO FILES
   int splitfileCount = splitFiles.count();
+  splitFiles.sort();
   QString optionFile, file;
   if (splitfileCount == 1 && splitFiles.at(0).endsWith(".mkv")) {
     file = splitFiles.at(0);

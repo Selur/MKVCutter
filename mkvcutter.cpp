@@ -1536,7 +1536,7 @@ void MkvCutter::buildAndCallMkvMerge()
 
   m_mkvVideoSplitCaller->setKeepIntermediate(ui.keepIntermediateCheckBox->isChecked());
   QString output = m_currentOutput;
-  if (!m_subtitles.isEmpty()) {
+  if (!m_subtitles.isEmpty() && m_keyframeonly) {
     output = output.insert(output.lastIndexOf("."), "_withoutSubs");
   }
   m_mkvVideoSplitCaller->start(m_currentInput, output, m_mkvVideoParts, m_tempFolder, false,

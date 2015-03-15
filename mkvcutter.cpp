@@ -930,23 +930,28 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   }
 
   QStringList detected;
-  detected << "x264Settings: "+m_x264Settings;
-  detected << "AVCProfileLevel: "+m_avcProfileLevel;
-  detected << "Interlaced: "+m_interlaced;
-  detected << "Cabac: "+m_avcCabac;
-  detected << "AVCRefFrames: "+m_avcRefFrames;
-  detected << "Chroma offset" + m_chromaOffset;
-  detected << "BFrames: "+QString::number(m_bframes);
-  detected << "WeightedB: "+QString::number(m_weightedB);
-  detected << "WeightP: "+QString::number(m_weightedP);
-  detected << "Min Keyint: " + m_minKey;
-  detected << "Max Keyint: " + m_maxKey;
-  detected << "QPMin: "+ QString::number(m_qpMin);
-  detected << "FPS: "+QString::number(m_fps);
-  detected << "AspectRatio: "+QString::number(m_aspectRatio);
+  detected << "  " + tr("Detected settings:");
+  bool hasNoX264Settings = m_x264Settings.trimmed().isEmpty();
+  if (hasNoX264Settings) {
+    detected << "    AVCProfileLevel: "+m_avcProfileLevel;
+    detected << "    Interlaced: "+m_interlaced;
+    detected << "    Cabac: "+QString( (m_avcCabac) ? "true" : "false");
+    detected << "    AVCRefFrames: "+QString::number(m_avcRefFrames);
+    detected << "    Chroma offset: " + QString::number(m_chromaOffset);
+    detected << "    BFrames: "+QString::number(m_bframes);
+    detected << "    WeightedB: "+QString::number(m_weightedB);
+    detected << "    WeightP: "+QString::number(m_weightedP);
+    detected << "    Min Keyint: " + m_minKey;
+    detected << "    Max Keyint: " + m_maxKey;
+    detected << "    QPMin: "+ QString::number(m_qpMin);
+    detected << "    AspectRatio: "+QString::number(m_aspectRatio);
+  } else {
+    detected << "   x264Settings: "+m_x264Settings;
+  }
+  detected << "     FPS: "+QString::number(m_fps);
   this->addInfo(detected.join("\n"));
 
-  if (m_x264Settings.isEmpty()) {
+  if (hasNoX264Settings) {
     if (maxBuff != 0 && maxRate != 0) {
       if (maxBuff != 0)
         call << "--vbv-bufsize " + QString::number(maxBuff);

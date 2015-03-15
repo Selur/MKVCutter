@@ -65,7 +65,7 @@ void MediaInfoAnalyser::mediainfoOutput()
     bool vfr = false;
     foreach(QString line, lines) {
       line = line.trimmed();
-      emit sendInfos(tr("MediaInfo out: %1").arg(line));
+      //emit sendInfos(tr("MediaInfo out: %1").arg(line));
       if (line.startsWith("Text #") || line.trimmed()=="Text") {
         break;
       }

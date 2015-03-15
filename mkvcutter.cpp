@@ -33,7 +33,7 @@ MkvCutter::MkvCutter(QWidget *parent)
   ui.openSourcePushButton->acceptDrops(true);
   Globals::initDecimalFractionHashs();
   this->initTools();
-  this->setWindowTitle("Mkv Cutter - "+QString::fromLocal8Bit(BUILDDATE));
+  this->setWindowTitle("Mkv Cutter - " + QString::fromLocal8Bit(BUILDDATE));
 }
 
 void MkvCutter::initTools()
@@ -928,29 +928,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     call << tmp;
   }
 
-  QStringList detected;
-  detected << "  " + tr("Detected settings:");
-  bool hasNoX264Settings = m_x264Settings.trimmed().isEmpty();
-  if (hasNoX264Settings) {
-    detected << "    AVCProfileLevel: "+m_avcProfileLevel;
-    detected << "    Interlaced: "+m_interlaced;
-    detected << "    Cabac: "+QString( (m_avcCabac) ? "true" : "false");
-    detected << "    AVCRefFrames: "+QString::number(m_avcRefFrames);
-    detected << "    Chroma offset: " + QString::number(m_chromaOffset);
-    detected << "    BFrames: "+QString::number(m_bframes);
-    detected << "    WeightedB: "+QString::number(m_weightedB);
-    detected << "    WeightP: "+QString::number(m_weightedP);
-    detected << "    Min Keyint: " + m_minKey;
-    detected << "    Max Keyint: " + m_maxKey;
-    detected << "    QPMin: "+ QString::number(m_qpMin);
-    detected << "    AspectRatio: "+QString::number(m_aspectRatio);
-  } else {
-    detected << "   x264Settings: "+m_x264Settings;
-  }
-  detected << "     FPS: "+QString::number(m_fps);
-  this->addInfo(detected.join("\n"));
-
-  if (hasNoX264Settings) {
+  if (m_x264Settings.trimmed().isEmpty()) {
     if (maxBuff != 0 && maxRate != 0) {
       if (maxBuff != 0)
         call << "--vbv-bufsize " + QString::number(maxBuff);
@@ -1108,7 +1086,32 @@ void MkvCutter::x264Finished(int exitstate)
 
 void MkvCutter::createReencodeCalls()
 {
-  foreach(QString avsSkript, m_tempReencodeAvs) {
+  if (m_tempReencodeAvs.isEmpty()) {
+    return;
+  }
+  QStringList detected;
+  detected << "  " + tr("Detected settings:");
+  bool hasNoX264Settings = m_x264Settings.trimmed().isEmpty();
+  if (hasNoX264Settings) {
+    detected << "    AVCProfileLevel: " + m_avcProfileLevel;
+    detected << "    Interlaced: " + m_interlaced;
+    detected << "    Cabac: " + QString((m_avcCabac) ? "true" : "false");
+    detected << "    AVCRefFrames: " + QString::number(m_avcRefFrames);
+    detected << "    Chroma offset: " + QString::number(m_chromaOffset);
+    detected << "    BFrames: " + QString::number(m_bframes);
+    detected << "    WeightedB: " + QString::number(m_weightedB);
+    detected << "    WeightP: " + QString::number(m_weightedP);
+    detected << "    Min Keyint: " + m_minKey;
+    detected << "    Max Keyint: " + m_maxKey;
+    detected << "    QPMin: " + QString::number(m_qpMin);
+    detected << "    AspectRatio: " + QString::number(m_aspectRatio);
+  } else {
+    detected << "   x264Settings: " + m_x264Settings;
+  }
+  detected << "     FPS: " + QString::number(m_fps);
+  this->addInfo(detected.join("\n"));
+  foreach(QString avsSkript, m_tempReencodeAvs)
+  {
     this->createVideoReencodeCall(avsSkript);
   }
 }

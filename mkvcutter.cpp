@@ -1577,7 +1577,7 @@ void MkvCutter::addInfo(QString infos)
 
 void MkvCutter::reset(bool andInit)
 {
-  cout << " reset and init " << andInit << endl;
+  this->addInfo("Reset");
   bool keepIntermediate = ui.keepIntermediateCheckBox->isChecked();
   if (!m_tempAvs.isEmpty() && !keepIntermediate) {
     this->addInfo(tr("Deleting %1,..").arg(m_tempAvs));

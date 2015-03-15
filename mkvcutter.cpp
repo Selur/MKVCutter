@@ -907,7 +907,6 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   QString tmp;
   tmp = "\"" + x264 + "\"";
   call << tmp;
-
   tmp = "--profile ";
   if (m_avcProfileLevel.contains("High") || m_avcProfileLevel.isEmpty()) {
     tmp += "high";
@@ -929,6 +928,23 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     tmp = "--level " + tmp;
     call << tmp;
   }
+
+  QStringList detected;
+  detected << "x264Settings: "+m_x264Settings;
+  detected << "AVCProfileLevel: "+m_avcProfileLevel;
+  detected << "Interlaced: "+m_interlaced;
+  detected << "Cabac: "+m_avcCabac;
+  detected << "AVCRefFrames: "+m_avcRefFrames;
+  detected << "Chroma offset" + m_chromaOffset;
+  detected << "BFrames: "+QString::number(m_bframes);
+  detected << "WeightedB: "+QString::number(m_weightedB);
+  detected << "WeightP: "+QString::number(m_weightedP);
+  detected << "Min Keyint: " + m_minKey;
+  detected << "Max Keyint: " + m_maxKey;
+  detected << "QPMin: "+ QString::number(m_qpMin);
+  detected << "FPS: "+QString::number(m_fps);
+  detected << "AspectRatio: "+QString::number(m_aspectRatio);
+
   if (m_x264Settings.isEmpty()) {
     if (maxBuff != 0 && maxRate != 0) {
       if (maxBuff != 0)

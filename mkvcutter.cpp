@@ -944,6 +944,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   detected << "QPMin: "+ QString::number(m_qpMin);
   detected << "FPS: "+QString::number(m_fps);
   detected << "AspectRatio: "+QString::number(m_aspectRatio);
+  this->addInfo(detected.join("\n"));
 
   if (m_x264Settings.isEmpty()) {
     if (maxBuff != 0 && maxRate != 0) {

@@ -96,6 +96,7 @@ class MkvCutter : public QWidget
     void addAudioAndSubtitleCuts(const int &start, const int &end);
     void addVideoCut(const int &start, const int &end, const bool &interlaced);
     void parseOriginal();
+    void createReencodeCalls();
 
   protected slots:
     void on_openSourcePushButton_clicked();

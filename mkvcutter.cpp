@@ -23,7 +23,7 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_maxKey(QString()), m_h264Parser(nullptr), m_weightedP(0), m_weightedB(0), m_bframes(0),
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
         m_mkvSubtitleExtractor(nullptr), m_subtitleCutter(nullptr), m_cutSubtitles(),
-        m_subtitleToCut(), m_keyframeonly(false)
+        m_subtitleToCut(), m_needReencodeCalls(), m_keyframeonly(false)
 {
   this->setObjectName("MkvCutter-Main");
   ui.setupUi(this);
@@ -427,7 +427,6 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
     this->addInfo("   ----------------------------");
     this->addInfo("  " + tr("to: %1").arg(avisynthFileName));
     m_tempReencodeAvs << avisynthFileName;
-    this->createVideoReencodeCall(avisynthFileName);
   } else {
     QMessageBox::critical(this, tr("Error"),
         tr("createAvisynthSkript: Couldn't create(%1)").arg(avisynthFileName));
@@ -1107,9 +1106,17 @@ void MkvCutter::x264Finished(int exitstate)
   this->startVideoReencoding();
 }
 
+void MkvCutter::createReencodeCalls()
+{
+  foreach(QString avsSkript, m_tempReencodeAvs) {
+    this->createVideoReencodeCall(avsSkript);
+  }
+}
+
 void MkvCutter::parseOriginal()
 {
   if (m_toAnalyse.isEmpty()) {
+    this->createReencodeCalls();
     this->startVideoReencoding();
     return;
   }
@@ -1595,6 +1602,7 @@ void MkvCutter::reset(bool andInit)
       QFile::remove(file);
     }
   }
+  m_needReencodeCalls.clear();
   m_tempReencodeAvs.clear();
   m_currentInput = QString();
   m_currentOutput = QString();

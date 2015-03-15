@@ -355,6 +355,7 @@ bool MkvCutter::createLibAVSourceAVS()
 
 void MkvCutter::setX264Settings(QString settings)
 {
+  this->addInfo(tr("Found x264 encoding settings!"));
   m_x264Settings = settings;
 }
 
@@ -907,9 +908,9 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   tmp = "\"" + x264 + "\"";
   call << tmp;
   tmp = "--profile ";
-  if (m_avcProfileLevel.contains("High") || m_avcProfileLevel.isEmpty()) {
+  if (m_avcProfileLevel.contains("High", Qt::CaseInsensitive) || m_avcProfileLevel.isEmpty()) {
     tmp += "high";
-  } else if (m_avcProfileLevel.contains("High")) {
+  } else if (m_avcProfileLevel.contains("Base", Qt::CaseInsensitive)) {
     tmp += "baseline";
   } else {
     tmp += "main";

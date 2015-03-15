@@ -1126,6 +1126,7 @@ void MkvCutter::parseOriginal()
 void MkvCutter::h264ParseFinished()
 {
   this->addInfo(" " + tr("h264_parse finished analysing the input,.."));
+  this->createReencodeCalls();
   this->startVideoReencoding();
 }
 

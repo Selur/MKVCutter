@@ -435,10 +435,10 @@ namespace Converter
       switch (value)
       {
         case 1 :
-          line = "normal";
+          line = "strict";
           break;
         case 2 :
-          line = "strict";
+          line = "normal";
           break;
         default :
           line = "none";

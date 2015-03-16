@@ -921,7 +921,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   int maxBuff = 0;
   int maxRate = 0;
   if (!tmp.isEmpty()) {
-    tmp = tmp.remove(0, tmp.indexOf("@") + 1).trimmed();
+    tmp = tmp.remove(0, tmp.indexOf("@") + 2).trimmed();
     maxBuff = maxMainBuff(tmp);
     maxRate = maxMainRate(tmp);
     tmp = tmp.remove(".");

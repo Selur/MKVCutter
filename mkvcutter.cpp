@@ -921,7 +921,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   int maxBuff = 0;
   int maxRate = 0;
   if (!tmp.isEmpty()) {
-    tmp = tmp.remove(0, tmp.indexOf("@") + 2);
+    tmp = tmp.remove(0, tmp.indexOf("@") + 1).trimmed();
     maxBuff = maxMainBuff(tmp);
     maxRate = maxMainRate(tmp);
     tmp = tmp.remove(".");
@@ -1092,9 +1092,9 @@ void MkvCutter::createReencodeCalls()
   }
   QStringList detected;
   detected << "  " + tr("Detected settings:");
+  detected << "    AVCProfileLevel: " + m_avcProfileLevel;
   bool hasNoX264Settings = m_x264Settings.trimmed().isEmpty();
   if (hasNoX264Settings) {
-    detected << "    AVCProfileLevel: " + m_avcProfileLevel;
     detected << "    Interlaced: " + m_interlaced;
     detected << "    Cabac: " + QString((m_avcCabac) ? "true" : "false");
     detected << "    AVCRefFrames: " + QString::number(m_avcRefFrames);

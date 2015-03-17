@@ -897,10 +897,21 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
 {
   this->addInfo(" " + tr("creating x264 reencode call for: %1").arg(avisynthFile));
   QString x264 = QApplication::applicationDirPath() + QDir::separator();
+  bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
+      || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
+
 #ifdef Q_OS_WIN32
-  x264 += "x264.exe";
+  if (high10) {
+    x264 += "x264-10bit.exe";
+  } else {
+    x264 += "x264.exe";
+  }
 #else
-  x264 += "x264";
+  if (high10) {
+    x264 += "x264-10bit";
+  } else {
+    x264 += "x264";
+  }
 #endif
   x264 = QDir::toNativeSeparators(x264);
   QStringList call;
@@ -908,7 +919,10 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   tmp = "\"" + x264 + "\"";
   call << tmp;
   tmp = "--profile ";
-  if (m_avcProfileLevel.contains("High", Qt::CaseInsensitive) || m_avcProfileLevel.isEmpty()) {
+  if (high10) {
+    tmp += "high10";
+  } else if (m_avcProfileLevel.contains("High", Qt::CaseInsensitive)
+      || m_avcProfileLevel.isEmpty()) {
     tmp += "high";
   } else if (m_avcProfileLevel.contains("Base", Qt::CaseInsensitive)) {
     tmp += "baseline";

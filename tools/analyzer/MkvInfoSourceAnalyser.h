@@ -52,6 +52,7 @@ class MkvInfoSourceAnalyser : public QObject
     void videoTrackID(int videoTrack);
     void subtitleTrack(SubtitleTrack track);
     void avcProfileLevel(QString profileLevel);
+    void hasAudio(bool exists);
 };
 
 #endif /* MKVINFOSOURCEANALYSER_H_ */

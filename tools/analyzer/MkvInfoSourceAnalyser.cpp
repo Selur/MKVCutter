@@ -113,8 +113,6 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
   emit sendInfos(medaiInfo);
   //TODO: Check MediaInfo data for compatibility
   // video needs to be AVC
-  // audio needs to be delayCut compatible
-  // subtitle need to be ?
   // -> warn if incompatible streams are detected
 }
 
@@ -132,6 +130,9 @@ void MkvInfoSourceAnalyser::analyseOutput()
     //emit sendInfos(tr("looking at: %1").arg(line));
     if (!gotMediaInfo && line.startsWith("Track")) {
       mediaInfo += "\r\n" + line.trimmed();
+      if (line.contains(": audio")) {
+        emit hasAudio(true);
+      }
       if (videoTrack == -1) {
         index1 = line.indexOf(":");
         index2 = line.indexOf(": video");

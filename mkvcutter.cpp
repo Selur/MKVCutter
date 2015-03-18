@@ -23,7 +23,7 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_maxKey(QString()), m_h264Parser(nullptr), m_weightedP(0), m_weightedB(0), m_bframes(0),
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
         m_mkvSubtitleExtractor(nullptr), m_subtitleCutter(nullptr), m_cutSubtitles(),
-        m_subtitleToCut(), m_keyframeonly(false)
+        m_subtitleToCut(), m_keyframeonly(false), m_hasAudio(false)
 {
   this->setObjectName("MkvCutter-Main");
   ui.setupUi(this);
@@ -56,6 +56,7 @@ void MkvCutter::initTools()
       SLOT(subtitleTrack(SubtitleTrack)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(avcProfileLevel(QString)), this,
       SLOT(setAvcProfileLevel(QString)));
+  this->myconnect(m_mkvinfoAnalyser, SIGNAL(hasAudio(bool)), this, SLOT(setHasAudio(bool)));
   cout << "  init m_mediaInfoAnalyser" << endl;
   delete m_mediaInfoAnalyser;
   m_mediaInfoAnalyser = new MediaInfoAnalyser(this);
@@ -622,19 +623,20 @@ void MkvCutter::buildCutList()
     this->addAudioAndSubtitleCuts(start, end);
     this->addVideoCut(start, end, interlaced);
   }
-  QStringList elems;
-  double audioLength = 0;
-  foreach(QString part, m_mkvAudioAndSubtitleParts)
-  {
-    elems = part.split("-");
-    audioLength += Globals::timeToSeconds(elems.at(1));
-    audioLength -= Globals::timeToSeconds(elems.at(0));
+  if (m_hasAudio) {
+    QStringList elems;
+    double audioLength = 0;
+    foreach(QString part, m_mkvAudioAndSubtitleParts)
+    {
+      elems = part.split("-");
+      audioLength += Globals::timeToSeconds(elems.at(1));
+      audioLength -= Globals::timeToSeconds(elems.at(0));
+    }
+    this->addInfo(
+        " -> calculated audio length: " + Globals::secondsToHMSZZZ(audioLength) + ", in seconds: "
+            + QString::number(audioLength));
   }
   double videoLength = outputFrameCount / m_fps;
-
-  this->addInfo(
-      " -> calculated audio length: " + Globals::secondsToHMSZZZ(audioLength) + ", in seconds: "
-          + QString::number(audioLength));
   this->addInfo(
       " -> calculated video length: " + Globals::secondsToHMSZZZ(videoLength) + ", in seconds: "
           + QString::number(videoLength));
@@ -1385,6 +1387,11 @@ void MkvCutter::extractTimeCodes()
   m_timeextractor->startExtraction(m_currentInput, QString::number(m_videoTrackID), m_tempFolder);
 }
 
+void MkvCutter::setHasAudio(bool hasAudio)
+{
+  m_hasAudio = hasAudio;
+}
+
 void MkvCutter::mkvSubtitleCutterFinished(int state)
 {
   if (state < 0) {
@@ -1572,6 +1579,14 @@ void MkvCutter::buildAndCallMkvMerge()
 
 void MkvCutter::cutAudio()
 {
+  if (!m_hasAudio) {
+    if (!m_subtitles.isEmpty()) {
+      m_mkvSubtitleExtractor->startExtraction(m_currentInput, m_subtitles, m_tempFolder);
+      return;
+    }
+    this->cleanUpAndMerge();
+    return;
+  }
   this->addInfo(tr("Calling audio cutter,.."));
   m_audioFile = m_tempFolder + QDir::separator() + Globals::getWholeFileName(m_currentOutput);
   m_audioFile = m_audioFile.insert(m_audioFile.lastIndexOf("."), "_AudioCut");
@@ -1637,7 +1652,7 @@ void MkvCutter::reset(bool andInit)
   m_currentInput = QString();
   m_currentOutput = QString();
   m_tempFolder = QString();
-
+  m_hasAudio = false;
   m_avcProfileLevel = QString();
   m_audioFormat = QString();
   m_avcCabac = true;

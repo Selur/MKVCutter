@@ -415,6 +415,11 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   if (bff || tff) {
     tmp += ", threads=1";
   }
+  bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
+      || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
+  if (high10) {
+    tmp += ", format=\"YUV420P8\"";
+  }
   tmp += ", cache=false)";
   script << tmp;
   script << assume;
@@ -974,9 +979,9 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
       if (m_weightedB == 0) {
         call << "--b-pyramid none";
       } else if (m_weightedB == 1) {
-        call << "--b-pyramid normal";
-      } else {
         call << "--b-pyramid strict";
+      } else {
+        call << "--b-pyramid normal";
       }
     }
     call << "--weightp " + QString::number(m_weightedP);

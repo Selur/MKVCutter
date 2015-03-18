@@ -980,7 +980,6 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
       }
     }
     call << "--weightp " + QString::number(m_weightedP);
-    call << "--stitchable";
     //TODO: bluray check
     if (m_minKey != QString()) {
       call << "--min-keyint " + m_minKey;
@@ -996,6 +995,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   } else {
     call << m_x264Settings;
   }
+  call << "--stitchable";
   call << "--non-deterministic";
   call << "--thread-input";
   call << "--crf 19";

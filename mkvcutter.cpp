@@ -1073,10 +1073,10 @@ void MkvCutter::cleanUpAndMerge()
   if (subtitleCount > 0) {
     this->addInfo("  " + tr("subtitle files:\n") + m_cutSubtitles.join("\n   "));
   }
-  if (videoFileCount == 1) {
+  QString tmp = m_reencodedVideoFiles.first();
+  if (videoFileCount == 1 && tmp.endsWith(".mkv")) {
     if (audioFileCount == 0 && subtitleCount == 0) {
       this->addInfo(" " + tr("no audio&subtitle files present -> renaming videoFile,.."));
-      QString tmp = m_reencodedVideoFiles.first();
       if (!QFile::rename(tmp, m_currentOutput)) {
         QMessageBox::critical(this, tr("Error"),
             tr("Couldn't move %1 to %2").arg(tmp).arg(m_currentOutput));

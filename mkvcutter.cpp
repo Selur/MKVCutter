@@ -1333,7 +1333,7 @@ void MkvCutter::handleSplitFiles()
       trim = m_trimming.value(m_currentInput);
     } else if (toDelete != m_currentInput) {
       toDelete = Globals::getWholeFileName(file);
-      toDelete = toDelete.remove(0, toDelete.indexOf("-") + 1);
+      toDelete = toDelete.remove(0, toDelete.lastIndexOf("-") + 1);
       toDelete = Globals::getFileName(m_currentInput) + "_cut_" + toDelete;
       trim = m_trimming.value(toDelete);
     }

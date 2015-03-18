@@ -415,11 +415,7 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   if (bff || tff) {
     tmp += ", threads=1";
   }
-  bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
-      || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
-  if (high10) {
-    tmp += ", format=\"YUV420P8\"";
-  }
+  tmp += ", format=\"YUV420P8\"";
   tmp += ", cache=false)";
   script << tmp;
   script << assume;

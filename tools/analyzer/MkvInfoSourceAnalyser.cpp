@@ -125,7 +125,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
   int videoTrack = -1;
   int index1, index2;
   QString mediaInfo;
-  QString line, track, videoData;
+  QString line, track, videoData, profileLevel;
   bool gotMediaInfo = false;
   for (int i = 0, c = lines.count(); i < c; ++i) {
     line = lines.at(i);
@@ -139,6 +139,11 @@ void MkvInfoSourceAnalyser::analyseOutput()
           continue;
         }
         videoData = line;
+        profileLevel=line;
+        profileLevel=profileLevel.remove(0, profileLevel.indexOf("(")+1);
+        profileLevel=profileLevel.remove(0, profileLevel.indexOf(":")+1);
+        profileLevel=profileLevel.remove(profileLevel.indexOf(")"), profileLevel.size());
+        emit avcProfileLevel(profileLevel);
         line = line.remove(index1, line.size());
         line = line.remove(0, 6).trimmed();
         videoTrack = line.toInt();

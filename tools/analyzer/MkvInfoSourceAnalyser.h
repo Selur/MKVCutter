@@ -51,6 +51,7 @@ class MkvInfoSourceAnalyser : public QObject
     void fps(double framerate);
     void videoTrackID(int videoTrack);
     void subtitleTrack(SubtitleTrack track);
+    void avcProfileLevel(QString profileLevel);
 };
 
 #endif /* MKVINFOSOURCEANALYSER_H_ */

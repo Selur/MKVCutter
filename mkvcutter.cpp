@@ -54,6 +54,8 @@ void MkvCutter::initTools()
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(fps(double)), this, SLOT(setFPS(double)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(subtitleTrack(SubtitleTrack)), this,
       SLOT(subtitleTrack(SubtitleTrack)));
+  this->myconnect(m_mkvinfoAnalyser, SIGNAL(avcProfileLevel(QString)), this,
+      SLOT(setAvcProfileLevel(QString)));
   cout << "  init m_mediaInfoAnalyser" << endl;
   delete m_mediaInfoAnalyser;
   m_mediaInfoAnalyser = new MediaInfoAnalyser(this);
@@ -419,6 +421,11 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   QString tmp = "LWLibavVideoSource(\"" + filename + "\"";
   if (bff || tff) {
     tmp += ", threads=1";
+  }
+  bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
+      || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
+  if (high10) {
+    tmp += ", format=\"YUV420P8\"";
   }
   tmp += ", cache=false)";
   script << tmp;

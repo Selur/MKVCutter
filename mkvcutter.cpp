@@ -353,11 +353,13 @@ bool MkvCutter::createLibAVSourceAVS()
   if (high10) {
     call += ", format=\"YUV420P8\"";
   }
-  QString tmp =  Globals::decimalToFractionConvert(m_fps);
+  QString tmp = Globals::decimalToFractionConvert(m_fps);
   QStringList fps = tmp.split("/");
-  call += ", fpsnum="+fps[0];
-  call += ", fpsden="+fps[1];
-  call += ", cache=false, repeat=true)";
+  call += ", fpsnum=" + fps[0];
+  call += ", fpsden=" + fps[1];
+  call += ", cache=false";
+  //call += ", repeat=true";
+  call += ")";
   script << call;
   QString resizer = "BicubicResize(Ceil(last.Width*" + QString::number(m_aspectRatio)
       + ")-(Ceil(last.Width*" + QString::number(m_aspectRatio) + ")) % 4, last.Height)";
@@ -432,11 +434,13 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   if (high10) {
     tmp += ", format=\"YUV420P8\"";
   }
-  QString tmpFps =  Globals::decimalToFractionConvert(m_fps);
+  QString tmpFps = Globals::decimalToFractionConvert(m_fps);
   QStringList fps = tmpFps.split("/");
-  tmp += ", fpsnum="+fps[0];
-  tmp += ", fpsden="+fps[1];
-  tmp += ", cache=false, repeat=true)";
+  tmp += ", fpsnum=" + fps[0];
+  tmp += ", fpsden=" + fps[1];
+  tmp += ", cache=false";
+  //tmp += ", repeat=true";
+  tmp += ")";
   script << tmp;
   script << assume;
   script << trim;

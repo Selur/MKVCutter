@@ -353,6 +353,10 @@ bool MkvCutter::createLibAVSourceAVS()
   if (high10) {
     call += ", format=\"YUV420P8\"";
   }
+  QString tmp =  Globals::decimalToFractionConvert(m_fps);
+  QStringList fps = tmp.split("/");
+  call += ", fpsnum="+fps[0];
+  call += ", fpsden="+fps[1];
   call += ", cache=false, repeat=true)";
   script << call;
   QString resizer = "BicubicResize(Ceil(last.Width*" + QString::number(m_aspectRatio)
@@ -428,7 +432,11 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   if (high10) {
     tmp += ", format=\"YUV420P8\"";
   }
-  tmp += ", cache=false)";
+  QString tmp =  Globals::decimalToFractionConvert(m_fps);
+  QStringList fps = tmp.split("/");
+  tmp += ", fpsnum="+fps[0];
+  tmp += ", fpsden="+fps[1];
+  tmp += ", cache=false, repeat=true)";
   script << tmp;
   script << assume;
   script << trim;

@@ -432,8 +432,8 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   if (high10) {
     tmp += ", format=\"YUV420P8\"";
   }
-  QString tmp =  Globals::decimalToFractionConvert(m_fps);
-  QStringList fps = tmp.split("/");
+  QString tmpFps =  Globals::decimalToFractionConvert(m_fps);
+  QStringList fps = tmpFps.split("/");
   tmp += ", fpsnum="+fps[0];
   tmp += ", fpsden="+fps[1];
   tmp += ", cache=false, repeat=true)";

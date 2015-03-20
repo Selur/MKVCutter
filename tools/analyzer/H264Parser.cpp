@@ -11,13 +11,13 @@
 #include <QStringList>
 #include <QApplication>
 
-H264Parser::H264Parser(QObject *parent) :
-    QObject(parent), m_process(nullptr)
+H264Parser::H264Parser(QObject *parent)
+    : QObject(parent), m_process(nullptr)
 {
   this->setObjectName("H264Parser");
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int,QProcess::ExitStatus)), this,
-                   SLOT(h264ParseFinished(int,QProcess::ExitStatus)));
+      SLOT(h264ParseFinished(int,QProcess::ExitStatus)));
 }
 
 H264Parser::~H264Parser()
@@ -67,6 +67,11 @@ void H264Parser::analyseOutput(QString output)
       emit chromaOffset(line.toInt());
       continue;
     }
+    if (line.startsWith("seq_parameter_set_id")) {
+      this->removeStartOfLine(line);
+      emit sps(line.toInt());
+      continue;
+    }
   }
   emit finished();
 }
@@ -97,7 +102,7 @@ void H264Parser::analyse(QString input)
 void H264Parser::h264ParseFinished(int exitState, QProcess::ExitStatus status)
 {
   if (exitState < 0) {
-    emit sendInfo(" "+tr("h264_parse finished(%1, %2).").arg(exitState).arg(status));
+    emit sendInfo(" " + tr("h264_parse finished(%1, %2).").arg(exitState).arg(status));
   }
   QString output = m_process->readAllStandardOutput();
   output += m_process->readAllStandardError();

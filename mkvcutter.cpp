@@ -23,7 +23,7 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_maxKey(QString()), m_h264Parser(nullptr), m_weightedP(0), m_weightedB(0), m_bframes(0),
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
         m_mkvSubtitleExtractor(nullptr), m_subtitleCutter(nullptr), m_cutSubtitles(),
-        m_subtitleToCut(), m_keyframeonly(false), m_hasAudio(false)
+        m_subtitleToCut(), m_keyframeonly(false), m_hasAudio(false), m_sps(-1)
 {
   this->setObjectName("MkvCutter-Main");
   ui.setupUi(this);
@@ -140,6 +140,7 @@ void MkvCutter::initTools()
   this->myconnect(m_h264Parser, SIGNAL(bframes(int)), this, SLOT(setBFrames(int)));
   this->myconnect(m_h264Parser, SIGNAL(qpMin(int)), this, SLOT(setQPmin(int)));
   this->myconnect(m_h264Parser, SIGNAL(chromaOffset(int)), this, SLOT(setChromaOffset(int)));
+  this->myconnect(m_h264Parser, SIGNAL(sps(int)), this, SLOT(setSps(int)));
   cout << "  init m_mkvSubtitleExtractor" << endl;
   delete m_mkvSubtitleExtractor;
   m_mkvSubtitleExtractor = new MkvSubtitleExtractor(this);
@@ -968,6 +969,10 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     tmp = "--level " + tmp;
     call << tmp;
   }
+  if (m_sps != -1) {
+    call << "--sps-id "+QString::number(m_sps);
+  }
+
 
   if (m_x264Settings.trimmed().isEmpty()) {
     if (maxBuff != 0 && maxRate != 0) {
@@ -1149,6 +1154,7 @@ void MkvCutter::createReencodeCalls()
   } else {
     detected << "   x264Settings: " + m_x264Settings;
   }
+  detected << "     SPS: " + QString::number(m_sps);
   detected << "     FPS: " + QString::number(m_fps);
   this->addInfo(detected.join("\n"));
   foreach(QString avsSkript, m_tempReencodeAvs)
@@ -1679,7 +1685,7 @@ void MkvCutter::reset(bool andInit)
   m_fps = -1;
   m_trimming.clear();
   m_cutList.clear();
-
+  m_sps = -1;
   m_mkvmergeIntSplitList.clear();
   m_mkvVideoParts.clear();
   m_mkvAudioAndSubtitleParts.clear();
@@ -1757,4 +1763,9 @@ void MkvCutter::myconnect(const QObject * sender, const char * signal, const QOb
         tr("Couldn't connect %1 '%2' to %3 '%4'").arg(sender->objectName()).arg(signal).arg(
             receiver->objectName()).arg(type));
   }
+}
+
+void MkvCutter::setSps(int sps)
+{
+  m_sps = sps;
 }

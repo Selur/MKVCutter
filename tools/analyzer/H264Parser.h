@@ -37,6 +37,7 @@ class H264Parser : public QObject
     void bframes(int value);
     void qpMin(int value);
     void chromaOffset(int value);
+    void sps(int value);
 
 };
 

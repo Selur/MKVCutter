@@ -19,7 +19,7 @@ FFmpegVideoExtractor::FFmpegVideoExtractor(QObject *parent)
 
 void FFmpegVideoExtractor::startExtraction(QString filename, QString tempFolder)
 {
-
+  this->call(this->buildCall(filename, tempFolder));
 }
 
 void FFmpegVideoExtractor::call(QString call)

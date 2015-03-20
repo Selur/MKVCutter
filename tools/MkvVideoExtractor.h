@@ -1,11 +1,9 @@
 #ifndef MKVVIDEOEXTRACTOR_H
 #define MKVVIDEOEXTRACTOR_H
 
-#include <QIcon>
 #include <QObject>
 #include <QProcess>
-#include <QStringList>
-class QPushButton;
+#include <QString>
 
 class MkvVideoExtractor : public QObject
 {

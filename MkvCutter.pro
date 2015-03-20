@@ -3,13 +3,14 @@ TEMPLATE = app
 TARGET = MkvCutter
 QT += core \
     gui
-win32 {
-  DEFINES += BUILDTIME=\\\"$$system('echo %time%')\\\"
-  DEFINES += BUILDDATE=\\\"$$system('echo %date:~6,4%%date:~3,2%%date:~0,2%')\\\"
-} else {
-  DEFINES += BUILDTIME=\\\"$$system(date '+%H:%M.%s')\\\"
-  DEFINES += BUILDDATE=\\\"$$system(date '+%y.%m.%d')\\\"
-} 
+win32 { 
+    DEFINES += BUILDTIME=\\\"$$system('echo %time%')\\\"
+    DEFINES += BUILDDATE=\\\"$$system('echo %date:~6,4%%date:~3,2%%date:~0,2%')\\\"
+}
+else { 
+    DEFINES += BUILDTIME=\\\"$$system(date '+%H:%M.%s')\\\"
+    DEFINES += BUILDDATE=\\\"$$system(date '+%y.%m.%d')\\\"
+}
 isEqual(QT_MAJOR_VERSION, 5):QT += widgets # for all widgets
 win32-msvc* { 
     message(Building for Windows using Qt $$QT_VERSION)
@@ -26,9 +27,8 @@ win32-msvc* {
     contains(QMAKE_HOST.arch, x86_64):QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.02 # Windows XP 64bit
     else:QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.01 # Windows XP 32bit
 }
-
-
-HEADERS += tools/subtitlecutters/IdxSubCutter.h \
+HEADERS += FFmpegVideoExtractor.h \
+    tools/subtitlecutters/IdxSubCutter.h \
     tools/MkvSubtitleExtractor.h \
     tools/SubtitleCutter.h \
     tools/subtitlecutters/AssCutter.h \
@@ -52,7 +52,8 @@ HEADERS += tools/subtitlecutters/IdxSubCutter.h \
     tools/MkvVideoExtractor.h \
     DropPushButton.h \
     tools/MkvTimeExtractor.h
-SOURCES += tools/subtitlecutters/IdxSubCutter.cpp \
+SOURCES += FFmpegVideoExtractor.cpp \
+    tools/subtitlecutters/IdxSubCutter.cpp \
     tools/MkvSubtitleExtractor.cpp \
     tools/SubtitleCutter.cpp \
     tools/subtitlecutters/AssCutter.cpp \

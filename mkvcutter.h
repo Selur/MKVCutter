@@ -18,6 +18,7 @@
 #include "tools/MkvTimeExtractor.h"
 #include "tools/MkvSubtitleExtractor.h"
 #include "tools/SubtitleCutter.h"
+#include "tools/FFmpegVideoExtractor.h"
 
 #include "ui_mkvcutter.h"
 
@@ -54,7 +55,8 @@ class MkvCutter : public QWidget
     int m_averageBitrate;
     QStringList m_audioSplitFiles, m_extractionFiles, m_toDelete;
     int m_videoTrackID;
-    MkvVideoExtractor *m_extractor;
+    //MkvVideoExtractor *m_extractor;
+    FFmpegVideoExtractor *m_extractor;
     MkvTimeExtractor *m_timeextractor;
     double m_aspectRatio;
     QString m_interlaced, m_mediaInfoScanorder;

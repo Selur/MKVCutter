@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <iostream>
 #include "Globals.h"
+
 using namespace std;
 
 MkvCutter::MkvCutter(QWidget *parent)
@@ -115,7 +116,7 @@ void MkvCutter::initTools()
   this->myconnect(m_x264, SIGNAL(progress(int)), this, SLOT(x264Progress(int)));
   cout << "  init m_extractor" << endl;
   delete m_extractor;
-  m_extractor = new MkvVideoExtractor(this);
+  m_extractor = new FFmpegVideoExtractor(this); //new MkvVideoExtractor
   this->myconnect(m_extractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_extractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_extractor, SIGNAL(finished(int)), this, SLOT(mkvExtractorFinished(int)));
@@ -1399,7 +1400,8 @@ void MkvCutter::startExtraction()
   }
   m_toDelete << filename;
   m_reencodedVideoFiles.replace(m_reencodedVideoFiles.indexOf(input), filename);
-  m_extractor->startExtraction(input, QString::number(m_videoTrackID), "264", m_tempFolder);
+  //m_extractor->startExtraction(input, QString::number(m_videoTrackID), "264", m_tempFolder);
+  m_extractor->startExtraction(input, m_tempFolder);
 }
 
 void MkvCutter::extractTimeCodes()

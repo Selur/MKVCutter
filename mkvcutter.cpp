@@ -996,9 +996,6 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     } else {
       call << "--ref 1";
     }
-    if (m_chromaOffset != 0) {
-      call << "--chroma-qp-offset " + QString::number(m_chromaOffset);
-    }
     call << "--bframes " + QString::number(m_bframes);
 
     if (m_bframes > 0) {
@@ -1020,12 +1017,17 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     } else {
       call << "--keyint " + QString::number(m_averageKeyDistance);
     }
-    if (m_qpMin > 0) {
-      call << "--qpmin " + QString::number(m_qpMin);
-    }
   } else {
     call << m_x264Settings;
   }
+  tmp = call.join(" ");
+  if (m_chromaOffset != 0 && !tmp.contains("--chroma-qp-offset")) {
+    call << "--chroma-qp-offset " + QString::number(m_chromaOffset);
+  }
+  if (m_qpMin > 0 && !tmp.contains("--qpmin")) {
+    call << "--qpmin " + QString::number(m_qpMin);
+  }
+
   call << "--stitchable";
   call << "--non-deterministic";
   call << "--thread-input";

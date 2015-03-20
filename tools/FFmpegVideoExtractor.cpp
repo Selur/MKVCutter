@@ -47,6 +47,7 @@ QString FFmpegVideoExtractor::buildCall(QString filename, QString tempFolder)
   call << "-an";
   call << "-sn";
   call << "-vsync 0";
+  call << "-bsf:v h264_mp4toannexb";
   filename = filename.remove(filename.lastIndexOf("."), filename.length());
   filename += ".264";
   filename = tempFolder + QDir::separator() + Globals::getWholeFileName(filename);

@@ -9,8 +9,8 @@
 #include <QHash>
 
 MkvInfoSourceAnalyser::MkvInfoSourceAnalyser(QObject *parent)
-    : QObject(parent), m_process(nullptr), m_input(QString()), m_outData(QString()), m_keyFrameInfos(),
-        m_linesread(0), m_crashed(false)
+    : QObject(parent), m_process(nullptr), m_input(QString()), m_outData(QString()),
+        m_keyFrameInfos(), m_linesread(0), m_crashed(false)
 {
   this->setObjectName("MkvInfoSourceAnalyser");
 }
@@ -91,7 +91,8 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
   SubtitleTrack track;
   QStringList lines = medaiInfo.split("\r\n");
   int index;
-  foreach(QString line, lines) {
+  foreach(QString line, lines)
+  {
     if (!line.contains(": subtitles")) { // Track 5: subtitles, codec ID: S_VOBSUB, mkvmerge/mkvextract track ID: 4, language: dan
       continue;
     }
@@ -100,10 +101,10 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
       line = line.remove(index, line.size());
     }
     trackID = line;
-    trackID = trackID.remove(0, trackID.lastIndexOf(":")+1);
+    trackID = trackID.remove(0, trackID.lastIndexOf(":") + 1);
     trackID = trackID.trimmed();
     type = line;
-    type = type.remove(0, type.indexOf("codec ID:")+10);
+    type = type.remove(0, type.indexOf("codec ID:") + 10);
     type = type.remove(type.indexOf(","), type.size());
     track.trackID = trackID.toInt();
     track.type = type;
@@ -123,7 +124,7 @@ void MkvInfoSourceAnalyser::analyseOutput()
   int videoTrack = -1;
   int index1, index2;
   QString mediaInfo;
-  QString line, track, videoData, profileLevel;
+  QString line, track, videoData, profileLevel, width, height;
   bool gotMediaInfo = false;
   for (int i = 0, c = lines.count(); i < c; ++i) {
     line = lines.at(i);
@@ -139,12 +140,21 @@ void MkvInfoSourceAnalyser::analyseOutput()
         if (index1 != index2) {
           continue;
         }
-        videoData = line;
-        profileLevel=line;
-        profileLevel=profileLevel.remove(0, profileLevel.indexOf("(")+1);
-        profileLevel=profileLevel.remove(0, profileLevel.indexOf(":")+1);
-        profileLevel=profileLevel.remove(profileLevel.indexOf(")"), profileLevel.size());
+        profileLevel = line;
+        profileLevel = profileLevel.remove(0, profileLevel.indexOf("(") + 1);
+        profileLevel = profileLevel.remove(0, profileLevel.indexOf(":") + 1);
+        profileLevel = profileLevel.remove(profileLevel.indexOf(")"), profileLevel.size());
         emit avcProfileLevel(profileLevel);
+        videoData = line;
+        videoData = videoData.remove(0, videoData.indexOf("pixel width:") + 13);
+        videoData = videoData.remove(videoData, videoData.indexOf(","));
+        width = videoData.trimmed();
+        videoData = line;
+        videoData = videoData.remove(0, videoData.indexOf("pixel height:") + 13);
+        videoData = videoData.remove(videoData, videoData.indexOf(","));
+        height = videoData.trimmed()
+        emit resolution(width, height);
+        videoData = line;
         line = line.remove(index1, line.size());
         line = line.remove(0, 6).trimmed();
         videoTrack = line.toInt();
@@ -177,7 +187,8 @@ void MkvInfoSourceAnalyser::analyseOutput()
   QStringList keyFrames;
   QString iframe = "I frame, track " + QString::number(videoTrack) + ", ";
   int currentFrame = -1;
-  foreach(QString frame, infos) {
+  foreach(QString frame, infos)
+  {
     currentFrame++;
     if (!frame.startsWith(iframe)) {
       continue;

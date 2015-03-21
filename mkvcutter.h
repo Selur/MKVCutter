@@ -77,6 +77,7 @@ class MkvCutter : public QWidget
     bool m_keyframeonly;
     bool m_hasAudio;
     int m_sps;
+    int m_width, m_height;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -157,6 +158,7 @@ class MkvCutter : public QWidget
     void mkvSubtitleCutterFinished(int state);
     void setHasAudio(bool hasAudio);
     void setSps(int sps);
+    void setResolution(QString width, QString height);
 };
 
 #endif // MKVCUTTER_H

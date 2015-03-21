@@ -24,7 +24,8 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_maxKey(QString()), m_h264Parser(nullptr), m_weightedP(0), m_weightedB(0), m_bframes(0),
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
         m_mkvSubtitleExtractor(nullptr), m_subtitleCutter(nullptr), m_cutSubtitles(),
-        m_subtitleToCut(), m_keyframeonly(false), m_hasAudio(false), m_sps(-1)
+        m_subtitleToCut(), m_keyframeonly(false), m_hasAudio(false), m_sps(-1), m_width(-1),
+        m_height(-1)
 {
   this->setObjectName("MkvCutter-Main");
   ui.setupUi(this);
@@ -924,10 +925,10 @@ QString adjustParDotToColon(QString value)
 void MkvCutter::createVideoReencodeCall(QString avisynthFile)
 {
   this->addInfo(" " + tr("creating x264 reencode call for: %1").arg(avisynthFile));
-  QString x264 = QApplication::applicationDirPath() + QDir::separator();
+  QString base = QApplication::applicationDirPath() + QDir::separator();
   bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
       || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
-
+  QString x264 = base;
 #ifdef Q_OS_WIN32
   if (high10) {
     x264 += "x264-10bit.exe";
@@ -943,6 +944,10 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
 #endif
   x264 = QDir::toNativeSeparators(x264);
   QStringList call;
+  if (high10) {
+    QString avs2yuv = base + "avs2yuv.exe -raw \"" + avisynthFile + "\" -o -";
+    call << avs2yuv;
+  }
   QString tmp;
   tmp = "\"" + x264 + "\"";
   call << tmp;
@@ -971,9 +976,8 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     call << tmp;
   }
   if (m_sps != -1) {
-    call << "--sps-id "+QString::number(m_sps);
+    call << "--sps-id " + QString::number(m_sps);
   }
-
 
   if (m_x264Settings.trimmed().isEmpty()) {
     if (maxBuff != 0 && maxRate != 0) {
@@ -1033,7 +1037,13 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << "--non-deterministic";
   call << "--thread-input";
   call << "--crf 19";
-  call << "--demuxer avs";
+  if (high10) {
+    call << "--demuxer raw";
+    call << "--input-depth 10";
+    call << "--input-res " + QString::number(m_width) + "x" + QString::number(m_height);
+  } else {
+    call << "--demuxer avs";
+  }
   call << "--fps " + Globals::decimalToFractionConvert(m_fps);
   QString par = QString::number(m_aspectRatio);
   par = adjustParDotToColon(par);
@@ -1628,6 +1638,11 @@ void MkvCutter::setKeyFrames(QStringList list)
   this->addInfo(
       " " + tr("video stream key frame count: %1, average distance: %2").arg(count).arg(dist));
 }
+void MkvCutter::setResolution(QString width, QString height)
+{
+  m_width = width.toInt();
+  m_height = height.toInt();
+}
 
 void MkvCutter::setFrameRateMode(bool vfr)
 {
@@ -1670,6 +1685,8 @@ void MkvCutter::reset(bool andInit)
       QFile::remove(file);
     }
   }
+  m_width = -1;
+  m_height = -1;
   m_tempReencodeAvs.clear();
   m_currentInput = QString();
   m_currentOutput = QString();

@@ -1059,8 +1059,12 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   m_reencodedVideoFiles << tmp;
   tmp = "-o \"" + tmp + "\"";
   call << tmp;
-  tmp = "\"" + avisynthFile + "\"";
-  call << tmp;
+  if (high10) {
+    call << "-";
+  }else {
+    tmp = "\"" + avisynthFile + "\"";
+    call << tmp;
+  }
   tmp = call.join(" ");
   this->addInfo(" -> " + tr("x264 call: %1").arg(tmp));
   m_videoEncodingCalls << tmp;

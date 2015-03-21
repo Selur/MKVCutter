@@ -135,7 +135,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
       if (i == 0) {
         optionFile = file;
       } else {
-        append << QString::number(i)+":0"+QString::number(i-1)+":0";
+        append << QString::number(i)+":0:"+QString::number(i-1)+":0";
       }
     }
   }

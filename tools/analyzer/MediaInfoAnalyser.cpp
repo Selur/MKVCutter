@@ -121,7 +121,7 @@ void MediaInfoAnalyser::mediainfoOutput()
           if (line == "1.000") {
             line = "1";
           }
-          emit aspectRatio(line.toDouble());
+          emit aspectRatio(line.trimmed().toDouble());
           continue;
         }
         if (line.startsWith("Scan type") && line.endsWith("Interlaced")) {

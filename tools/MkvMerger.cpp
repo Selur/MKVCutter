@@ -98,7 +98,6 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
   options << "no_cue_duration";
   options << "--engage";
   options << "no_cue_relative_position";
-
 // VIDEO FILES
   int splitfileCount = splitFiles.count();
   splitFiles.sort();
@@ -117,7 +116,15 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
       }
     }
     if (splitfileCount > 0) {
+      options << "--no-global-tags";
+      options << "--no-chapters";
+      options << "--no-subtitles";
+      options << "--no-track-tags";
+      options << "--no-buttons";
       options << "--no-audio";
+      options << "--no-attachments";
+      options << "--forced-track";
+      options << "0:no";
       options << "--default-duration";
       options << "0:" + fpsValue + fpsExtension;
       options << "--fix-bitstream-timing-information";
@@ -150,6 +157,11 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
   foreach (QString file, audioFiles)
   {
     options << "--no-video";
+    options << "--no-global-tags";
+    options << "--no-chapters";
+    options << "--no-subtitles";
+    options << "--no-track-tags";
+    options << "--no-buttons";
     options << doubleBackSlash(file);
   }
 

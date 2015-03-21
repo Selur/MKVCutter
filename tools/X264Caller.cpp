@@ -1,7 +1,7 @@
 #include "X264Caller.h"
 
-X264Caller::X264Caller(QObject *parent) :
-    QObject(parent), m_process(nullptr)
+X264Caller::X264Caller(QObject *parent)
+    : QObject(parent), m_process(nullptr), m_helper(nullptr)
 {
 }
 
@@ -11,8 +11,17 @@ void X264Caller::start(QString call)
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
-                   SLOT(x264Finished(int, QProcess::ExitStatus)));
+      SLOT(x264Finished(int, QProcess::ExitStatus)));
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleX264Output()));
+  if (call.contains("avs2yuv.exe")) {
+    QStringList calls = call.split(" | ");
+    delete m_helper;
+    m_helper = new QProcess(this);
+    m_helper->setProcessChannelMode(QProcess::SeparateChannels);
+    m_helper->setStandardOutputProcess(m_process);
+    m_helper->start(calls.at(0));
+    call = calls.at(1);
+  }
   m_process->start(call);
 }
 

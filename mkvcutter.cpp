@@ -58,6 +58,8 @@ void MkvCutter::initTools()
       SLOT(subtitleTrack(SubtitleTrack)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(avcProfileLevel(QString)), this,
       SLOT(setAvcProfileLevel(QString)));
+  this->myconnect(m_mkvinfoAnalyser, SIGNAL(resolution(QString, QString)), this,
+      SLOT(setResolution(QString, QString)));
   this->myconnect(m_mkvinfoAnalyser, SIGNAL(hasAudio(bool)), this, SLOT(setHasAudio(bool)));
   cout << "  init m_mediaInfoAnalyser" << endl;
   delete m_mediaInfoAnalyser;

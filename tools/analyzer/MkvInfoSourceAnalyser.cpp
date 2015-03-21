@@ -147,12 +147,12 @@ void MkvInfoSourceAnalyser::analyseOutput()
         emit avcProfileLevel(profileLevel);
         videoData = line;
         videoData = videoData.remove(0, videoData.indexOf("pixel width:") + 13);
-        videoData = videoData.remove(videoData, videoData.indexOf(","));
+        videoData = videoData.remove(videoData.indexOf(","), videoData.size());
         width = videoData.trimmed();
         videoData = line;
         videoData = videoData.remove(0, videoData.indexOf("pixel height:") + 13);
-        videoData = videoData.remove(videoData, videoData.indexOf(","));
-        height = videoData.trimmed()
+        videoData = videoData.remove(videoData.indexOf(","), videoData.size());
+        height = videoData.trimmed();
         emit resolution(width, height);
         videoData = line;
         line = line.remove(index1, line.size());

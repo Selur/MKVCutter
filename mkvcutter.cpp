@@ -949,6 +949,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   if (high10) {
     QString avs2yuv = base + "avs2yuv.exe -raw \"" + avisynthFile + "\" -o -";
     call << avs2yuv;
+    call << "|";
   }
   QString tmp;
   tmp = "\"" + x264 + "\"";

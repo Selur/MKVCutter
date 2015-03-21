@@ -434,7 +434,7 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
       || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
   if (high10) {
-    tmp += ", format=\"YUV420P8\"";
+    tmp += ", format=\"YUV420P10\"";
   }
   //QString tmpFps = Globals::decimalToFractionConvert(m_fps);
   //QStringList fps = tmpFps.split("/");

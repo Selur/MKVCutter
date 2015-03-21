@@ -131,10 +131,14 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
       options << "--fix-bitstream-timing-information";
       options << "0:1";
       file = splitFiles.at(i);
-      options << doubleBackSlash(file);
       if (i == 0) {
         optionFile = file;
+        options << doubleBackSlash(file);
       } else {
+        options << "+";
+        options << "(";
+        options << doubleBackSlash(file);
+        options << ")";
         append << QString::number(i)+":0:"+QString::number(i-1)+":0";
       }
     }

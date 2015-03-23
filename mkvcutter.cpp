@@ -691,6 +691,11 @@ void MkvCutter::buildTrimAndPartsList()
         if (!name.isEmpty() && m_trimming.value(name) == trim && part.toInt() == prevKey) {
           part = mkvparts.takeLast();
           part = part.remove(part.indexOf("-") + 1, part.size());
+          if (part == QString::number(nextKey) + "-") {
+            m_trimming.remove(name);
+            this->addInfo("   " + tr("removed last"));
+            continue;
+          }
           part += QString::number(nextKey);
           this->addInfo(
               "   "
@@ -948,7 +953,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   QStringList call;
   if (high10) {
     QString avs2yuv = base + "avs2yuv.exe";
-    call <<  "\""+QDir::toNativeSeparators(avs2yuv)+"\"";
+    call << "\"" + QDir::toNativeSeparators(avs2yuv) + "\"";
     call << "-raw \"" + avisynthFile + "\"";
     call << "-o -";
     call << "|";
@@ -1063,7 +1068,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << tmp;
   if (high10) {
     call << "-";
-  }else {
+  } else {
     tmp = "\"" + avisynthFile + "\"";
     call << tmp;
   }

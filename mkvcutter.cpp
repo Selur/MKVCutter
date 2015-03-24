@@ -668,7 +668,7 @@ void MkvCutter::buildTrimAndPartsList()
   int lastNextKey = -1, lastStartKey = -1;
   bool append;
   QStringList mkvparts;
-  QString name, trim, negReplace;
+  QString name, trim, negReplace, part;
   cutTyp1 cut;
   int fileIndex = 0;
   m_keyframeonly = true;
@@ -686,7 +686,7 @@ void MkvCutter::buildTrimAndPartsList()
     if (cutStart == prevKey && cutEnd == nextKey - 1) {
       trim = "KEEP";
       if (!mkvparts.isEmpty()) {
-        QString part = mkvparts.last();
+        part = mkvparts.last();
         part = part.remove(0, part.indexOf("-") + 1);
         if (!name.isEmpty() && m_trimming.value(name) == trim && part.toInt() == prevKey) {
           part = mkvparts.takeLast();
@@ -745,12 +745,31 @@ void MkvCutter::buildTrimAndPartsList()
     mkvparts.append(QString::number(prevKey) + "-" + QString::number(nextKey));
 
     if (!append && (cutStart == clipStart || cutStart == prevKey)) {
+      if (cutStart == prevKey && (cutEnd == nextKey || cutEnd == clipEnd)
+          && trim.startsWith("KEEP")) {
+        part = mkvparts.takeLast();
+        part = part.remove(part.indexOf("-") + 1, part.size());
+        if (part == QString::number(nextKey) + "-") {
+          m_trimming.remove(name);
+          this->addInfo("   " + tr("removed last"));
+          continue;
+        }
+        part += QString::number(nextKey);
+        this->addInfo(
+            "   "
+                + tr("removed last, now adding(7) %1 <> %2 for %3").arg(name).arg(trim).arg(part));
+        mkvparts.append(part);
+        m_trimming.remove(name);
+        m_trimming.insert(name, trim);
+        continue;
+      }
       trim = "Trim(0,";
       if (cutEnd == nextKey || cutEnd == clipEnd) {
         trim = "KEEP";
         this->addInfo(
             "  "
                 + tr("adding(1) %1 <> %2 for %3-%4").arg(name).arg(trim).arg(cutStart).arg(cutEnd));
+
         m_trimming.insert(name, trim);
         continue;
       }

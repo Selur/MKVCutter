@@ -1282,7 +1282,8 @@ void MkvCutter::deleteFiles()
   this->addInfo(" " + tr("deleting split list elements,..."));
   foreach (QString file, m_splitFiles)
   {
-    if (file.isEmpty() || (file == m_currentInput || !QFile::exists(file))) {
+    if (file.isEmpty()
+        || (file == m_currentInput || !QFile::exists(file) || file == m_currentOutput)) {
       continue;
     }
     if (QFile::exists(file)) {

@@ -184,7 +184,7 @@ QString Cutter::readAll(const QString fileName, QString type)
   return input;
 }
 
-QString Cutter::secondsToHMSZZ(double seconds)
+QString Cutter::secondsToHMSZZZ(double seconds)
 {
   if (seconds == 0) {
     return "00:00:00.00";
@@ -228,7 +228,7 @@ QString Cutter::secondsToHMSZZ(double seconds)
   return time;
 }
 
-QString Cutter::secondsToHMSZZZ(double seconds)
+QString Cutter::secondsToHMSZZ(double seconds)
 {
   if (seconds == 0) {
     return "00:00:00";

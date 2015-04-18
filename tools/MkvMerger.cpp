@@ -72,7 +72,7 @@ void MkvMerger::call(QString call)
 }
 QString MkvMerger::doubleBackSlash(QString text)
 {
-  return text.replace("\\", "\\\\");
+  return "\""+text.replace("\\", "\\\\")+"\"";
 }
 
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,

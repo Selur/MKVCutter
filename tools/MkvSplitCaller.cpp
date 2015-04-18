@@ -10,9 +10,10 @@
 #include <QDir>
 #include "Globals.h"
 
-MkvSplitCaller::MkvSplitCaller(QObject *parent) :
-    QObject(parent), m_process(nullptr), m_input(QString()), m_output(QString()), m_splitParts(),
-    m_outputFolder(QString()), m_tempFiles(), m_audio(false), m_keepIntermediate(false), m_keyframeonly(false)
+MkvSplitCaller::MkvSplitCaller(QObject *parent)
+    : QObject(parent), m_process(nullptr), m_input(QString()), m_output(QString()), m_splitParts(),
+        m_outputFolder(QString()), m_tempFiles(), m_audio(false), m_keepIntermediate(false),
+        m_keyframeonly(false)
 {
 
 }
@@ -23,7 +24,7 @@ MkvSplitCaller::~MkvSplitCaller()
 
 void MkvSplitCaller::setKeepIntermediate(bool keep)
 {
-    m_keepIntermediate = keep;
+  m_keepIntermediate = keep;
 }
 
 void MkvSplitCaller::handleMkvmergeOutput()
@@ -32,7 +33,8 @@ void MkvSplitCaller::handleMkvmergeOutput()
   if (!out.isEmpty()) {
     QStringList lines = out.split("\n", QString::SkipEmptyParts);
     int index;
-    foreach(QString line, lines) {
+    foreach(QString line, lines)
+    {
       line = line.trimmed();
       if (line.isEmpty()) {
         continue;
@@ -53,7 +55,7 @@ void MkvSplitCaller::handleMkvmergeOutput()
       if (index == -1) {
         continue;
       }
-      line = line.remove(0, index+10);
+      line = line.remove(0, index + 10);
       line = line.remove(line.indexOf("'"), line.size());
       emit sendInfos(" -> " + tr("new temp file: %1").arg(line));
       m_tempFiles << line;
@@ -78,11 +80,11 @@ void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitSta
   }
   QString optionFile = m_output;
   optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
-  optionFile +="_mkvOptions.txt";
+  optionFile += "_mkvOptions.txt";
   if (!m_keepIntermediate && QFile::remove(optionFile)) {
-      this->sendInfos(tr("deleted %1").arg(optionFile));
+    this->sendInfos(tr("deleted %1").arg(optionFile));
   } else {
-      this->sendInfos(tr("only one output file: %1").arg(m_output));
+    this->sendInfos(tr("only one output file: %1").arg(m_output));
   }
 
   emit splitFiles(m_tempFiles);
@@ -90,7 +92,7 @@ void MkvSplitCaller::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitSta
 }
 
 void MkvSplitCaller::start(QString inputFile, QString outputFile, QStringList splitParts,
-                           QString outputFolder, bool audio, bool keyframeonly)
+    QString outputFolder, bool audio, bool keyframeonly)
 {
   m_audio = audio;
   m_output = outputFile;
@@ -109,15 +111,15 @@ void MkvSplitCaller::call(QString call)
   delete m_process;
   m_process = new QProcess(this);
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
-                   SLOT(mkvmergeFinished(int, QProcess::ExitStatus)));
+      SLOT(mkvmergeFinished(int, QProcess::ExitStatus)));
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this,
-                   SLOT(handleMkvmergeOutput()));
+      SLOT(handleMkvmergeOutput()));
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleMkvmergeOutput()));
   m_process->start(call);
 }
 QString MkvSplitCaller::doubleBackSlash(QString text)
 {
-    return text.replace("\\", "\\\\");
+  return "\"" + text.replace("\\", "\\\\") + "\"";
 }
 
 QString MkvSplitCaller::buildCall()
@@ -137,18 +139,18 @@ QString MkvSplitCaller::buildCall()
   }
   QStringList options;
   options << "-o";
-  options <<  doubleBackSlash(QDir::toNativeSeparators(m_output));
+  options << doubleBackSlash(QDir::toNativeSeparators(m_output));
   if (m_audio) {
     options << "--split";
-    options << "parts:"+m_splitParts.join(",+");
-    options <<  "--no-video";
-    options <<  "--no-subtitles";
+    options << "parts:" + m_splitParts.join(",+");
+    options << "--no-video";
+    options << "--no-subtitles";
   } else {
     options << "--split";
     if (m_keyframeonly) {
-      options << "parts-frames:"+m_splitParts.join(",+");
+      options << "parts-frames:" + m_splitParts.join(",+");
     } else {
-      options << "parts-frames:"+m_splitParts.join(",");
+      options << "parts-frames:" + m_splitParts.join(",");
       options << "--no-audio";
     }
     options << "--no-subtitles";
@@ -161,20 +163,21 @@ QString MkvSplitCaller::buildCall()
   options << doubleBackSlash(QDir::toNativeSeparators(m_input));
   QString optionFile = m_output;
   optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
-  optionFile +="_mkvOptions.txt";
+  optionFile += "_mkvOptions.txt";
   emit sendInfos(tr("Saving options:"));
   emit sendInfos("---------------------------");
-  foreach (QString option, options) {
+  foreach (QString option, options)
+  {
     emit sendInfos(option);
   }
   emit sendInfos("---------------------------");
   emit sendInfos(tr("to:  %1").arg(optionFile));
-  if (Globals::saveTextTo(options.join("\n"), optionFile)!= 0) {
-      emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));
+  if (Globals::saveTextTo(options.join("\n"), optionFile) != 0) {
+    emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));
   } else {
-      emit sendInfos(tr("Saved %1.").arg(optionFile));
+    emit sendInfos(tr("Saved %1.").arg(optionFile));
   }
 
-  call += " @\""+Globals::shortFileName(optionFile)+"\"";
+  call += " @\"" + Globals::shortFileName(optionFile) + "\"";
   return call;
 }

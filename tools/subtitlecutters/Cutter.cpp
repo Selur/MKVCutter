@@ -238,6 +238,9 @@ double Cutter::timeToSeconds(QTime time)
 double Cutter::timeToSeconds(QString value)
 {
   QString tmp = value.trimmed();
+  if (tmp.startsWith("0:")) {
+    tmp = "0"+tmp;
+  }
   double dtime = tmp.toDouble();
   int index = tmp.indexOf(":");
   bool tripple = tmp.count(":") == 3;

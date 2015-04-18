@@ -52,6 +52,17 @@ QString AssCutter::cutContent(const QString &content, const QStringList &cutList
 {
   QString scriptInfo = content;
   scriptInfo = scriptInfo.remove(scriptInfo.indexOf("[V"), scriptInfo.size());
+  QStringList lines = scriptInfo.split("\n");
+  scriptInfo = lines.takeFirst();
+  foreach(QString line, lines)
+  {
+    line = line.trimmed();
+    if (line.contains("File:")) {
+      continue;
+    }
+    scriptInfo += "\n" + line;
+  }
+
   QString style = content;
   style = style.remove(0, style.indexOf("[V"));
   style = style.remove(style.indexOf("[E"), style.size());
@@ -66,7 +77,8 @@ QString AssCutter::cutContent(const QString &content, const QStringList &cutList
     cout << " subtitle entries" << endl;
   }
   adjustEntries(tokens, cutList);
-  QString subtitles = scriptInfo + style + events;
+  QString subtitles = scriptInfo.trimmed() + "\n\n" + style.trimmed() + "\n\n" + events.trimmed()
+      + "\n\n";
   QString text;
   foreach(SubtitleEntry entry, tokens)
   {

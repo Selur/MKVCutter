@@ -231,16 +231,16 @@ QString Cutter::secondsToHMSZZZ(double seconds)
 QString Cutter::secondsToHMSZZ(double seconds)
 {
   if (seconds == 0) {
-    return "00:00:00";
+    return "0:00:00.00";
   }
-  QString time = QString();
+
   int hrs = 0;
   if (seconds >= 3600) { //Stunden
     hrs = int(seconds) / 3600;
   } else if (seconds == 3600) {
     hrs = 1;
   }
-  time += QString((hrs < 10) ? "0" : QString()) + QString::number(hrs);
+  QString time = QString::number(hrs);
 
   int min = 0;
   seconds = seconds - 3600 * hrs;
@@ -257,7 +257,7 @@ QString Cutter::secondsToHMSZZ(double seconds)
   time += ":";
   time += QString((sec < 10) ? "0" : QString());
   time += QString::number(sec);
-  int milliseconds = int(1000 * (seconds - (sec * 1.0)) + 0.5);
+  int milliseconds = int(100 * (seconds - (sec * 1.0)) + 0.5);
   if (milliseconds == 0) {
     time += ".00";
     return time;

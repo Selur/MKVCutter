@@ -10,8 +10,8 @@
 #include <iostream>
 using namespace std;
 
-AssCutter::AssCutter(QObject *parent, bool debug) :
-    Cutter(parent, debug)
+AssCutter::AssCutter(QObject *parent, bool debug)
+    : Cutter(parent, debug)
 {
   this->setObjectName("AssCutter");
   m_acceptedExtensions << "ass" << "ssa";
@@ -40,7 +40,7 @@ QList<SubtitleEntry> AssCutter::tokenize(const QString dialog)
     //0,0:00:01.77,0:00:05.93,Default,,0000,0000,0000,,Es ist vollendet: Unser eigenes Valkyria Chronicles!
     elements = line.split(",");
     entry.from = this->timeToSeconds(elements.takeAt(1));
-    entry.to = this->timeToSeconds(elements.takeAt(2));
+    entry.to = this->timeToSeconds(elements.takeAt(1));
     elements.insert(1, ":*:FromToDate:*:");
     entry.text = elements.join(",");
     entries.append(entry);
@@ -73,7 +73,7 @@ QString AssCutter::cutContent(const QString &content, const QStringList &cutList
     subtitles += "Dialogue: ";
     text = entry.text;
     text = text.replace(":*:FromToDate:*:",
-                        secondsToHMSZZZ(entry.from) + "," + secondsToHMSZZZ(entry.to));
+        this->secondsToHMSZZ(entry.from) + "," + this->secondsToHMSZZ(entry.to));
     subtitles += text;
     subtitles += "\n";
   }

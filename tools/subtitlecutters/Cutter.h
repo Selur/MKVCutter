@@ -39,6 +39,7 @@ class Cutter : public QObject
     QStringList m_acceptedExtensions;
     void adjustEntries(QList<SubtitleEntry> &entries, const QStringList &cutList);
     QString secondsToHMSZZZ(double seconds);
+    QString secondsToHMSZZ(double seconds);
     QString getDirectory(const QString input);
     QString removeLastSeparatorFromPath(QString input);
     int saveTextTo(QString text, QString to);

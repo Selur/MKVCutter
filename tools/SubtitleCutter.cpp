@@ -22,7 +22,10 @@ QStringList SubtitleCutter::getCutSubtitles()
 QString SubtitleCutter::cutPGSSubtitle(const QString &input, const QString &output,
     const QStringList &cutList)
 {
-  QString out = output;
+  Q_UNUSED(input);
+  Q_UNUSED(output);
+  Q_UNUSED(cutList);
+  //QString out = output;
   emit sendInfos(" ignored subtitles since pgs cutting is not implemented");
   //TODO: implement cutPGSSubtitle
   return QString(); //out;

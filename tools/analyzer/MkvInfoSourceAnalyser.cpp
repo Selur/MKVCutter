@@ -91,6 +91,7 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
   SubtitleTrack track;
   QStringList lines = medaiInfo.split("\r\n");
   int index;
+  QString language;
   foreach(QString line, lines)
   {
     if (!line.contains(": subtitles")) { // Track 5: subtitles, codec ID: S_VOBSUB, mkvmerge/mkvextract track ID: 4, language: dan
@@ -98,7 +99,11 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
     }
     index = line.indexOf(", language");
     if (index != -1) {
+      language = line;
+      language = language.remove(0, index +12).trimmed();
       line = line.remove(index, line.size());
+    } else {
+      language=QString();
     }
     trackID = line;
     trackID = trackID.remove(0, trackID.lastIndexOf(":") + 1);
@@ -108,6 +113,7 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
     type = type.remove(type.indexOf(","), type.size());
     track.trackID = trackID.toInt();
     track.type = type;
+    track.language=language;
     emit subtitleTrack(track);
   }
 

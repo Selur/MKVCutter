@@ -165,6 +165,7 @@ QString Cutter::getDirectory(const QString input)
 
 QString Cutter::readAll(const QString fileName, QString type)
 {
+  Q_UNUSED(type);
   QString input = fileName;
   QFile file(input);
   if (!file.exists()) {
@@ -174,11 +175,7 @@ QString Cutter::readAll(const QString fileName, QString type)
     return QString();
   }
   QTextStream stream(&file);
-  if (type == "auto") {
-    stream.autoDetectUnicode();
-  } else {
-    stream.setCodec(type.toUtf8());
-  }
+  stream.setCodec(type.toUtf8());
   input = stream.readAll();
   file.close();
   return input;

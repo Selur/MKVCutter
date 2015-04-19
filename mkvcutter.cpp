@@ -1205,7 +1205,7 @@ void MkvCutter::cleanUpAndMerge()
       }
       this->addInfo(" " + tr("Muxing content,.."));
       m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
-          m_fps, m_interlaced != "progressive", m_paff);
+          m_fps, m_interlaced != "progressive", m_paff, m_subtitles);
     }
     return;
   }
@@ -1213,7 +1213,7 @@ void MkvCutter::cleanUpAndMerge()
   // generate mkvmerge calls to join all parts
   this->addInfo(" " + tr("Muxing audio&video(2),.."));
   m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
-      m_fps, m_interlaced != "progressive", m_paff);
+      m_fps, m_interlaced != "progressive", m_paff, m_subtitles);
 }
 
 void MkvCutter::x264Finished(int exitstate)

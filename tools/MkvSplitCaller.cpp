@@ -119,7 +119,7 @@ void MkvSplitCaller::call(QString call)
 }
 QString MkvSplitCaller::doubleBackSlash(QString text)
 {
-  return "\"" + text.replace("\\", "\\\\") + "\"";
+  return text.replace("\\", "\\\\");
 }
 
 QString MkvSplitCaller::buildCall()

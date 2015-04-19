@@ -11,12 +11,8 @@
 #include <QObject>
 #include <QString>
 #include <QProcess>
+#include "tools/Subtitletrack.h"
 
-struct SubtitleTrack
-{
-    int trackID;
-    QString type;
-};
 
 class MkvInfoSourceAnalyser : public QObject
 {

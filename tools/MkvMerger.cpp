@@ -52,10 +52,10 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 }
 
 void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles,
-    QString outputFile, const double fps, const bool interlaced, const bool paff)
+    QString outputFile, const double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles )
 {
   m_output = outputFile;
-  this->call(this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff));
+  this->call(this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles));
 }
 
 void MkvMerger::call(QString call)
@@ -76,7 +76,7 @@ QString MkvMerger::doubleBackSlash(QString text)
 }
 
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
-    QStringList subtitleFiles, double fps, const bool interlaced, const bool paff)
+    QStringList subtitleFiles, double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles)
 {
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -163,10 +163,28 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     options << "--no-buttons";
     options << doubleBackSlash(file);
   }
-
+  QString lang;
 // SUBTITLE FILES
   foreach(QString file, subtitleFiles)
   {
+    options << "--no-video";
+    options << "--no-audio";
+    options << "--no-global-tags";
+    options << "--no-chapters";
+    options << "--no-track-tags";
+    options << "--subtitle-tracks";
+    options << "0";
+    lang = file;
+    index = lang.lastIndexOf("_track_");
+    if (index != -1){
+      lang = lang.remove(0, index+7);
+      lang = lang.remove(lang.indexOf("_"), lang.size());
+      lang = subtitles.at(lang.toInt()).language;
+      if (lang != QString()) {
+        options << "--language";
+        options << "0:"+lang;
+      }
+    }
     options << "--compression";
     options << "-1:none";
     options << doubleBackSlash(file);

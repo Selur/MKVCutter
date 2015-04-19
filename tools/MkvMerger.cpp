@@ -107,8 +107,8 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
   QString optionFile, file;
   QStringList append;
   if (splitfileCount == 1 && splitFiles.at(0).endsWith(".mkv")) {
-    file = splitFiles.at(0);
-    options << doubleBackSlash(splitFiles.at(0));
+    file = splitFiles.at(0).trimmed();
+    options << doubleBackSlash(file);
     optionFile = file;
   } else {
     QString fpsValue = Globals::decimalToFractionConvert(fps);
@@ -181,7 +181,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     index = lang.lastIndexOf("_track_");
     if (index != -1) {
       lang = lang.remove(0, index + 7);
-      lang = lang.remove(lang.indexOf("."), lang.size()).trimmed();
+      lang = lang.remove(lang.lastIndexOf("."), lang.size()).trimmed();
       index = lang.toInt();
       lang = subtitles.at(index).language;
       if (lang != QString()) {

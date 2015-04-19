@@ -1132,7 +1132,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     call << "--sar " + par;
   }
   tmp = avisynthFile;
-  tmp = tmp.remove(tmp.indexOf("."), tmp.size());
+  tmp = tmp.remove(tmp.lastIndexOf("."), tmp.size());
   tmp += "_reencode.264";
   m_reencodedVideoFiles << tmp;
   tmp = "-o \"" + tmp + "\"";

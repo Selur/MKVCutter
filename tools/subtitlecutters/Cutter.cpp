@@ -11,13 +11,6 @@
 #include <QTextCodec>
 #include <QTextStream>
 
-#define UTF8BOM "\xEF\xBB\xBF"
-#define UTF8 "UTF-8"
-#define UTF16LEBOM "\xFF\xFE"
-#define UTF16LE "UTF-16LE"
-#define UTF16BEBOM "\xFE\xFF"
-#define UTF16BE "UTF-16BE"
-
 #include <iostream>
 using namespace std;
 
@@ -58,6 +51,7 @@ int Cutter::saveTextTo(QString text, QString to)
   if (avs || meta || idx || qp || d2v) {
     out.setCodec(QTextCodec::codecForLocale());
   } else {
+    out.setGenerateByteOrderMark(false);
     out.setCodec("UTF-8");
   }
   out << text;

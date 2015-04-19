@@ -52,10 +52,12 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 }
 
 void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles,
-    QString outputFile, const double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles )
+    QString outputFile, const double fps, const bool interlaced, const bool paff,
+    const QList<SubtitleTrack>& subtitles)
 {
   m_output = outputFile;
-  this->call(this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles));
+  this->call(
+      this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles));
 }
 
 void MkvMerger::call(QString call)
@@ -72,11 +74,12 @@ void MkvMerger::call(QString call)
 }
 QString MkvMerger::doubleBackSlash(QString text)
 {
-  return "\""+text.replace("\\", "\\\\")+"\"";
+  return text.replace("\\", "\\\\");
 }
 
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
-    QStringList subtitleFiles, double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles)
+    QStringList subtitleFiles, double fps, const bool interlaced, const bool paff,
+    const QList<SubtitleTrack>& subtitles)
 {
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -139,7 +142,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
         options << "(";
         options << doubleBackSlash(file);
         options << ")";
-        append << QString::number(i)+":0:"+QString::number(i-1)+":0";
+        append << QString::number(i) + ":0:" + QString::number(i - 1) + ":0";
       }
     }
   }
@@ -176,13 +179,14 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     options << "0";
     lang = file;
     index = lang.lastIndexOf("_track_");
-    if (index != -1){
-      lang = lang.remove(0, index+7);
-      lang = lang.remove(lang.indexOf("_"), lang.size());
-      lang = subtitles.at(lang.toInt()).language;
+    if (index != -1) {
+      lang = lang.remove(0, index + 7);
+      lang = lang.remove(lang.indexOf("."), lang.size()).trimmed();
+      index = lang.toInt();
+      lang = subtitles.at(index).language;
       if (lang != QString()) {
         options << "--language";
-        options << "0:"+lang;
+        options << "0:" + lang;
       }
     }
     options << "--compression";

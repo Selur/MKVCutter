@@ -177,7 +177,8 @@ MkvCutter::~MkvCutter()
 
 void MkvCutter::subtitleTrack(SubtitleTrack track)
 {
-  this->addInfo(" " + tr("subtitle track: %1").arg(track.trackID));
+  this->addInfo(
+      " " + tr("subtitle track: %1, language: %2").arg(track.trackID).arg(track.language));
   m_subtitles.append(track);
 }
 

@@ -52,19 +52,8 @@ int Cutter::saveTextTo(QString text, QString to)
   bool d2v = to.endsWith(".d2v", Qt::CaseInsensitive);
   bool qp = to.endsWith(".qp", Qt::CaseInsensitive);
   bool meta = to.endsWith(".meta", Qt::CaseInsensitive);
-  bool srt = to.endsWith(".srt", Qt::CaseInsensitive);
-  bool ass = to.endsWith(".ass", Qt::CaseInsensitive);
-  bool ssa = to.endsWith(".ssa", Qt::CaseInsensitive);
   text = text.replace("\r\n", "\n");
-#ifdef Q_OS_WIN
-  bool ttxt = to.endsWith(".ttxt", Qt::CaseInsensitive);
-  if (!ttxt && !avs && !meta && !qp && !d2v && !srt && !ass && !ssa) {
-#else
-  if (!avs && !meta && !qp && !d2v) {
-#endif
-    file.write(UTF8BOM);
-    file.setTextModeEnabled(true);
-  }
+  file.setTextModeEnabled(true);
   QTextStream out(&file);
   if (avs || meta || idx || qp || d2v) {
     out.setCodec(QTextCodec::codecForLocale());

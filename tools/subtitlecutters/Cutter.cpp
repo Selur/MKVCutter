@@ -11,6 +11,13 @@
 #include <QTextCodec>
 #include <QTextStream>
 
+#define UTF8BOM "\xEF\xBB\xBF"
+#define UTF8 "UTF-8"
+#define UTF16LEBOM "\xFF\xFE"
+#define UTF16LE "UTF-16LE"
+#define UTF16BEBOM "\xFE\xFF"
+#define UTF16BE "UTF-16BE"
+
 #include <iostream>
 using namespace std;
 
@@ -46,12 +53,19 @@ int Cutter::saveTextTo(QString text, QString to)
   bool qp = to.endsWith(".qp", Qt::CaseInsensitive);
   bool meta = to.endsWith(".meta", Qt::CaseInsensitive);
   text = text.replace("\r\n", "\n");
-  file.setTextModeEnabled(true);
+#ifdef Q_OS_WIN
+  bool ttxt = to.endsWith(".ttxt", Qt::CaseInsensitive);
+  if (!ttxt && !avs && !meta && !qp && !d2v) {
+#else
+  if (!avs && !meta && !qp && !d2v) {
+#endif
+    file.write(UTF8BOM);
+    file.setTextModeEnabled(true);
+  }
   QTextStream out(&file);
   if (avs || meta || idx || qp || d2v) {
     out.setCodec(QTextCodec::codecForLocale());
   } else {
-    out.setGenerateByteOrderMark(false);
     out.setCodec("UTF-8");
   }
   out << text;

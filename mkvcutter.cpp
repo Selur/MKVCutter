@@ -1135,6 +1135,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   tmp = tmp.remove(tmp.lastIndexOf("."), tmp.size());
   tmp += "_reencode.264";
   m_reencodedVideoFiles << tmp;
+  this->addInfo("m_reencodedVideoFiles:\n"+m_reencodedVideoFiles.join("\n  "));
   tmp = "-o \"" + tmp + "\"";
   call << tmp;
   if (high10) {
@@ -1178,15 +1179,15 @@ void MkvCutter::cleanUpAndMerge()
 
   this->addInfo(" " + tr("video file count: %1").arg(videoFileCount));
   if (videoFileCount > 0) {
-    this->addInfo(" " + tr("video files:\n") + m_reencodedVideoFiles.join("\n   "));
+    this->addInfo(" " + tr("video files:\n   ") + m_reencodedVideoFiles.join("\n   "));
   }
   this->addInfo(" " + tr("audio file count: %1").arg(audioFileCount));
   if (audioFileCount > 0) {
-    this->addInfo("  " + tr("audio files:\n") + m_audioSplitFiles.join("\n   "));
+    this->addInfo("  " + tr("audio files:\n   ") + m_audioSplitFiles.join("\n   "));
   }
   this->addInfo(" " + tr("subtitle file count: %1").arg(subtitleCount));
   if (subtitleCount > 0) {
-    this->addInfo("  " + tr("subtitle files:\n") + m_cutSubtitles.join("\n   "));
+    this->addInfo("  " + tr("subtitle files:\n   ") + m_cutSubtitles.join("\n   "));
   }
   QString tmp = m_reencodedVideoFiles.first();
   if (videoFileCount == 1 && tmp.endsWith(".mkv")) {
@@ -1671,6 +1672,7 @@ void MkvCutter::on_nextPushButton_clicked()
   ui.mainStackedWidget->setCurrentIndex(3);
   int listCount = m_mkvVideoParts.size();
   this->addInfo(tr("mkvParts count: %1").arg(listCount));
+  this->addInfo(m_mkvVideoParts.join("\n  "));
   if (listCount == 0) {
     ui.infoLabel->setText(tr("No cuts using mkvmerge needed,.."));
     m_splitFiles << m_currentInput;

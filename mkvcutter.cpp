@@ -991,9 +991,9 @@ QString adjustParDotToColon(QString value)
   if (dvalue == 0) {
     return par;
   }
-  if (dvalue < 1.0) {
+  if (dvalue > 1.0 && dvalue < 3.0) {
     par = "1000:" + QString::number(int(dvalue * 1000));
-  } else if (dvalue > 1.0 && dvalue < 3.0) {
+  } else if (dvalue < 1.0) {
     par = QString::number(int(dvalue * 1000)) + ":1000";
   }
 

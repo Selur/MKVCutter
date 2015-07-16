@@ -354,7 +354,7 @@ namespace Converter
     if (line.startsWith("psy=")) {
       clearStart(line);
       if (line == "0") {
-        x264 << "--no-psy " + line;
+        x264 << "--no-psy";
       }
       return true;
     }

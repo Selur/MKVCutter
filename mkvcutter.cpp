@@ -301,7 +301,8 @@ void MkvCutter::setInput(QString input)
     return;
   }
   m_currentInput = QDir::toNativeSeparators(input); //set current input
-  m_currentOutput = m_currentInput.insert(m_currentInput.lastIndexOf("."),"_"+QDateTime::currentDateTime().toString("hh_mm_ss"));
+  m_currentOutput = m_currentInput;
+  m_currentOutput = m_currentOutput.insert(m_currentOutput.lastIndexOf("."),"_"+QDateTime::currentDateTime().toString("hh_mm_ss"));
   m_mkvinfoAnalyser->analyse(m_currentInput);
 }
 

@@ -302,11 +302,17 @@ namespace Converter
     }
     if (line.startsWith("qpmin=")) {
       clearStart(line);
+      if (line.contains(":")) {
+        line = line.remove(line.indexOf(":"), line.size());
+      }
       x264 << "--qpmin " + line;
       return true;
     }
     if (line.startsWith("qpmax=")) {
       clearStart(line);
+      if (line.contains(":")) {
+        line = line.remove(line.indexOf(":"), line.size());
+      }
       x264 << "--qpmax " + line;
       return true;
     }

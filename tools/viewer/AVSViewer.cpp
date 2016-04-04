@@ -14,6 +14,7 @@
 #include <QTextStream>
 #include <QTextCodec>
 #include <QApplication>
+#include <QDesktopWidget>
 #include <QFileDialog>
 #include "Globals.h"
 using namespace std;
@@ -22,7 +23,8 @@ AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport
     QStringList keyFrames)
     : QWidget(parent), m_env(0), m_inf(), m_clip(), m_frameCount(100), m_current(-1),
         m_currentInput(path), m_version(QString()), m_avsModified(QString()), m_res(0),
-        m_mult(mult), m_currentImage(), m_cutSupport(cutSupport), m_keyFrames(keyFrames)
+        m_mult(mult), m_currentImage(), m_cutSupport(cutSupport), m_keyFrames(keyFrames),
+        m_displayWidth(-1), m_displayHeight(-1)
 {
   ui.setupUi(this);
   if (m_currentInput.isEmpty()) {
@@ -36,6 +38,19 @@ AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport
     delete ui.previousKeyPushButton;
   }
   this->setButtonImages();
+}
+
+void AVSViewer::setDisplay(const int videoWidth, const int videoHeight)
+{
+  QDesktopWidget* mydesk = qApp->desktop();
+  int screenCount = mydesk->screenCount();
+  int currentScreen = 0;
+  if (screenCount > 1 && this->parent() != nullptr) {
+    currentScreen = mydesk->screenNumber(static_cast<QWidget*>(this->parent()));
+  }
+  QWidget* screen = mydesk->screen(currentScreen);
+  m_displayWidth = screen->width();
+  m_displayHeight = screen->height();
 }
 
 AVSViewer::~AVSViewer()
@@ -484,7 +499,7 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
   QString content = file.readAll(), ffms2Line, newContent;
 //this->send(tr("Content:\r\n%1").arg(content));
   file.close();
-  if (!content.contains("FFInfo()")) {
+  if (!content.contains("FFInfo()") && !content.contains("ShowSMPTE(")) {
     bool ffmpegSource = false;
     bool ffms2Avs = false;
     foreach(QString line, content.split("\n"))
@@ -507,42 +522,47 @@ int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
         ffms2Avs = true;
       }
     }
-    ui.ffinfoCheckBox->setEnabled(ffmpegSource);
-    if (!ui.ffinfoCheckBox->isChecked()) {
-      return 0;
-    }
-    //emit sendInfos(tr("FFInfoCheckBox is activated,.."));
-    int index = content.indexOf("distributor()", Qt::CaseInsensitive);
-    if (index != -1) {
-      //emit sendInfos(tr("building temp avs script file with distributor present,.."));
-      newContent = content.trimmed();
-      newContent = newContent.remove(index, newContent.size()).trimmed();
-      if (!ffms2Avs && !ffms2Line.isEmpty()) {
+    if (!ffms2Avs && !content.contains("ShowSMPTE(")) {
+      newContent += "\n";
+      newContent += "ShowSMPTE(offset=\"00:00:00:00\", x=10, y=10, )";
+    } else {
+      ui.ffinfoCheckBox->setEnabled(ffmpegSource);
+      if (!ui.ffinfoCheckBox->isChecked()) {
+        return 0;
+      }
+      //emit sendInfos(tr("FFInfoCheckBox is activated,.."));
+      int index = content.indexOf("distributor()", Qt::CaseInsensitive);
+      if (index != -1) {
+        //emit sendInfos(tr("building temp avs script file with distributor present,.."));
+        newContent = content.trimmed();
+        newContent = newContent.remove(index, newContent.size()).trimmed();
+        if (!ffms2Avs && !ffms2Line.isEmpty()) {
+          newContent += "\n";
+          newContent += "Import(\"" + ffms2Line + "\")";
+        }
+        newContent += "\n";
+        newContent += "SetMTMode(5)";
+        newContent += "\n";
+        newContent += "FFInfo()";
+        newContent += "\n";
+        newContent += "distributor()";
+        newContent += "\n";
+        newContent += "return last";
+      } else if (!ffms2Avs && !ffms2Line.isEmpty()) {
+        //emit sendInfos(tr("building temp avs script file,.."));
+        newContent = content.trimmed();
+        if (content.contains("SetModeMT(")) {
+          newContent += "\n";
+          newContent += "SeMTMode(5)";
+        }
         newContent += "\n";
         newContent += "Import(\"" + ffms2Line + "\")";
-      }
-      newContent += "\n";
-      newContent += "SetMTMode(5)";
-      newContent += "\n";
-      newContent += "FFInfo()";
-      newContent += "\n";
-      newContent += "distributor()";
-      newContent += "\n";
-      newContent += "return last";
-    } else if (!ffms2Avs && !ffms2Line.isEmpty()) {
-      //emit sendInfos(tr("building temp avs script file,.."));
-      newContent = content.trimmed();
-      if (content.contains("SetModeMT(")) {
         newContent += "\n";
-        newContent += "SeMTMode(5)";
+        newContent += "FFInfo()";
+      } else {
+        //emit sendInfos(tr("enabling invoke FFInfo,.."));
+        invokeFFInfo = true;
       }
-      newContent += "\n";
-      newContent += "Import(\"" + ffms2Line + "\")";
-      newContent += "\n";
-      newContent += "FFInfo()";
-    } else {
-      //emit sendInfos(tr("enabling invoke FFInfo,.."));
-      invokeFFInfo = true;
     }
   }
 
@@ -747,7 +767,10 @@ void AVSViewer::showFrame(int i)
     int width = m_inf.width;
     int height = m_inf.height;
     QImage image(f->GetReadPtr(), width, height, QImage::Format_RGB32); //create a QImage
-
+    while (width > m_displayWidth - 100 || height > m_displayHeight - 100) {
+      width = int(width * 0.9 + 0.5);
+      height = int(width * 0.9 + 0.5);
+    }
     if (m_mult > 0 && m_mult != 1) {
       width = int(width * m_mult + 0.5);
       //emit sendInfos(tr("Width: %1, Height: %2").arg(width).arg(height));

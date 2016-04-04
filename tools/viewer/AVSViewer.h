@@ -42,6 +42,7 @@ class AVSViewer : public QWidget
     bool m_cutSupport;
     QStringList m_keyFrames;
     QString m_scanOrder;
+    int m_displayWidth, m_displayHeight;
     void showFrame(int frame);
     int import(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
     int invokeImportInternal(const char *inputFile, AVSValue &res, IScriptEnvironment* env);

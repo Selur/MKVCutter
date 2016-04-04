@@ -171,6 +171,7 @@ namespace Converter
     }
     if (line.startsWith("scenecut=")) {
       clearStart(line);
+      line = line.remove("(pre)");
       x264 << "--scenecut" << line;
       return true;
     }

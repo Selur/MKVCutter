@@ -24,7 +24,8 @@ win32-msvc* {
     # QMAKE_CFLAGS_DEBUG = -Zi -MTd
     # QMAKE_LFLAGS += /DYNAMICBASE:NO
     # for Windows XP compatibility
-    contains(QMAKE_HOST.arch, x86_64):QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.02 # Windows XP 64bit
+    QMAKE_LFLAGS_CONSOLE += /SUBSYSTEM:CONSOLE,5.01
+    contains(QMAKE_HOST.arch, x86_64):QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.01 # Windows XP 64bit
     else:QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.01 # Windows XP 32bit
 }
 HEADERS += tools/Subtitletrack.h \

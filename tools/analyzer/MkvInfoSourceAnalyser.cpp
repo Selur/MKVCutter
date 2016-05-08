@@ -134,7 +134,6 @@ void MkvInfoSourceAnalyser::analyseOutput()
   bool gotMediaInfo = false;
   for (int i = 0, c = lines.count(); i < c; ++i) {
     line = lines.at(i);
-    //emit sendInfos(tr("looking at: %1").arg(line));
     if (!gotMediaInfo && line.startsWith("Track")) {
       mediaInfo += "\r\n" + line.trimmed();
       if (line.contains(": audio")) {

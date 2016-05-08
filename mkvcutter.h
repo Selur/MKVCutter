@@ -78,6 +78,7 @@ class MkvCutter : public QWidget
     bool m_hasAudio;
     int m_sps;
     int m_width, m_height;
+    QHash<QString,QString> m_audioDelays;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -159,6 +160,7 @@ class MkvCutter : public QWidget
     void setHasAudio(bool hasAudio);
     void setSps(int sps);
     void setResolution(QString width, QString height);
+    void setTheAudioDelays(QHash<QString, QString> audioDelays);
 };
 
 #endif // MKVCUTTER_H

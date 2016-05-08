@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QObject>
 #include <QProcess>
+#include <QHash>
+#include <QString>
 
 class MediaInfoAnalyser : public QObject
 {
@@ -35,6 +37,7 @@ class MediaInfoAnalyser : public QObject
     void x264Settings(QString settings);
     void minKeyInt(QString min);
     void maxKeyInt(QString max);
+    void theAudioDelays(QHash<QString, QString> delays);
 
 };
 

@@ -50,11 +50,12 @@ class AVSViewer : public QWidget
     int invokeInternal(const char *function);
     void killEnv();
     void send(QString message);
-    int handleFFInfo(QString &input, bool &invokeFFInfo);
+    int showtime(QString &input);
     void addCut(int start, int end);
     void setButtonImage(QPushButton *button, QIcon image, const int height);
     void setButtonImages();
     bool isValid(int position);
+    void setDisplay();
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);
@@ -62,7 +63,6 @@ class AVSViewer : public QWidget
     void on_nextPushButton_clicked();
     void on_previousPushButton_clicked();
     void on_frameHorizontalSlider_sliderReleased();
-    void on_ffinfoCheckBox_toggled();
     void on_saveImagePushButton_clicked();
     void on_setCutStartPushButton_clicked();
     void on_setCutEndPushButton_clicked();

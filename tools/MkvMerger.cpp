@@ -1,6 +1,7 @@
 #include "MkvMerger.h"
 #include <QApplication>
 #include <QDir>
+#include <QHashIterator>
 #include "Globals.h"
 
 MkvMerger::MkvMerger(QObject *parent)
@@ -53,11 +54,11 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
 void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles,
     QString outputFile, const double fps, const bool interlaced, const bool paff,
-    const QList<SubtitleTrack>& subtitles)
+    const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays)
 {
   m_output = outputFile;
   this->call(
-      this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles));
+      this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles, audioDelays));
 }
 
 void MkvMerger::call(QString call)
@@ -79,7 +80,7 @@ QString MkvMerger::doubleBackSlash(QString text)
 
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     QStringList subtitleFiles, double fps, const bool interlaced, const bool paff,
-    const QList<SubtitleTrack>& subtitles)
+    const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays)
 {
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -164,6 +165,13 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     options << "--no-subtitles";
     options << "--no-track-tags";
     options << "--no-buttons";
+    QHashIterator<QString, QString> i(audioDelays);
+    while (i.hasNext()) {
+      i.next();
+      options << "--sync";
+      options << i.key()+ ":" +i.value();
+    }
+
     options << doubleBackSlash(file);
   }
   QString lang;

@@ -26,7 +26,7 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
         m_mkvSubtitleExtractor(nullptr), m_subtitleCutter(nullptr), m_cutSubtitles(),
         m_subtitleToCut(), m_keyframeonly(false), m_hasAudio(false), m_sps(-1), m_width(-1),
-        m_height(-1)
+        m_height(-1), m_audioDelays()
 {
   this->setObjectName("MkvCutter-Main");
   ui.setupUi(this);
@@ -37,6 +37,11 @@ MkvCutter::MkvCutter(QWidget *parent)
   Globals::initDecimalFractionHashs();
   this->initTools();
   this->setWindowTitle("Mkv Cutter - " + QString::fromLocal8Bit(BUILDDATE));
+}
+
+void MkvCutter::setTheAudioDelays(QHash<QString, QString> audioDelays)
+{
+  m_audioDelays = audioDelays;
 }
 
 void MkvCutter::initTools()
@@ -86,6 +91,8 @@ void MkvCutter::initTools()
       SLOT(setMinKeyInt(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(maxKeyInt(QString)), this,
       SLOT(setMaxKeyInt(QString)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(theAudioDelays(QHash<QString, QString>)), this,
+      SLOT(setTheAudioDelays(QHash<QString, QString>)));
   cout << "  init m_mkvVideoSplitCaller" << endl;
   delete m_mkvVideoSplitCaller;
   m_mkvVideoSplitCaller = new MkvSplitCaller(this);
@@ -1210,7 +1217,7 @@ void MkvCutter::cleanUpAndMerge()
       }
       this->addInfo(" " + tr("Muxing content,.."));
       m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
-          m_fps, m_interlaced != "progressive", m_paff, m_subtitles);
+          m_fps, m_interlaced != "progressive", m_paff, m_subtitles, m_audioDelays);
     }
     return;
   }
@@ -1218,7 +1225,7 @@ void MkvCutter::cleanUpAndMerge()
   // generate mkvmerge calls to join all parts
   this->addInfo(" " + tr("Muxing audio&video(2),.."));
   m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
-      m_fps, m_interlaced != "progressive", m_paff, m_subtitles);
+      m_fps, m_interlaced != "progressive", m_paff, m_subtitles, m_audioDelays);
 }
 
 void MkvCutter::x264Finished(int exitstate)

@@ -58,6 +58,8 @@ void MediaInfoAnalyser::mediainfoFinished(int exitState, QProcess::ExitStatus st
 void MediaInfoAnalyser::mediainfoOutput()
 {
   QString out = m_process->readAllStandardOutput().data();
+  QHash<QString, QString> audioDelays;
+  QString currentAudio = QString();
   if (!out.isEmpty()) {
     bool audio = false;
     QStringList lines = out.split("\n");
@@ -146,10 +148,20 @@ void MediaInfoAnalyser::mediainfoOutput()
         if (line == "Audio" || line.startsWith("Audio #")) {
           audio = true;
           emit frameRateMode(vfr);
+          currentAudio = QString();
           continue;
         }
-      } else {
-        if (line.startsWith("Format") && !line.startsWith("Format profile")
+      } else { // audio
+          if (line == "Audio" || line.startsWith("Audio #")) {
+            currentAudio = QString();
+            continue;
+          }
+          if (line.startsWith("StreamOrder")) {
+            removeStartOfLine(line);
+            currentAudio = line;
+            continue;
+          }
+          if (line.startsWith("Format") && !line.startsWith("Format profile")
             && !line.startsWith("Format/") && !line.startsWith("Format version")
             && !line.startsWith("Format settings")) {
           removeStartOfLine(line);
@@ -172,6 +184,12 @@ void MediaInfoAnalyser::mediainfoOutput()
           }
           m_audioFormat = line;
           emit audioFormat(line);
+          continue;
+        }
+        if (line.startsWith("Delay relative to video") && !currentAudio.isEmpty()) {
+          removeStartOfLine(line);
+          audioDelays.insert(currentAudio, line);
+          currentAudio = QString();
           continue;
         }
 
@@ -201,7 +219,7 @@ void MediaInfoAnalyser::mediainfoOutput()
     }
     emit interlaced(scanorder);
   }
-
+  emit theAudioDelays(audioDelays);
   QString err = m_process->readAllStandardOutput().data();
   if (!err.isEmpty()) {
     emit sendInfos(tr("MediaInfo error: %1").arg(err));

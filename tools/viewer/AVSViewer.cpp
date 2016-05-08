@@ -27,6 +27,7 @@ AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport
         m_displayWidth(-1), m_displayHeight(-1)
 {
   ui.setupUi(this);
+  this->setDisplay();
   if (m_currentInput.isEmpty()) {
     return;
   }
@@ -40,7 +41,7 @@ AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport
   this->setButtonImages();
 }
 
-void AVSViewer::setDisplay(const int videoWidth, const int videoHeight)
+void AVSViewer::setDisplay()
 {
   QDesktopWidget* mydesk = qApp->desktop();
   int screenCount = mydesk->screenCount();
@@ -58,6 +59,42 @@ AVSViewer::~AVSViewer()
   if (!m_avsModified.isEmpty()) {
     QFile::remove(m_avsModified);
   }
+}
+
+int AVSViewer::showtime(QString &input)
+{
+  QFile file(input);
+  if (!file.open(QIODevice::ReadOnly)) {
+    this->send(tr("Couldn't read content of %1!").arg(input));
+    emit
+    finished(-12);
+    return -1;
+  }
+  QString content = file.readAll(), ffms2Line, newContent;
+//this->send(tr("Content:\r\n%1").arg(content));
+  file.close();
+
+  if (!content.contains("ShowTime(")) {
+    newContent = content.trimmed();
+    newContent += "\n";
+    newContent += "ShowTime()";
+  }
+
+  if (!newContent.isEmpty()) {
+    QString directory = Globals::getDirectory(m_currentInput);
+    QString name = Globals::getFileName(m_currentInput);
+    m_avsModified = QDir::toNativeSeparators(directory + QDir::separator() + name + "_tmp.avs");
+    if (Globals::saveTextTo(newContent, m_avsModified) == 0) {
+      emit sendInfos(tr("Saved temp avs file to %1").arg(m_avsModified));
+      input = m_avsModified;
+      //emit sendInfos(tr("Content:\r\n%1").arg(newContent));
+    }
+  } else {
+    emit sendInfos(tr("No need for temporal avs file,.."));
+    QFile::remove(m_avsModified);
+    m_avsModified = QString();
+  }
+  return 0;
 }
 
 void AVSViewer::setButtonImages()
@@ -474,114 +511,6 @@ void AVSViewer::on_commitPushButton_clicked()
   emit finished(0);
 }
 
-void AVSViewer::on_ffinfoCheckBox_toggled()
-{
-  if (m_env != 0) {
-    this->send(tr("Clean up old script environment,.."));
-    m_res = 0;
-    m_clip = 0;
-    m_env->DeleteScriptEnvironment(); //delete the old script environment
-    m_env = 0; // ensure new environment created next time
-  }
-  this->init(m_current);
-}
-
-int AVSViewer::handleFFInfo(QString &input, bool &invokeFFInfo)
-{
-//this->send(tr("handleFFInfo(%1, %2)").arg(input).arg(invokeFFInfo));
-  QFile file(input);
-  if (!file.open(QIODevice::ReadOnly)) {
-    this->send(tr("Couldn't read content of %1!").arg(input));
-    emit
-    finished(-12);
-    return -1;
-  }
-  QString content = file.readAll(), ffms2Line, newContent;
-//this->send(tr("Content:\r\n%1").arg(content));
-  file.close();
-  if (!content.contains("FFInfo()") && !content.contains("ShowSMPTE(")) {
-    bool ffmpegSource = false;
-    bool ffms2Avs = false;
-    foreach(QString line, content.split("\n"))
-    {
-      if (line.contains("FFMpegSource2(", Qt::CaseInsensitive)
-          || line.contains("FFVideoSource(", Qt::CaseInsensitive)) {
-        ffmpegSource = true;
-      }
-      if (line.contains("ffms2.dll", Qt::CaseInsensitive)
-          || line.contains("ffms2-x64.dll", Qt::CaseInsensitive)) {
-        ffms2Line = line;
-        ffms2Line = ffms2Line.remove(0, ffms2Line.indexOf("\"") + 1);
-        ffms2Line = ffms2Line.remove(ffms2Line.indexOf("\""), ffms2Line.size());
-        ffms2Line = Globals::getDirectory(ffms2Line);
-        ffms2Line += QDir::separator();
-        ffms2Line += "FFMS2.avsi";
-        ffms2Line = QDir::toNativeSeparators(ffms2Line);
-      }
-      if (line.contains("FFMS2.avs", Qt::CaseInsensitive)) {
-        ffms2Avs = true;
-      }
-    }
-    if (!ffms2Avs && !content.contains("ShowSMPTE(")) {
-      newContent += "\n";
-      newContent += "ShowSMPTE(offset=\"00:00:00:00\", x=10, y=10, )";
-    } else {
-      ui.ffinfoCheckBox->setEnabled(ffmpegSource);
-      if (!ui.ffinfoCheckBox->isChecked()) {
-        return 0;
-      }
-      //emit sendInfos(tr("FFInfoCheckBox is activated,.."));
-      int index = content.indexOf("distributor()", Qt::CaseInsensitive);
-      if (index != -1) {
-        //emit sendInfos(tr("building temp avs script file with distributor present,.."));
-        newContent = content.trimmed();
-        newContent = newContent.remove(index, newContent.size()).trimmed();
-        if (!ffms2Avs && !ffms2Line.isEmpty()) {
-          newContent += "\n";
-          newContent += "Import(\"" + ffms2Line + "\")";
-        }
-        newContent += "\n";
-        newContent += "SetMTMode(5)";
-        newContent += "\n";
-        newContent += "FFInfo()";
-        newContent += "\n";
-        newContent += "distributor()";
-        newContent += "\n";
-        newContent += "return last";
-      } else if (!ffms2Avs && !ffms2Line.isEmpty()) {
-        //emit sendInfos(tr("building temp avs script file,.."));
-        newContent = content.trimmed();
-        if (content.contains("SetModeMT(")) {
-          newContent += "\n";
-          newContent += "SeMTMode(5)";
-        }
-        newContent += "\n";
-        newContent += "Import(\"" + ffms2Line + "\")";
-        newContent += "\n";
-        newContent += "FFInfo()";
-      } else {
-        //emit sendInfos(tr("enabling invoke FFInfo,.."));
-        invokeFFInfo = true;
-      }
-    }
-  }
-
-  if (!newContent.isEmpty()) {
-    QString directory = Globals::getDirectory(m_currentInput);
-    QString name = Globals::getFileName(m_currentInput);
-    m_avsModified = QDir::toNativeSeparators(directory + QDir::separator() + name + "_tmp.avs");
-    if (Globals::saveTextTo(newContent, m_avsModified) == 0) {
-      emit sendInfos(tr("Saved temp avs file to %1").arg(m_avsModified));
-      input = m_avsModified;
-      //emit sendInfos(tr("Content:\r\n%1").arg(newContent));
-    }
-  } else {
-    emit sendInfos(tr("No need for temporal avs file,.."));
-    QFile::remove(m_avsModified);
-    m_avsModified = QString();
-  }
-  return 0;
-}
 
 /**
  * initilazing an avisynth environment for the current input file
@@ -644,8 +573,7 @@ void AVSViewer::init(int start)
     }
     this->send(" " + tr("current avisynth version: %1").arg(m_version));
     QString input = m_currentInput;
-    bool invokeFFInfo = false;
-    if (this->handleFFInfo(input, invokeFFInfo) != 0) {
+    if (this->showtime(input) != 0) {
       return;
     }
 
@@ -653,6 +581,7 @@ void AVSViewer::init(int start)
     input = Globals::shortFileName(input);
     const char *inputFile = input.toUtf8();
     if (import(inputFile, m_res, m_env) != 0) {
+      emit sendInfos("AvsScript:\n" +QFile(input).readAll());
       emit finished(-6);
       return;
     }
@@ -661,6 +590,7 @@ void AVSViewer::init(int start)
       QString error = tr("Couldn't import:") + " " + input;
       error += "\r\n";
       error += tr("Script seems not to be a valid avisynth script.");
+      emit sendInfos("AvsScript:\n" +QFile(input).readAll());
       emit sendInfos(error);
       emit finished(-7);
       return;
@@ -700,16 +630,6 @@ void AVSViewer::init(int start)
       }
       reload = true;
     }
-    if (invokeFFInfo) {
-      if (this->invoke("FFInfo") != 0) {
-        this->killEnv();
-        emit
-        finished(-10);
-        return;
-      }
-      reload = true;
-    }
-
     if (reload) {
       this->send(" " + tr("initializating the clip anew,.."));
       m_clip = m_res.AsClip(); // update clip
@@ -725,7 +645,7 @@ void AVSViewer::init(int start)
     emit sendInfos(" " + tr("adjusting slider to frame count,.."));
     ui.frameHorizontalSlider->setMaximum(m_frameCount);
     ui.frameHorizontalSlider->resetMarks();
-    ui.showLabel->setFixedSize(m_inf.width, m_inf.height);
+    //ui.showLabel->setFixedSize(m_inf.width, m_inf.height);
     emit sendInfos(" " + tr("showing first frame,.."));
     ui.showLabel->setMaximumSize(32767, 32767);
     this->showFrame(start); //show first frame
@@ -767,13 +687,9 @@ void AVSViewer::showFrame(int i)
     int width = m_inf.width;
     int height = m_inf.height;
     QImage image(f->GetReadPtr(), width, height, QImage::Format_RGB32); //create a QImage
-    while (width > m_displayWidth - 100 || height > m_displayHeight - 100) {
-      width = int(width * 0.9 + 0.5);
-      height = int(width * 0.9 + 0.5);
-    }
     if (m_mult > 0 && m_mult != 1) {
       width = int(width * m_mult + 0.5);
-      //emit sendInfos(tr("Width: %1, Height: %2").arg(width).arg(height));
+      emit sendInfos(tr("Width: %1, Height: %2").arg(width).arg(height));
       image = image.scaled(width, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
     }
     ui.showLabel->setText(QString());

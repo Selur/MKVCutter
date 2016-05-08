@@ -1490,13 +1490,33 @@ void MkvCutter::handleSplitFiles()
   this->startExtraction();
 }
 
+QString MkvCutter::getSmallest()
+{
+  QString smallest;
+  qint64 size = -1;
+  qint64 sSize = -1;
+  foreach(QString fileName, m_extractionFiles) {
+    QFile file;
+    file.setFileName(fileName);
+    if (!file.exists()) {
+      continue;
+    }
+    sSize = (qint64) (file.size());
+    if (sSize < size || size == -1) {
+      size = sSize;
+      smallest = fileName;
+    }
+  }
+  return smallest;
+}
+
 void MkvCutter::startExtraction()
 {
   if (m_extractionFiles.isEmpty()) {
     this->parseOriginal();
     return;
   }
-  QString input = m_extractionFiles.takeFirst();
+  QString input = this->getSmallest();
   QString filename = input;
   filename = filename.remove(filename.lastIndexOf("."), filename.length());
   filename += ".264";

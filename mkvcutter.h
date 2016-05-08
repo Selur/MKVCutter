@@ -96,6 +96,7 @@ class MkvCutter : public QWidget
     void buildCutList();
     void cutAudio();
     void startExtraction();
+    QString getSmallest();
     cutTyp1 findCutForFrame(int frame, const bool start);
     void extractTimeCodes();
     QString cutTimecodes(QString timecodes);

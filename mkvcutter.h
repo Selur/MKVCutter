@@ -34,7 +34,7 @@ class MkvCutter : public QWidget
 
   private:
     Ui::MkvCutterClass ui;
-    QString m_currentInput, m_tempAvs, m_currentOutput, m_tempFolder;
+    QString m_currentInput, m_tempAvs, m_indexFile, m_currentOutput, m_tempFolder;
     QString m_avcProfileLevel, m_audioFormat;
     bool m_avcCabac;
     int m_avcRefFrames, m_enabled, m_frameCount;
@@ -79,6 +79,7 @@ class MkvCutter : public QWidget
     int m_sps;
     int m_width, m_height;
     QHash<QString,QString> m_audioDelays;
+    QString m_indexFile;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -105,6 +106,7 @@ class MkvCutter : public QWidget
     void addVideoCut(const int &start, const int &end, const bool &interlaced);
     void parseOriginal();
     void createReencodeCalls();
+    void createAVS();
 
   protected slots:
     void on_openSourcePushButton_clicked();
@@ -119,8 +121,10 @@ class MkvCutter : public QWidget
     void mkvAnalysefinished();
     void mkvAnalyseProgress(int linesRead);
     void setFrameCount(int count);
+    void ffIndexerFinished(int state);
     void avsViewerFinished(int state);
     void setCutList(QStringList cuts);
+    void ffindexProgress(int percent);
     void setFPS(double framerate);
     void mkvSplitFinished(int exitstate);
     void mkvAudioCutFinished(int exitstate);

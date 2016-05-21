@@ -28,7 +28,8 @@ win32-msvc* {
     contains(QMAKE_HOST.arch, x86_64):QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.01 # Windows XP 64bit
     else:QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.01 # Windows XP 32bit
 }
-HEADERS += tools/Subtitletrack.h \
+HEADERS += tools/FFIndexCaller.h \
+    tools/Subtitletrack.h \
     tools/FFmpegVideoExtractor.h \
     tools/subtitlecutters/IdxSubCutter.h \
     tools/MkvSubtitleExtractor.h \
@@ -54,7 +55,8 @@ HEADERS += tools/Subtitletrack.h \
     tools/MkvVideoExtractor.h \
     DropPushButton.h \
     tools/MkvTimeExtractor.h
-SOURCES += tools/FFmpegVideoExtractor.cpp \
+SOURCES += tools/FFIndexCaller.cpp \
+    tools/FFmpegVideoExtractor.cpp \
     tools/subtitlecutters/IdxSubCutter.cpp \
     tools/MkvSubtitleExtractor.cpp \
     tools/SubtitleCutter.cpp \

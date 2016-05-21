@@ -11,6 +11,7 @@
 #include "tools/analyzer/MediaInfoAnalyser.h"
 #include "tools/analyzer/H264Parser.h"
 #include "tools/viewer/AVSViewer.h"
+#include "tools/FFindexCaller.h"
 #include "tools/MkvSplitCaller.h"
 #include "tools/X264Caller.h"
 #include "tools/MkvMerger.h"
@@ -47,6 +48,7 @@ class MkvCutter : public QWidget
     MkvInfoSourceAnalyser *m_mkvinfoAnalyser;
     MediaInfoAnalyser *m_mediaInfoAnalyser;
     AVSViewer *m_viewer;
+    FFIndexCaller *m_ffindexCaller;
     MkvSplitCaller *m_mkvVideoSplitCaller, *m_mkvAudioCutCaller;
     MkvMerger *m_mkvMerger;
     X264Caller *m_x264;

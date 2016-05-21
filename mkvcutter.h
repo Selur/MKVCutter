@@ -78,10 +78,10 @@ class MkvCutter : public QWidget
     QStringList m_subtitleToCut;
     bool m_keyframeonly;
     bool m_hasAudio;
+    bool m_useLibAV;
     int m_sps;
     int m_width, m_height;
     QHash<QString,QString> m_audioDelays;
-    QString m_indexFile;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);
@@ -108,7 +108,7 @@ class MkvCutter : public QWidget
     void addVideoCut(const int &start, const int &end, const bool &interlaced);
     void parseOriginal();
     void createReencodeCalls();
-    void createAVS();
+    bool createAVS();
 
   protected slots:
     void on_openSourcePushButton_clicked();

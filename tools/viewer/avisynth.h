@@ -47,8 +47,7 @@ enum { AVISYNTH_INTERFACE_VERSION = 5 };
    Moved from internal.h */
 
 // Win32 API macros, notably the types BYTE, DWORD, ULONG, etc.
-#include <mywindows.h>
-
+#include "mywindows.h"
 
 // Raster types used by VirtualDub & Avisynth
 #define in64 (__int64)(unsigned short)
@@ -378,7 +377,7 @@ class VideoFrame {
   VideoFrame(VideoFrameBuffer* _vfb, int _offset, int _pitch, int _row_size, int _height);
   VideoFrame(VideoFrameBuffer* _vfb, int _offset, int _pitch, int _row_size, int _height, int _offsetU, int _offsetV, int _pitchUV, int _row_sizeUV, int _heightUV);
 
-  void* operator new(size_t size);
+  void* operator new(unsigned size);
 // TESTME: OFFSET U/V may be switched to what could be expected from AVI standard!
 public:
   int GetPitch(int plane=0) const;
@@ -561,7 +560,7 @@ public:
   void __stdcall GetAudio(void* buf, __int64 start, __int64 count, IScriptEnvironment* env) { child->GetAudio(buf, start, count, env); }
   const VideoInfo& __stdcall GetVideoInfo() { return vi; }
   bool __stdcall GetParity(int n) { return child->GetParity(n); }
-  int __stdcall SetCacheHints(int, int) { return 0; } ;  // We do not pass cache requests upwards, only to the next filter.
+  int __stdcall SetCacheHints(int cachehints,int frame_range) { return 0; } ;  // We do not pass cache requests upwards, only to the next filter.
 };
 
 
@@ -708,9 +707,9 @@ public:
   virtual void* __stdcall ManageCache(int key, void* data) = 0;
 
   enum PlanarChromaAlignmentMode {
-			PlanarChromaAlignmentOff,
-			PlanarChromaAlignmentOn,
-			PlanarChromaAlignmentTest };
+            PlanarChromaAlignmentOff,
+            PlanarChromaAlignmentOn,
+            PlanarChromaAlignmentTest };
 
   virtual bool __stdcall PlanarChromaAlignment(PlanarChromaAlignmentMode key) = 0;
 

@@ -576,7 +576,6 @@ void AVSViewer::init(int start)
     if (this->showtime(input) != 0) {
       return;
     }
-
     emit sendInfos(" " + tr("Importing %1 into environment,..").arg(input));
     input = Globals::shortFileName(input);
     const char *inputFile = input.toUtf8();

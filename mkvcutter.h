@@ -78,7 +78,6 @@ class MkvCutter : public QWidget
     QStringList m_subtitleToCut;
     bool m_keyframeonly;
     bool m_hasAudio;
-    bool m_useLibAV;
     int m_sps;
     int m_width, m_height;
     QHash<QString,QString> m_audioDelays;

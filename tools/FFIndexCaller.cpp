@@ -24,7 +24,7 @@ FFIndexCaller::~FFIndexCaller()
 void FFIndexCaller::index(QString inputFile, QString cacheFile)
 {
   emit sendInfos(tr("FFIndexCaller(%1, %2)").arg(inputFile).arg(cacheFile));
-  m_input = inputFile;
+  m_input = Globals::shortFileName(inputFile);
   m_cache = cacheFile;
   if (QFile::exists(m_cache)) {
     emit sendInfos(
@@ -44,7 +44,8 @@ void FFIndexCaller::index(QString inputFile, QString cacheFile)
 #else
   call << "ffmsindex";
 #endif
-  call << "\"" + QDir::toNativeSeparators(Globals::shortFileName(inputFile)) + "\"";
+// call << "\"" + QDir::toNativeSeparators(Globals::shortFileName(inputFile)) + "\"";
+  call << "\"" + QDir::toNativeSeparators(inputFile) + "\"";
   call << "\"" + QDir::toNativeSeparators(cacheFile) + "\"";
   QString tmp = call.join(" ");
   delete m_process;

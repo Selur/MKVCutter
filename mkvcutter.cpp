@@ -179,8 +179,8 @@ void MkvCutter::initTools()
   tmp += QDir::separator();
   tmp += "LSMASHSource.dll";
   tmp = QDir::toNativeSeparators(tmp);
-  m_useLibAV = QFile::exists(tmp);
-  if (!m_useLibAV) {
+  if (!QFile::exists(tmp)) {
+    cout << "  init ffmindexCaller" << endl;
     m_ffindexCaller = new FFIndexCaller(this);
     this->myconnect(m_ffindexCaller, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
     this->myconnect(m_ffindexCaller, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
@@ -398,26 +398,26 @@ bool MkvCutter::createLibAVSourceAVS()
 
 bool MkvCutter::createAVS()
 {
-  m_indexFile = m_tempFolder;
+  QString name = Globals::getFileName(m_currentInput);
   QString shortName = Globals::shortFileName(m_currentInput);
+  m_indexFile = m_tempFolder;
   if (m_indexFile.isEmpty()) {
     m_indexFile = Globals::getDirectory(shortName);
   }
   m_indexFile += QDir::separator();
-  m_indexFile += Globals::getFileName(shortName);
-  QString temp = m_indexFile;
+  m_indexFile += name;
+  m_tempAvs = m_indexFile + ".avs";
   m_indexFile += ".ffindex";
   m_indexFile = QDir::toNativeSeparators(m_indexFile);
-  temp += ".avs";
-  m_tempAvs = QDir::toNativeSeparators(temp);
 
   QStringList script;
   QString inputPath = QApplication::applicationDirPath() + QDir::separator();
   QString path = QDir::toNativeSeparators(inputPath + "ffms2.dll");
   script << "LoadPlugin(\"" + path + "\")";
+
   QString call = "FFVideoSource(\"" + shortName + "\"";
   call += ", ";
-  call += "cachefile=\"" + m_indexFile + "\"";
+  call += "cachefile=\"" +  m_indexFile + "\"";
   call += ", threads=1";
   call += ")";
   script << call;
@@ -442,7 +442,7 @@ void MkvCutter::mkvAnalysefinished()
     return;
   }
 
-  if (m_useLibAV && !this->createLibAVSourceAVS()) {
+  if (m_ffindexCaller == nullptr && !this->createLibAVSourceAVS()) {
     this->reset();
     return;
   } else if (!this->createAVS()) {
@@ -474,9 +474,9 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   QStringList script;
   QString inputPath = QApplication::applicationDirPath() + QDir::separator();
   QString path = QDir::toNativeSeparators(inputPath + "LSMASHSource.dll");
-  if (m_useLibAV) {
-  	path = QDir::toNativeSeparators(inputPath + "LSMASHSource.dll");
-  	} else {
+  if (m_ffindexCaller == nullptr) {
+    path = QDir::toNativeSeparators(inputPath + "LSMASHSource.dll");
+    } else {
     path = QDir::toNativeSeparators(inputPath + "ffms2.dll");
   }
 
@@ -492,25 +492,25 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   } else if (tff) {
     assume = "AssumeTFF()";
   }
-  if (m_useLibAV) {
-  script << "LoadPlugin(\"" + path + "\")";
-  QString tmp = "LWLibavVideoSource(\"" + filename + "\"";
-  if (bff || tff) {
-    tmp += ", threads=1";
-  }
-  bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
-      || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
-  if (high10) {
-    tmp += ", format=\"YUV420P10\"";
-  }
-  //QString tmpFps = Globals::decimalToFractionConvert(m_fps);
-  //QStringList fps = tmpFps.split("/");
-  //tmp += ", fpsnum=" + fps[0];
-  //tmp += ", fpsden=" + fps[1];
-  tmp += ", cache=false";
-  //tmp += ", repeat=true";
-  tmp += ")";
-  script << tmp;
+  if (m_ffindexCaller == nullptr) {
+    script << "LoadPlugin(\"" + path + "\")";
+    QString tmp = "LWLibavVideoSource(\"" + filename + "\"";
+    if (bff || tff) {
+      tmp += ", threads=1";
+    }
+    bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
+        || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
+    if (high10) {
+      tmp += ", format=\"YUV420P10\"";
+    }
+    //QString tmpFps = Globals::decimalToFractionConvert(m_fps);
+    //QStringList fps = tmpFps.split("/");
+    //tmp += ", fpsnum=" + fps[0];
+    //tmp += ", fpsden=" + fps[1];
+    tmp += ", cache=false";
+    //tmp += ", repeat=true";
+    tmp += ")";
+    script << tmp;
   } else {
     script << "FFVideoSource(\"" + filename + "\", threads=1)";
   }
@@ -1632,7 +1632,7 @@ void MkvCutter::finishedTimeCodeExtraction(int state)
     this->reset();
     return;
   }
-  if (!m_useLibAV) {
+  if (m_ffindexCaller != nullptr) {
     ui.infoLabel->setText(tr("Indexing input file,.."));
     m_ffindexCaller->index(m_currentInput, m_indexFile);
   } else {
@@ -1648,9 +1648,18 @@ void MkvCutter::mediaInfoFinished(int exitstate)
     this->reset();
     return;
   }
+  if (!m_vfr && m_fps != int(m_fps)) {
+    this->addInfo(tr("Video doesn't use an even frame rate -> extracting time codes"));
+    m_vfr = true;
+  }
   if (m_vfr) {
     ui.infoLabel->setText(tr("extracting time codes with mkvextract,.."));
     this->extractTimeCodes();
+    return;
+  }
+  if (m_ffindexCaller != nullptr) {
+    ui.infoLabel->setText(tr("Indexing input file,.."));
+    m_ffindexCaller->index(m_currentInput, m_indexFile);
     return;
   }
   this->startViewer();
@@ -1659,7 +1668,13 @@ void MkvCutter::mediaInfoFinished(int exitstate)
 void MkvCutter::startViewer()
 {
   cout << "init viewer" << endl;
-  delete m_viewer;
+  /*
+  if (m_viewer != nullptr) {
+    cout << "  reset m_viewer" << endl;
+    delete m_viewer;
+    m_viewer = nullptr;
+  }
+  */
   QStringList keyframes;
   foreach(QString key, m_keyframes)
   {
@@ -1685,21 +1700,37 @@ void MkvCutter::ffIndexerFinished(int exitstate)
     this->reset();
     return;
   }
+  if (!QFile::exists(m_indexFile)) {
+    this->addInfo(tr("FFindexer output file %1 doesn't exist!").arg(m_indexFile));
+    this->reset();
+    return;
+  }
   ui.infoLabel->setText(tr("Indexing input file finished,.."));
   this->startViewer();
 }
 
 QString MkvCutter::cutTimecodes(QString timecodes)
 {
-  QStringList outputLines;
-  QStringList lines = timecodes.split("\n");
-  //TODO: cut timecodes based on m_mkvAudioAndSubtitleParts
-  foreach (QString line, lines)
+  this->addInfo(tr("Cutting time codes,..."));
+  QStringList timeCodeList = timecodes.split("\n");
+  QStringList outputTimeCodes, tCuts;
+  foreach(QString cut, m_cuts)
   {
-    this->addInfo("Looking at: " + line);
-    outputLines << line;
+    tCuts = cut.split("-");
+    int start = tCuts.at(0).toInt();
+    int end = tCuts.at(1).toInt();
+    for (int i = start; i < end; ++i) {
+      int timestamp = timeCodeList.at(i).toInt();
+      if (!outputTimeCodes.isEmpty()) {
+        int lastTimeStamp = outputTimeCodes.last().toInt();
+        int durationLastFrame = timeCodeList.at(i-1).toInt() - timestamp;
+        timestamp = lastTimeStamp + durationLastFrame;
+      }
+      outputTimeCodes << QString::number(timestamp);
+    }
   }
-  return outputLines.join("\r\n");
+  this->addInfo(tr("Finished cutting time codes, count: %1").arg(outputTimeCodes.count()));
+  return outputTimeCodes.join("\r\n");
 }
 
 void MkvCutter::avsViewerFinished(int state)

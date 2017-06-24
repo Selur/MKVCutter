@@ -1,23 +1,24 @@
 CONFIG += qt
+CONFIG += console
 TEMPLATE = app
 TARGET = MkvCutter
 QT += core \
     gui
-win32 { 
+win32 {
     DEFINES += BUILDTIME=\\\"$$system('echo %time%')\\\"
     DEFINES += BUILDDATE=\\\"$$system('echo %date:~6,4%%date:~3,2%%date:~0,2%')\\\"
 }
-else { 
+else {
     DEFINES += BUILDTIME=\\\"$$system(date '+%H:%M.%s')\\\"
     DEFINES += BUILDDATE=\\\"$$system(date '+%y.%m.%d')\\\"
 }
 isEqual(QT_MAJOR_VERSION, 5):QT += widgets # for all widgets
-win32-msvc* { 
+win32-msvc* {
     message(Building for Windows using Qt $$QT_VERSION)
     CONFIG += c++11 # C++11 support
     QMAKE_CXXFLAGS += /bigobj # allow big objects
     !contains(QMAKE_HOST.arch, x86_64):QMAKE_LFLAGS += /LARGEADDRESSAWARE # allow the use more of than 2GB of RAM on 32bit Windows
-    
+
     # # add during static build
     # QMAKE_CFLAGS_RELEASE += -MT
     # QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO += -MT

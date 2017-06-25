@@ -81,6 +81,7 @@ class MkvCutter : public QWidget
     int m_sps;
     int m_width, m_height;
     QHash<QString,QString> m_audioDelays;
+    QStringList m_inputTimeCodes;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);

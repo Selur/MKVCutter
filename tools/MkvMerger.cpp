@@ -5,7 +5,7 @@
 #include "Globals.h"
 
 MkvMerger::MkvMerger(QObject *parent)
-    : QObject(parent), m_process(nullptr), m_output(QString())
+    : QObject(parent), m_process(nullptr), m_output(QString()), m_keepIntermediate(false)
 {
 }
 
@@ -43,10 +43,12 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
     emit finished(-1);
     return;
   }
-  if (QFile::remove(m_optionsFile)) {
-    this->sendInfos(tr("deleted %1").arg(m_optionsFile));
-  } else {
-    this->sendInfos(tr("coudln't delete %1").arg(m_optionsFile));
+  if (!m_keepIntermediate) {
+    if (QFile::remove(m_optionsFile)) {
+      this->sendInfos(tr("deleted %1").arg(m_optionsFile));
+    } else {
+      this->sendInfos(tr("coudln't delete %1").arg(m_optionsFile));
+    }
   }
   m_optionsFile = QString();
   emit finished(0);
@@ -54,11 +56,12 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
 void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles,
     QString outputFile, const double fps, const bool interlaced, const bool paff,
-    const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays)
+    const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays, const QString& timecodes, const bool keepIntermediate)
 {
   m_output = outputFile;
+  m_keepIntermediate = keepIntermediate;
   this->call(
-      this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles, audioDelays));
+      this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles, audioDelays, timecodes));
 }
 
 void MkvMerger::call(QString call)
@@ -80,7 +83,8 @@ QString MkvMerger::doubleBackSlash(QString text)
 
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     QStringList subtitleFiles, double fps, const bool interlaced, const bool paff,
-    const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays)
+    const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays,
+                             const QString& timecodes)
 {
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -128,6 +132,12 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
       options << "--no-buttons";
       options << "--no-audio";
       options << "--no-attachments";
+      // TIME CODES
+      if (i == 0 && !timecodes.isEmpty()) {
+        options << "--timecodes";
+        options << "0:"+doubleBackSlash(timecodes);
+      }
+
       options << "--forced-track";
       options << "0:no";
       options << "--default-duration";

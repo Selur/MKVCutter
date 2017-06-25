@@ -331,11 +331,15 @@ int Globals::saveTextTo(QString text, QString to)
   }
   return -1;
 }
-
-QString Globals::frameToTime(int number, double fps)
+#include <iostream>
+QString Globals::frameToTime(const int& number, const double& fps, const QStringList* inputTimeCodeList)
 {
-  double seconds = int(number / fps * 1000 + 0.5)/1000.0;
-  return secondsToHMSZZZ(seconds);
+  if (inputTimeCodeList->isEmpty()) {
+    double seconds = int(number / fps * 1000 + 0.5)/1000.0;
+    return secondsToHMSZZZ(seconds);
+  }
+  double offset = inputTimeCodeList->at(1).toDouble();
+  return secondsToHMSZZZ((inputTimeCodeList->at(number).toDouble()-offset)/1000.0);
 }
 
 double Globals::timeToSeconds(QTime time)

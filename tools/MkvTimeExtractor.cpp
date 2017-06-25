@@ -23,24 +23,28 @@ void MkvTimeExtractor::call(QString call)
                   SLOT(mkvextractFinished(int, QProcess::ExitStatus)));
  QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this,
                   SLOT(handleMkvExtractOutput()));
+ emit enableGui(false);
  m_process->start(call);
 }
 
 QString MkvTimeExtractor::buildCall(QString filename, QString track, QString tempFolder)
 {
+ if (tempFolder.isEmpty()) {
+   tempFolder = Globals::getDirectory(filename);
+ }
  QString call = QApplication::applicationDirPath();
  call += QDir::separator();
  call += "mkvextract.exe";
  call = "\"" + QDir::toNativeSeparators(call) + "\"";
  call += " timecodes_v2";
  call += " \"" + filename + "\"";
- if (track.isEmpty()) {
+ if (track.isEmpty() || track == "-1") {
      track = "0";
  }
  call += " "+track+":";
  filename = filename.remove(filename.lastIndexOf("."), filename.length());
- filename += ".txt";
  filename = tempFolder + QDir::separator() + Globals::getWholeFileName(filename)+"_timecode";
+ filename += ".tc";
  filename = QDir::toNativeSeparators(filename);
  m_timecodeFile = filename;
  call += "\"" + filename + "\"";
@@ -61,10 +65,10 @@ void MkvTimeExtractor::handleMkvExtractOutput()
 
 void MkvTimeExtractor::mkvextractFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
+ emit enableGui(true);
  if (exitCode < 0) {
    emit sendInfos(tr("ExitCode: %1, ExitStatus: %2").arg(exitCode).arg(exitStatus));
-   emit
-   finished(-1);
+   emit finished(-1);
    return;
  }
  emit timecodes(m_timecodeFile);

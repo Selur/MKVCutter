@@ -23,9 +23,7 @@ class AVSViewer : public QWidget
 {
   Q_OBJECT
   public:
-    AVSViewer(QWidget *parent = 0, QString path = QString(), double mult = 0, bool cutSupport =
-                  false,
-              QStringList keyframes = QStringList());
+    AVSViewer(QWidget *parent = nullptr, QString path = QString(), double mult = 0, bool cutSupport = false, QStringList keyframes = QStringList());
     ~AVSViewer();
     void init(int start = 0);
 

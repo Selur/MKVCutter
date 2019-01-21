@@ -4,6 +4,7 @@
 #include <QMimeData>
 #include <QDropEvent>
 #include <QDragEnterEvent>
+#include <QDragMoveEvent>
 
 DropPushButton::DropPushButton(QWidget *parent) :
     QPushButton(parent), m_drops(false)
@@ -41,4 +42,9 @@ void DropPushButton::acceptDrops(bool value)
 {
   m_drops = value;
   this->setAcceptDrops(value);
+}
+
+void DropPushButton::dragMoveEvent(QDragMoveEvent *event)
+{
+  event->accept();
 }

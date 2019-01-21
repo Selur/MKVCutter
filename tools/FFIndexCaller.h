@@ -16,7 +16,7 @@ class FFIndexCaller : public QObject
 {
   Q_OBJECT
   public:
-    FFIndexCaller(QObject *parent = 0);
+    FFIndexCaller(QObject *parent = nullptr);
     virtual ~FFIndexCaller();
     void index(QString inputFile, QString cacheFile);
 

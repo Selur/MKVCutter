@@ -5,16 +5,18 @@
 #include <QObject>
 class QDropEvent;
 class QDragEnterEvent;
+class QDragMoveEvent;
 
 class DropPushButton : public QPushButton
 {
   Q_OBJECT
   public:
-    explicit DropPushButton(QWidget *parent = 0);
+    explicit DropPushButton(QWidget *parent = nullptr);
 
   protected:
     void dropEvent(QDropEvent *event);
     void dragEnterEvent(QDragEnterEvent *event);
+    void dragMoveEvent(QDragMoveEvent *event);
 
   private:
     bool m_drops;

@@ -407,12 +407,12 @@ p, li { white-space: pre-wrap; }
   <customwidget>
    <class>ImageLabel</class>
    <extends>QLabel</extends>
-   <header>ImageLabel.h</header>
+   <header>tools/viewer/ImageLabel.h</header>
   </customwidget>
   <customwidget>
    <class>MarkSlider</class>
    <extends>QSlider</extends>
-   <header>MarkSlider.h</header>
+   <header>tools/viewer/MarkSlider.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

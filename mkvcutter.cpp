@@ -379,19 +379,26 @@ bool MkvCutter::createLibAVSourceAVS()
   QStringList script;
   QString inputPath = QApplication::applicationDirPath() + QDir::separator();
   QString path = QDir::toNativeSeparators(inputPath + "LSMASHSource.dll");
-  script << "LoadPlugin(\"" + path + "\")";
-  QString call = "LWLibavVideoSource(\"" + shortName + "\"";
+  script << "LoadCPlugin(\"" + path + "\")";
+  QString apath = QDir::toNativeSeparators(inputPath + "waveform.dll");
+  script << "LoadPlugin(\"" + apath + "\")";
+  script << "function m4(float x) {return(x<16?16:int(round(x/4.0)*4))}";
+  QString call = "V = LWLibavVideoSource(\"" + shortName + "\"";
   bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
       || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
   if (high10) {
     call += ", format=\"YUV420P8\"";
   }
   call += ", cache=false";
-  call += ")";
+  call += ").ConvertToYv12()";
   script << call;
-  QString resizer = "BicubicResize(Ceil(last.Width*" + QString::number(m_aspectRatio)
-      + ")-(Ceil(last.Width*" + QString::number(m_aspectRatio) + ")) % 4, last.Height)";
+
+  QString audio = QString("A = LWLibavAudioSource(\"%1\", cache=false).ConvertToMono").arg(shortName);
+  script << audio;
+  QString resizer = "V = V.BicubicResize(Ceil(V.Width*" + QString::number(m_aspectRatio) +  ")-(Ceil(V.Width*" + QString::number(m_aspectRatio) + ")) % 4, V.Height)";
   script << resizer;
+  QString merge = QString("AudioDub(V,A).WaveForm(window=1, height=m4(V.Height/8.0)).ConvertToYv12()");
+  script << merge;
   return Globals::saveTextTo(script.join("\n"), m_tempAvs) == 0;
 }
 
@@ -414,16 +421,23 @@ bool MkvCutter::createAVS()
   QStringList script;
   QString inputPath = QApplication::applicationDirPath() + QDir::separator();
   QString path = QDir::toNativeSeparators(inputPath + "ffms2.dll");
-  script << "LoadPlugin(\"" + path + "\")";
-  QString call = "FFVideoSource(\"" + shortName + "\"";
+  script << "LoadCPlugin(\"" + path + "\")";
+  QString apath = QDir::toNativeSeparators(inputPath + "waveform.dll");
+  script << "LoadPlugin(\"" + apath + "\")";
+  script << "function m4(float x) {return(x<16?16:int(round(x/4.0)*4))}";
+  QString call = "V = FFVideoSource(\"" + shortName + "\"";
   call += ", ";
   call += "cachefile=\"" +  m_indexFile + "\"";
   call += ", threads=1";
-  call += ")";
+  call += ").ConvertToYv12()";
   script << call;
-  QString resizer = "BicubicResize(Ceil(last.Width*" + QString::number(m_aspectRatio)
-      + ")-(Ceil(last.Width*" + QString::number(m_aspectRatio) + ")) % 4, last.Height)";
+  QString audio = QString("A = FFAudioSource(\"%1\", cache=false).ConvertToMono").arg(shortName);
+  script << audio;
+  QString resizer = "V = V.BicubicResize(Ceil(V.Width*" + QString::number(m_aspectRatio)
+      + ")-(Ceil(V.Width*" + QString::number(m_aspectRatio) + ")) % 4, V.Height)";
   script << resizer;
+  QString merge = QString("AudioDub(V,A).WaveForm(window=1, height=m4(V.Height/8.0))");
+  script << merge;
   return Globals::saveTextTo(script.join("\n"), m_tempAvs) == 0;
 }
 
@@ -1681,8 +1695,7 @@ void MkvCutter::startViewer()
   this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
   this->myconnect(m_viewer, SIGNAL(cuts(QStringList)), this, SLOT(setCutList(QStringList)));
   this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
-  this->myconnect(m_viewer, SIGNAL(setInterlacedMode(QString)), this,
-      SLOT(setInterlacedMode(QString)));
+  this->myconnect(m_viewer, SIGNAL(setInterlacedMode(QString)), this, SLOT(setInterlacedMode(QString)));
   ui.avsViewerVerticalLayout->insertWidget(0, m_viewer);
   ui.mainStackedWidget->setCurrentIndex(1);
   ui.infoLabel->setText(tr("- Cut View -"));
@@ -1907,6 +1920,7 @@ void MkvCutter::reset(bool andInit)
   bool keepIntermediate = ui.keepIntermediateCheckBox->isChecked();
   if (!m_tempAvs.isEmpty() && !keepIntermediate) {
     this->addInfo(tr("Deleting %1,..").arg(m_tempAvs));
+    this->addInfo(Globals::readAll(m_tempAvs, "auto"));
     QFile::remove(m_tempAvs);
   }
   m_tempAvs = QString();

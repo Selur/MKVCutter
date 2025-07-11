@@ -560,7 +560,7 @@ public:
   void __stdcall GetAudio(void* buf, __int64 start, __int64 count, IScriptEnvironment* env) { child->GetAudio(buf, start, count, env); }
   const VideoInfo& __stdcall GetVideoInfo() { return vi; }
   bool __stdcall GetParity(int n) { return child->GetParity(n); }
-  int __stdcall SetCacheHints(int cachehints,int frame_range) { return 0; } ;  // We do not pass cache requests upwards, only to the next filter.
+  int __stdcall SetCacheHints(int cachehints,int frame_range) { return 0; }  // We do not pass cache requests upwards, only to the next filter.
 };
 
 
@@ -677,7 +677,7 @@ public:
 
   virtual void __stdcall AddFunction(const char* name, const char* params, ApplyFunc apply, void* user_data) = 0;
   virtual bool __stdcall FunctionExists(const char* name) = 0;
-  virtual AVSValue __stdcall Invoke(const char* name, const AVSValue args, const char* const* arg_names=0) = 0;
+  virtual AVSValue __stdcall Invoke(const char* name, const AVSValue args, const char* const* arg_names=nullptr) = 0;
 
   virtual AVSValue __stdcall GetVar(const char* name) = 0;
   virtual bool __stdcall SetVar(const char* name, const AVSValue& val) = 0;

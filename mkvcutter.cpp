@@ -379,7 +379,7 @@ bool MkvCutter::createLibAVSourceAVS()
   QStringList script;
   QString inputPath = QApplication::applicationDirPath() + QDir::separator();
   QString path = QDir::toNativeSeparators(inputPath + "LSMASHSource.dll");
-  script << "LoadCPlugin(\"" + path + "\")";
+  script << "LoadPlugin(\"" + path + "\")";
   QString apath = QDir::toNativeSeparators(inputPath + "waveform.dll");
   script << "LoadPlugin(\"" + apath + "\")";
   script << "function m4(float x) {return(x<16?16:int(round(x/4.0)*4))}";
@@ -421,7 +421,7 @@ bool MkvCutter::createAVS()
   QStringList script;
   QString inputPath = QApplication::applicationDirPath() + QDir::separator();
   QString path = QDir::toNativeSeparators(inputPath + "ffms2.dll");
-  script << "LoadCPlugin(\"" + path + "\")";
+  script << "LoadPlugin(\"" + path + "\")";
   QString apath = QDir::toNativeSeparators(inputPath + "waveform.dll");
   script << "LoadPlugin(\"" + apath + "\")";
   script << "function m4(float x) {return(x<16?16:int(round(x/4.0)*4))}";
@@ -1068,7 +1068,7 @@ QString adjustParDotToColon(QString value)
   }
   par = "1:1";
   double dvalue = value.toDouble();
-  if (dvalue == 0) {
+  if (qAbs(dvalue) >= 0) {
     return par;
   }
   if (dvalue > 1.0 && dvalue < 3.0) {
@@ -1567,7 +1567,7 @@ QString MkvCutter::getSmallest()
     if (!file.exists()) {
       continue;
     }
-    sSize = (qint64) (file.size());
+    sSize = qint64(file.size());
     if (sSize < size || size == -1) {
       size = sSize;
       indexOfSmallest = i;
@@ -1658,7 +1658,7 @@ void MkvCutter::mediaInfoFinished(int exitstate)
     this->reset();
     return;
   }
-  if (!m_vfr && m_fps != int(m_fps)) {
+  if (!m_vfr && qAbs(m_fps - int(m_fps)) > 0) {
     this->addInfo(tr("Video doesn't use an even frame rate -> extracting time codes"));
     m_vfr = true;
   }
@@ -1920,7 +1920,7 @@ void MkvCutter::reset(bool andInit)
   bool keepIntermediate = ui.keepIntermediateCheckBox->isChecked();
   if (!m_tempAvs.isEmpty() && !keepIntermediate) {
     this->addInfo(tr("Deleting %1,..").arg(m_tempAvs));
-    this->addInfo(Globals::readAll(m_tempAvs, "auto"));
+    //this->addInfo(Globals::readAll(m_tempAvs, "auto"));
     QFile::remove(m_tempAvs);
   }
   m_tempAvs = QString();

@@ -3,7 +3,8 @@ CONFIG += qt
 TEMPLATE = app
 TARGET = MkvCutter
 QT += core \
-    gui
+    gui \
+    widgets
 win32 {
     DEFINES += BUILDTIME=\\\"$$system('echo %time%')\\\"
     DEFINES += BUILDDATE=\\\"$$system('echo %date:~6,4%%date:~3,2%%date:~0,2%')\\\"
@@ -15,20 +16,46 @@ else {
 isEqual(QT_MAJOR_VERSION, 5):QT += widgets # for all widgets
 win32-msvc* {
     message(Building for Windows using Qt $$QT_VERSION)
-    CONFIG += c++11 # C++11 support
-    QMAKE_CXXFLAGS += /bigobj # allow big objects
     !contains(QMAKE_HOST.arch, x86_64):QMAKE_LFLAGS += /LARGEADDRESSAWARE # allow the use more of than 2GB of RAM on 32bit Windows
 
-    # # add during static build
-    # QMAKE_CFLAGS_RELEASE += -MT
-    # QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO += -MT
-    # QMAKE_CFLAGS_DEBUG = -Zi -MTd
-    # QMAKE_LFLAGS += /DYNAMICBASE:NO
-    # for Windows XP compatibility
     QMAKE_LFLAGS_CONSOLE += /SUBSYSTEM:CONSOLE,5.01
-    contains(QMAKE_HOST.arch, x86_64):QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.01 # Windows XP 64bit
-    else:QMAKE_LFLAGS += /SUBSYSTEM:WINDOWS,5.01 # Windows XP 32bit
+    CONFIG += c++17 # C++17 support
+    QMAKE_CXXFLAGS += /std:c++17
+
+    QMAKE_LFLAGS += /STACK:64000000
+    QMAKE_CXXFLAGS += -bigobj
+
+
+    # /Zi aus den Debug-Compiler-Flags entfernen
+    QMAKE_CXXFLAGS_DEBUG -= /Zi
+    QMAKE_CXXFLAGS_DEBUG += /Z7
+    QMAKE_CFLAGS_DEBUG   -= /Zi
+    QMAKE_CFLAGS_DEBUG   += /Z7
+    QMAKE_LFLAGS_DEBUG += /DEBUG
+    QMAKE_LFLAGS_DEBUG += /OPT:REF
+    QMAKE_LFLAGS_DEBUG += /OPT:ICF
+
+    QMAKE_LFLAGS += /entry:mainCRTStartup
+
+    QMAKE_CFLAGS_RELEASE += -WX
+    QMAKE_CFLAGS_RELEASE_WITH_DEBUGINFO += -WX
+    QMAKE_CFLAGS_RELEASE += -link notelemetry.obj
+
+    # some Windows headers violate strictStrings rules
+    QMAKE_CXXFLAGS_RELEASE -= -Zc:strictStrings
+    QMAKE_CFLAGS_RELEASE -= -Zc:strictStrings
+    QMAKE_CFLAGS -= -Zc:strictStrings
+    QMAKE_CXXFLAGS -= -Zc:strictStrings
+    QMAKE_CXXFLAGS_RELEASE += /Zc:__cplusplus
+    QMAKE_CFLAGS_RELEASE += /Zc:__cplusplus
+    QMAKE_CFLAGS += /Zc:__cplusplus
+    QMAKE_CXXFLAGS += /Zc:__cplusplus
+
+    DEFINES += NOMINMAX
+
+    QMAKE_CXXFLAGS += -permissive-
 }
+
 HEADERS += tools/FFIndexCaller.h \
     tools/Subtitletrack.h \
     tools/FFmpegVideoExtractor.h \

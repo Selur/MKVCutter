@@ -12,9 +12,9 @@
 #include <QListWidgetItem>
 #include <QFileInfo>
 #include <QTextStream>
-#include <QTextCodec>
+#include <QStringConverter>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QFileDialog>
 #include "Globals.h"
 using namespace std;
@@ -43,15 +43,27 @@ AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport
 
 void AVSViewer::setDisplay()
 {
-  QDesktopWidget* mydesk = qApp->desktop();
-  int screenCount = mydesk->screenCount();
+  QList<QScreen*> screens = QGuiApplication::screens();
+  int screenCount = screens.size();
   int currentScreen = 0;
+  QScreen* screen = nullptr;
   if (screenCount > 1 && this->parent() != nullptr) {
-    currentScreen = mydesk->screenNumber(static_cast<QWidget*>(this->parent()));
+    screen = QGuiApplication::screenAt(static_cast<QWidget*>(this->parent())->mapToGlobal(QPoint(0, 0)));
+    if (screen != nullptr) {
+      currentScreen = screens.indexOf(screen);
+    }
   }
-  QWidget* screen = mydesk->screen(currentScreen);
-  m_displayWidth = screen->width();
-  m_displayHeight = screen->height();
+  if (screen == nullptr && currentScreen >= 0 && currentScreen < screenCount) {
+    screen = screens.at(currentScreen);
+  }
+  if (screen == nullptr) {
+    screen = QGuiApplication::primaryScreen();
+  }
+  if (screen == nullptr) {
+    return;
+  }
+  m_displayWidth = screen->size().width();
+  m_displayHeight = screen->size().height();
 }
 
 AVSViewer::~AVSViewer()

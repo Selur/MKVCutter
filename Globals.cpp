@@ -36,8 +36,8 @@ QString Globals::cutTyp1ListToString(QList<cutTyp> elems)
 
 QString Globals::intSetToString(QSet<int> keyframes)
 {
-  QList<int> list = keyframes.toList();
-  qSort(list);
+  QList<int> list(keyframes.begin(), keyframes.end());
+  std::sort(list.begin(), list.end());
   QString keyString;
   foreach(int key, list) {
     keyString += QString::number(key) + ", ";
@@ -172,8 +172,8 @@ QString Globals::secondsToHMS(double seconds)
 //#include <iostream>
 QString Globals::intSetToTimes(QSet<int> keyframes, double fps)
 {
-  QList<int> list = keyframes.toList();
-  qSort(list);
+  QList<int> list(keyframes.begin(), keyframes.end());
+  std::sort(list.begin(), list.end());
   QString keyString;
   foreach(int key, list) {
     //std::cerr << "key: " << key << ", fps: " << qPrintable(QString::number(fps)) << std::endl;
@@ -284,11 +284,7 @@ QString Globals::readAll(const QString fileName, QString type)
     return QString();
   }
   QTextStream stream(&file);
-  if (type == "auto") {
-    stream.autoDetectUnicode();
-  } else {
-    stream.setCodec(type.toUtf8());
-  }
+  stream.setEncoding(QStringConverter::encodingForName(type.toUtf8()).value_or(QStringConverter::Utf8));
   input = stream.readAll();
   file.close();
   return input;
@@ -317,11 +313,11 @@ int Globals::saveTextTo(QString text, QString to)
     }
     QTextStream out(&file);
     if (ttxt) {
-       out.setAutoDetectUnicode(true);
+       out.setEncoding(QStringConverter::Utf16);
     } else if (avs || meta) {
-      out.setCodec(QTextCodec::codecForLocale());
+      out.setEncoding(QStringConverter::System);
     } else {
-      out.setCodec("UTF-8");
+      out.setEncoding(QStringConverter::Utf8);
     }
     out << text;
     if (file.exists()) {

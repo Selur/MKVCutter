@@ -7,7 +7,7 @@
 #include <QList>
 #include <QTime>
 #include <QTextStream>
-#include <QTextCodec>
+#include <QStringConverter>
 
 struct cutTyp
 {

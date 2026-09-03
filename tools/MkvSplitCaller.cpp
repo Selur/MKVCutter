@@ -31,7 +31,7 @@ void MkvSplitCaller::handleMkvmergeOutput()
 {
   QString out = m_process->readAllStandardOutput().data();
   if (!out.isEmpty()) {
-    QStringList lines = out.split("\n", QString::SkipEmptyParts);
+    QStringList lines = out.split("\n", Qt::SkipEmptyParts);
     int index;
     foreach(QString line, lines)
     {

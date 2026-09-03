@@ -14,7 +14,7 @@
 class ImageLabel : public QLabel
 {
   public:
-    ImageLabel(QWidget * parent = nullptr, Qt::WindowFlags f = nullptr);
+    ImageLabel(QWidget * parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
     virtual ~ImageLabel();
     void paintEvent(QPaintEvent *aEvent);
     void setPixmap(QPixmap aPicture);

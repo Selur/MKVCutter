@@ -5,13 +5,12 @@
 #include <QString>
 #include <QHash>
 #include <QStringList>
-#include <QHash>
 
 #include "tools/analyzer/MkvInfoSourceAnalyser.h"
 #include "tools/analyzer/MediaInfoAnalyser.h"
 #include "tools/analyzer/H264Parser.h"
 #include "tools/viewer/AVSViewer.h"
-#include "tools/FFindexCaller.h"
+#include "tools/FFIndexCaller.h"
 #include "tools/MkvSplitCaller.h"
 #include "tools/X264Caller.h"
 #include "tools/MkvMerger.h"

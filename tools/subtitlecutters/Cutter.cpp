@@ -8,7 +8,7 @@
 #include "Cutter.h"
 #include <QDir>
 #include <QFile>
-#include <QTextCodec>
+#include <QStringConverter>
 #include <QTextStream>
 
 #define UTF8BOM "\xEF\xBB\xBF"
@@ -64,9 +64,9 @@ int Cutter::saveTextTo(QString text, QString to)
   }
   QTextStream out(&file);
   if (avs || meta || idx || qp || d2v) {
-    out.setCodec(QTextCodec::codecForLocale());
+    out.setEncoding(QStringConverter::System);
   } else {
-    out.setCodec("UTF-8");
+    out.setEncoding(QStringConverter::Utf8);
   }
   out << text;
   if (file.exists()) {
@@ -172,7 +172,7 @@ QString Cutter::readAll(const QString fileName, QString type)
     return QString();
   }
   QTextStream stream(&file);
-  stream.setCodec(type.toUtf8());
+  stream.setEncoding(QStringConverter::encodingForName(type.toUtf8()).value_or(QStringConverter::Utf8));
   input = stream.readAll();
   file.close();
   return input;

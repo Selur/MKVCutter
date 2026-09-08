@@ -21,7 +21,7 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_mkvAudioAndSubtitleParts(), m_audioFile(QString()), m_averageBitrate(-1),
         m_audioSplitFiles(), m_extractionFiles(), m_toDelete(), m_videoTrackID(-1),
         m_extractor(nullptr), m_timeextractor(nullptr), m_aspectRatio(1),
-        m_interlaced("progressive"), m_mediaInfoScanorder(), m_vfr(false), m_timecodes(QString()),
+        m_interlaced("progressive"), m_mediaInfoScanorder(), m_scanType(), m_vfr(false), m_timecodes(QString()),
         m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
         m_maxKey(QString()), m_h264Parser(nullptr), m_weightedP(0), m_weightedB(0), m_bframes(0),
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
@@ -87,6 +87,8 @@ void MkvCutter::initTools()
       SLOT(setFrameRateMode(bool)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(interlaced(QString)), this,
       SLOT(setInterlaced(QString)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(scanType(QString)), this,
+      SLOT(setScanType(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(audioFormat(QString)), this,
       SLOT(setAudioFormat(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(minKeyInt(QString)), this,
@@ -275,12 +277,19 @@ void MkvCutter::setInterlacedMode(QString interlacedMode)
 
 void MkvCutter::setInterlaced(QString interlaced)
 {
-  bool mbaff = interlaced == "MBAFF";
-  m_interlaced = (mbaff) ? "tff" : interlaced;
-  m_paff = interlaced != "progressive" && !mbaff;
+  // 'interlaced' ist die Feldreihenfolge (progressive/TFF/BFF). Ob die Quelle MBAFF oder
+  // feldcodiert ist, steht im Scan-*Type* und kommt ueber setScanType(); m_paff wird
+  // deshalb erst in mediaInfoFinished() bestimmt, wenn beide Werte vorliegen.
+  m_interlaced = interlaced;
   // gemappten Wert merken, damit "auto" im Viewer genau die Erkennung wiederherstellt
   m_mediaInfoScanorder = m_interlaced;
   this->addInfo(" " + tr("video scan order: %1").arg(interlaced));
+}
+
+void MkvCutter::setScanType(QString type)
+{
+  m_scanType = type;
+  this->addInfo(" " + tr("video scan type: %1").arg(type.isEmpty() ? "-" : type));
 }
 
 void MkvCutter::setVideoTrackID(int id)
@@ -656,7 +665,7 @@ void MkvCutter::addAudioAndSubtitleCuts(const int &start, const int &end)
   m_mkvAudioAndSubtitleParts << startTime + "-" + endTime;
 }
 
-void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interlaced)
+void MkvCutter::addVideoCut(const int &start, const int &end)
 {
   cutTyp1 tempCut;
   cutTyp1 startCut = findCutForFrame(start, true);
@@ -668,20 +677,20 @@ void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interl
   // two cuts in one gop
   if (startCut.prevKey == endCut.prevKey && endCut.nextKey == startCut.nextKey) {
     //CUT LIST
-    tempCut.cut.start = start * ((interlaced) ? 2 : 1);
-    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-    tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
-    tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
+    tempCut.cut.start = start;
+    tempCut.cut.end = end;
+    tempCut.prevKey = startCut.prevKey;
+    tempCut.nextKey = startCut.nextKey;
     this->addInfo("   " + tr("A1: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
     return;
   }
   // two cuts in two adjacent gops
   if (startCut.nextKey == endCut.prevKey) {
-    tempCut.cut.start = start * ((interlaced) ? 2 : 1);
-    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-    tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
-    tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
+    tempCut.cut.start = start;
+    tempCut.cut.end = end;
+    tempCut.prevKey = startCut.prevKey;
+    tempCut.nextKey = endCut.nextKey;
     this->addInfo("   " + tr("A2: adding to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
     return;
@@ -689,35 +698,35 @@ void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interl
 
   // B: start&end frame are in different GOPs
   // start cut
-  tempCut.cut.start = start * ((interlaced) ? 2 : 1);
-  tempCut.cut.end = (startCut.nextKey - 1) * ((interlaced) ? 2 : 1);
-  tempCut.prevKey = startCut.prevKey * ((interlaced) ? 2 : 1);
-  tempCut.nextKey = startCut.nextKey * ((interlaced) ? 2 : 1);
+  tempCut.cut.start = start;
+  tempCut.cut.end = (startCut.nextKey - 1);
+  tempCut.prevKey = startCut.prevKey;
+  tempCut.nextKey = startCut.nextKey;
   this->addInfo(
       "   " + tr("B1: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
   m_cutList.append(tempCut);
 
   // middle cut
   tempCut.cut.start = startCut.nextKey;
-  tempCut.cut.end = (endCut.prevKey - 1) * ((interlaced) ? 2 : 1);
-  tempCut.prevKey = (startCut.nextKey) * ((interlaced) ? 2 : 1);
-  tempCut.nextKey = (endCut.prevKey) * ((interlaced) ? 2 : 1);
+  tempCut.cut.end = (endCut.prevKey - 1);
+  tempCut.prevKey = (startCut.nextKey);
+  tempCut.nextKey = (endCut.prevKey);
   this->addInfo(
       "   " + tr("B2: adding middleCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
   m_cutList.append(tempCut);
 
   if (end == endCut.prevKey) {
-    tempCut.cut.end = (endCut.prevKey) * ((interlaced) ? 2 : 1);
+    tempCut.cut.end = (endCut.prevKey);
     this->addInfo(" " + tr("no end cut needed, middle cut ends with end"));
     return;
   }
 
   // middle&end cut
   if (end == endCut.nextKey - 1) {
-    tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);
-    tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-    tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
-    tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
+    tempCut.cut.start = endCut.prevKey;
+    tempCut.cut.end = end;
+    tempCut.prevKey = endCut.prevKey;
+    tempCut.nextKey = endCut.nextKey;
     this->addInfo(
         "   " + tr("B3: adding middle&endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
     m_cutList.append(tempCut);
@@ -725,10 +734,10 @@ void MkvCutter::addVideoCut(const int &start, const int &end, const bool &interl
   }
 
   // end cut
-  tempCut.cut.start = endCut.prevKey * ((interlaced) ? 2 : 1);
-  tempCut.cut.end = end * ((interlaced) ? 2 : 1);
-  tempCut.prevKey = endCut.prevKey * ((interlaced) ? 2 : 1);
-  tempCut.nextKey = endCut.nextKey * ((interlaced) ? 2 : 1);
+  tempCut.cut.start = endCut.prevKey;
+  tempCut.cut.end = end;
+  tempCut.prevKey = endCut.prevKey;
+  tempCut.nextKey = endCut.nextKey;
   this->addInfo("   " + tr("B4: adding endCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
   m_cutList.append(tempCut);
 }
@@ -742,13 +751,12 @@ void MkvCutter::buildCutList()
   QStringList tCuts;
   int start, end;
 
-  bool interlaced = false;
-  if (!m_x264Settings.isEmpty()
-      && (m_x264Settings.contains("--bff") || m_x264Settings.contains("--tff"))) {
-    interlaced = true;
-  } else {
-    interlaced = m_interlaced != "progressive";
-  }
+  // Frueher wurden bei interlaced Quellen saemtliche Frame- und Keyframe-Nummern verdoppelt.
+  // Der Rest der Kette rechnet aber durchgehend in Frames: die Keyframeliste von mkvinfo,
+  // m_frameCount, die Schnittliste aus dem Viewer, 'mkvmerge --split parts-frames:' und
+  // Trim() im AviSynth-Script. Die verdoppelten Werte waren reine Feldzahlen, die keine
+  // dieser Stellen so interpretiert -- gemessen an einer MBAFF-Quelle (1194 Frames) kamen
+  // statt 200 nur 178 Frames heraus, und ein Teilbereich lag jenseits des Clipendes.
   int outputFrameCount = 0;
   for (int i = 0, c = m_cuts.count(); i < c; ++i) {
     this->addInfo(" current cut: " + m_cuts.at(i));
@@ -757,7 +765,7 @@ void MkvCutter::buildCutList()
     end = tCuts.at(1).toInt();
     outputFrameCount += end - start;
     this->addAudioAndSubtitleCuts(start, end);
-    this->addVideoCut(start, end, interlaced);
+    this->addVideoCut(start, end);
   }
   if (m_hasAudio) {
     QStringList elems;
@@ -1745,6 +1753,17 @@ void MkvCutter::mediaInfoFinished(int exitstate)
     this->reset();
     return;
   }
+  // Jetzt liegen Feldreihenfolge und Scan-Type beide vor. PAFF heisst feldcodiert; MBAFF
+  // ist frame-codiert und braucht beim finalen mkvmerge die verdoppelte --default-duration
+  // ("i" meint Felder pro Sekunde). Frueher wurde auf den Scan-*Order*-Wert "MBAFF" geprueft,
+  // den MediaInfo dort nie liefert -- MBAFF-Quellen galten deshalb faelschlich als PAFF.
+  m_paff = (m_interlaced != "progressive")
+      && !m_scanType.contains("MBAFF", Qt::CaseInsensitive);
+  if (m_interlaced != "progressive") {
+    this->addInfo(
+        " " + tr("interlaced source, scan type: %1 -> paff: %2").arg(
+            m_scanType.isEmpty() ? "-" : m_scanType).arg(m_paff ? "true" : "false"));
+  }
   if (!m_vfr && qAbs(m_fps - int(m_fps)) > 0) {
     this->addInfo(tr("Video doesn't use an even frame rate -> extracting time codes"));
     m_vfr = true;
@@ -2120,6 +2139,7 @@ void MkvCutter::reset(bool andInit)
   m_aspectRatio = 1;
   m_interlaced = "progressive";
   m_mediaInfoScanorder = QString();
+  m_scanType = QString();
   m_paff = false;
   m_vfr = false;
   m_x264Settings = QString();

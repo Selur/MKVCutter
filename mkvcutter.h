@@ -70,7 +70,7 @@ class MkvCutter : public QWidget
     FFmpegVideoExtractor *m_extractor;
     MkvTimeExtractor *m_timeextractor;
     double m_aspectRatio;
-    QString m_interlaced, m_mediaInfoScanorder;
+    QString m_interlaced, m_mediaInfoScanorder, m_scanType;
     bool m_vfr;
     QString m_timecodes, m_x264Settings;
     int m_averageKeyDistance;
@@ -119,7 +119,7 @@ class MkvCutter : public QWidget
     QString cutTimecodes(QString timecodes);
     void startViewer();
     void addAudioAndSubtitleCuts(const int &start, const int &end);
-    void addVideoCut(const int &start, const int &end, const bool &interlaced);
+    void addVideoCut(const int &start, const int &end);
     void parseOriginal();
     void createReencodeCalls();
     bool createAVS();
@@ -161,6 +161,7 @@ class MkvCutter : public QWidget
     void setAudioSplitFiles(QStringList splitFiles);
     void setVideoTrackID(int id);
     void setInterlaced(QString interlaced);
+    void setScanType(QString type);
     void setInterlacedMode(QString interlaced);
     void setFrameRateMode(bool vfr);
     void finishedTimeCodeExtraction(int exitstate);

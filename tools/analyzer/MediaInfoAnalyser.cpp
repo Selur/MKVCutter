@@ -63,7 +63,7 @@ void MediaInfoAnalyser::mediainfoOutput()
   if (!out.isEmpty()) {
     bool audio = false;
     QStringList lines = out.split("\n");
-    QString scanorder = "progressive", tmp;
+    QString scanorder = "progressive", scantype, tmp;
     bool vfr = false;
     foreach(QString line, lines) {
       line = line.trimmed();
@@ -126,8 +126,17 @@ void MediaInfoAnalyser::mediainfoOutput()
           emit aspectRatio(line.trimmed().toDouble());
           continue;
         }
-        if (line.startsWith("Scan type") && line.endsWith("Interlaced")) {
-          scanorder = "MBAFF";
+        // "Scan type" ist etwas anderes als "Scan order": MediaInfo meldet dort z.B.
+        // "MBAFF", "Interlaced" oder "Progressive". Frueher wurde hier bei
+        // endsWith("Interlaced") der Scan*order*-Wert auf "MBAFF" gesetzt -- das traf bei
+        // einer echten MBAFF-Quelle nie zu (dort steht "MBAFF"), und die Scan-Order-Abfrage
+        // weiter unten hat den Wert ohnehin gleich wieder ueberschrieben. Der Typ wird jetzt
+        // getrennt gemerkt und eigenstaendig gemeldet; die Feldreihenfolge bleibt in
+        // 'scanorder'. Achtung: "Scan type, store method" faengt auch mit "Scan type" an.
+        if (line.startsWith("Scan type") && !line.startsWith("Scan type,")) {
+          tmp = line;
+          removeStartOfLine(tmp);
+          scantype = tmp.trimmed();
           continue;
         }
         if (line.startsWith("Scan order")) {
@@ -218,6 +227,7 @@ void MediaInfoAnalyser::mediainfoOutput()
       }
     }
     emit interlaced(scanorder);
+    emit scanType(scantype);
   }
   emit theAudioDelays(audioDelays);
   QString err = m_process->readAllStandardOutput().data();

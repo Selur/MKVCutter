@@ -105,7 +105,7 @@ class MkvCutter : public QWidget
     QStringList keyFrameTimes();
     void buildAndCallMkvMerge();
     void createVideoReencodeCall(QString avisynthFile);
-    void createAvisynthSkript(QString filename, QString trim);
+    bool createAvisynthSkript(QString filename, QString trim);
     void startVideoReencoding();
     void cleanUpAndMerge();
     void handleSplitFiles();

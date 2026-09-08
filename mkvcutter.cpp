@@ -486,7 +486,13 @@ QString numberToLength3String(int num)
   return ret;
 }
 
-void MkvCutter::createAvisynthSkript(QString filename, QString trim)
+/**
+ * Erzeugt den Trim-AviSynth-Script fuer eine Split-Datei.
+ * Liefert false, wenn kein Script entstanden ist -- der Aufrufer muss dann abbrechen:
+ * ohne Script wird der Teil weder neu codiert noch sonst irgendwo eingetragen, und die
+ * Ausgabe waere still unvollstaendig.
+ **/
+bool MkvCutter::createAvisynthSkript(QString filename, QString trim)
 {
   this->addInfo(" " + tr("createAvisynthSkript(%1, %2)").arg(filename).arg(trim));
   QString avisynthFileName = m_tempFolder;
@@ -505,8 +511,9 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
   }
 
   if (path.isEmpty() || !QFile::exists(path)) {
+    this->addInfo("  " + tr("ERROR: couldn't find avisynth plugin %1").arg(path));
     QMessageBox::critical(this, tr("Error"), tr("Couldn't find avisynth plugins,.."));
-    return;
+    return false;
   }
   QString assume;
   bool bff = m_interlaced == "bff" || m_interlaced == "BFF";
@@ -549,10 +556,11 @@ void MkvCutter::createAvisynthSkript(QString filename, QString trim)
     this->addInfo("   ----------------------------");
     this->addInfo("  " + tr("to: %1").arg(avisynthFileName));
     m_tempReencodeAvs << avisynthFileName;
-  } else {
-    QMessageBox::critical(this, tr("Error"), tr("createAvisynthSkript: Couldn't create(%1)").arg(avisynthFileName));
-    return;
+    return true;
   }
+  this->addInfo("  " + tr("ERROR: couldn't write %1").arg(avisynthFileName));
+  QMessageBox::critical(this, tr("Error"), tr("createAvisynthSkript: Couldn't create(%1)").arg(avisynthFileName));
+  return false;
 }
 
 cutTyp1 MkvCutter::findCutForFrame(int frame, const bool start)
@@ -1288,6 +1296,15 @@ void MkvCutter::cleanUpAndMerge()
   if (subtitleCount > 0) {
     this->addInfo("  " + tr("subtitle files:\n   ") + m_cutSubtitles.join("\n   "));
   }
+  if (videoFileCount == 0) {
+    // Ohne Videoteile gibt es nichts zu muxen; first() waere hier ein Zugriff auf eine
+    // leere Liste. Der Fall wird oben schon als moeglich protokolliert.
+    this->addInfo(tr("Resetting since there are no video files to merge,.."));
+    QMessageBox::critical(this, tr("Error"),
+        tr("No video parts to merge -- see the log for what went wrong."));
+    this->reset();
+    return;
+  }
   QString tmp = m_reencodedVideoFiles.first();
   if (videoFileCount == 1 && tmp.endsWith(".mkv")) {
     if (audioFileCount == 0 && subtitleCount == 0) {
@@ -1571,7 +1588,15 @@ void MkvCutter::handleSplitFiles()
       m_extractionFiles << file;
       continue;
     }
-    this->createAvisynthSkript(file, trim);
+    if (!this->createAvisynthSkript(file, trim)) {
+      // Ohne Script fiele dieser Teil aus beiden Listen -- die Ausgabe waere still
+      // unvollstaendig, und faellt es fuer *alle* Teile aus, laeuft cleanUpAndMerge()
+      // spaeter auf eine leere Liste. Lieber hier sauber abbrechen.
+      this->addInfo(
+          tr("Resetting: couldn't create the avisynth script for %1").arg(file));
+      this->reset();
+      return;
+    }
   }
   this->startExtraction();
 }
@@ -1596,6 +1621,16 @@ QString MkvCutter::getSmallest()
     }
   }
 
+  if (indexOfSmallest == -1) {
+    // Keine der gelisteten Dateien liegt auf der Platte -- mkvmerge hatte sie aber als
+    // erzeugt gemeldet. takeAt(-1) waere ein Zugriff ausserhalb der Liste; stattdessen den
+    // ersten Eintrag nehmen. Die Liste *muss* schrumpfen, sonst dreht startExtraction()
+    // endlos. Der nachfolgende Extraktionsschritt scheitert dann sichtbar.
+    this->addInfo(
+        " " + tr("WARNING: none of the %1 file(s) to extract exists, taking the first one: %2").arg(
+            count).arg(m_extractionFiles.first()));
+    indexOfSmallest = 0;
+  }
   return m_extractionFiles.takeAt(indexOfSmallest);
 }
 
@@ -1616,7 +1651,16 @@ void MkvCutter::startExtraction()
     m_toAnalyse = filename;
   }
   m_toDelete << filename;
-  m_reencodedVideoFiles.replace(m_reencodedVideoFiles.indexOf(input), filename);
+  // handleSplitFiles() traegt KEEP-Dateien immer in beide Listen ein, indexOf() sollte also
+  // treffen. Falls doch nicht, waere replace(-1, ...) ein Zugriff ausserhalb der Liste.
+  const int indexInReencoded = m_reencodedVideoFiles.indexOf(input);
+  if (indexInReencoded == -1) {
+    this->addInfo(
+        " " + tr("WARNING: %1 is not in the video file list, appending it").arg(input));
+    m_reencodedVideoFiles << filename;
+  } else {
+    m_reencodedVideoFiles.replace(indexInReencoded, filename);
+  }
   m_extractor->startExtraction(input, m_tempFolder);
 }
 

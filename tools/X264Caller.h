@@ -14,7 +14,6 @@ class X264Caller : public QObject
 
   private:
     QProcess *m_process;
-    QProcess *m_helper;
 
   private slots:
    void handleX264Output();

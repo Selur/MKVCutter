@@ -1,7 +1,7 @@
 #include "X264Caller.h"
 
 X264Caller::X264Caller(QObject *parent)
-    : QObject(parent), m_process(nullptr), m_helper(nullptr)
+    : QObject(parent), m_process(nullptr)
 {
 }
 
@@ -13,15 +13,10 @@ void X264Caller::start(QString call)
   QObject::connect(m_process, SIGNAL(finished(int, QProcess::ExitStatus)), this,
       SLOT(x264Finished(int, QProcess::ExitStatus)));
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleX264Output()));
-  if (call.contains("avs2yuv.exe")) {
-    QStringList calls = call.split(" | ");
-    delete m_helper;
-    m_helper = new QProcess(this);
-    m_helper->setProcessChannelMode(QProcess::SeparateChannels);
-    m_helper->setStandardOutputProcess(m_process);
-    m_helper->startCommand(calls.at(0));
-    call = calls.at(1);
-  }
+  // Frueher wurde bei 10-Bit-Quellen ueber 'avs2yuv | x264' gepiped und der Aufruf hier
+  // wieder aufgetrennt. Das aktuelle x264 (Hybrid) kann 8 und 10 Bit in einer Binary und
+  // liest den AviSynth-Script direkt (--demuxer avs, --input-depth), es gibt also keine
+  // Pipe mehr aufzutrennen. Der Zweig war seitdem unerreichbar.
   m_process->startCommand(call);
 }
 

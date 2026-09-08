@@ -1829,26 +1829,50 @@ QString MkvCutter::cutTimecodes(QString timecodes)
 {
   this->addInfo(tr("Cutting time codes,..."));
   QStringList timeCodeList = timecodes.split("\n");
+  // Zeile 0 ist der Header, Zeile f+1 gehoert zu Frame f. Abschliessende Leerzeilen (der
+  // Zeilenumbruch am Dateiende) sind keine Zeitstempel. Die Datei ist CRLF-codiert, die
+  // Eintraege enden also auf '\r' -- deshalb trimmed().
+  int lastStamp = timeCodeList.size() - 1;
+  while (lastStamp > 0 && timeCodeList.at(lastStamp).trimmed().isEmpty()) {
+    --lastStamp;
+  }
+  auto stampOfFrame = [&timeCodeList, lastStamp](int frame) -> double {
+    int index = frame + 1;
+    if (index < 1) {
+      index = 1;
+    } else if (index > lastStamp) {
+      index = lastStamp;
+    }
+    return timeCodeList.at(index).trimmed().toDouble();
+  };
+
   QStringList outputTimeCodes, tCuts;
-  int timestamp;
   QString cut;
-  int previousIndex = 0;
+  // 'previousIndex == 0' taugte nicht als "erster Durchlauf"-Merker, weil 0 eine gueltige
+  // Framenummer ist: bei einem Schnitt ab Frame 0 setzte 'previousIndex = i' den Merker
+  // wieder auf 0, und Frame 0 wie Frame 1 bekamen den Zeitstempel 0. Deshalb ein Flag.
+  bool firstFrame = true;
+  int previousFrame = 0;
+  double timestamp = 0.0;
   for (int c = 0; c < m_cuts.count(); ++c) {
     cut = m_cuts.at(c);
     std::cerr << qPrintable(tr("adding time codes for cut: %1").arg(cut)) << std::endl;
     tCuts = cut.split("-");
-    int start = tCuts.at(0).toInt();
-    int end = tCuts.at(1).toInt();
+    const int start = tCuts.at(0).toInt();
+    const int end = tCuts.at(1).toInt();
     for (int i = start; i < end; ++i) {
-      if (previousIndex == 0) {
-        timestamp = int(timeCodeList.at(1).toDouble());
+      if (firstFrame) {
+        timestamp = 0.0;
+        firstFrame = false;
       } else {
-        int lastTimeStamp = outputTimeCodes.last().toInt();
-        int durationLastFrame = int(timeCodeList.at(previousIndex + 1).toDouble()) - int(timeCodeList.at(previousIndex).toDouble());
-        timestamp = lastTimeStamp + durationLastFrame;
+        // Dauer des zuletzt ausgegebenen Frames. Frueher wurde hier um eins daneben
+        // gegriffen und damit die Dauer des Frames *davor* genommen (gleiches Muster wie
+        // B2). Ungerundet aufsummieren, sonst summiert sich der Abschneidefehler ueber den
+        // ganzen Schnitt auf.
+        timestamp += stampOfFrame(previousFrame + 1) - stampOfFrame(previousFrame);
       }
-      previousIndex = i;
-      outputTimeCodes << QString::number(timestamp);
+      previousFrame = i;
+      outputTimeCodes << QString::number(qRound(timestamp));
     }
   }
   std::cerr << " output time code count " << outputTimeCodes.count() << std::endl;

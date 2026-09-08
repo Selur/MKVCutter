@@ -115,11 +115,7 @@ void MkvSplitCaller::call(QString call)
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this,
       SLOT(handleMkvmergeOutput()));
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleMkvmergeOutput()));
-  m_process->start(call);
-}
-QString MkvSplitCaller::doubleBackSlash(QString text)
-{
-  return text.replace("\\", "\\\\");
+  m_process->startCommand(call);
 }
 
 QString MkvSplitCaller::buildCall()
@@ -139,7 +135,7 @@ QString MkvSplitCaller::buildCall()
   }
   QStringList options;
   options << "-o";
-  options << doubleBackSlash(QDir::toNativeSeparators(m_output));
+  options << QDir::toNativeSeparators(m_output);
   if (m_audio) {
     options << "--split";
     options << "parts:" + m_splitParts.join(",+");
@@ -160,7 +156,7 @@ QString MkvSplitCaller::buildCall()
     options << "--no-attachments";
     options << "--no-global-tags";
   }
-  options << doubleBackSlash(QDir::toNativeSeparators(m_input));
+  options << QDir::toNativeSeparators(m_input);
   QString optionFile = m_output;
   optionFile = optionFile.remove(optionFile.lastIndexOf("."), optionFile.size());
   optionFile += "_mkvOptions.txt";
@@ -172,7 +168,7 @@ QString MkvSplitCaller::buildCall()
   }
   emit sendInfos("---------------------------");
   emit sendInfos(tr("to:  %1").arg(optionFile));
-  if (Globals::saveTextTo(options.join("\n"), optionFile) != 0) {
+  if (Globals::saveTextTo(Globals::optionsToJson(options), optionFile) != 0) {
     emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));
   } else {
     emit sendInfos(tr("Saved %1.").arg(optionFile));

@@ -29,7 +29,6 @@ class MkvSplitCaller : public QObject
     bool m_audio;
     void call(QString call);
     QString buildCall();
-    QString doubleBackSlash(QString text);
     bool m_keepIntermediate, m_keyframeonly;
 
   private slots:

@@ -22,7 +22,6 @@ class MkvMerger : public QObject
     bool m_keepIntermediate;
     void call(QString call);
     QString buildCall(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles, double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays, const QString& timecodes);
-    QString doubleBackSlash(QString text);
 
   private slots:
     void handleMkvmergeOutput();

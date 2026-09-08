@@ -1,8 +1,9 @@
 #include "mkvcutter.h"
 #include <QMessageBox>
 #include <QFileDialog>
-#include <QScrollbar>
+#include <QScrollBar>
 #include <QApplication>
+#include <QFileInfo>
 #include <iostream>
 #include <QDateTime>
 #include "Globals.h"
@@ -26,7 +27,8 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
         m_mkvSubtitleExtractor(nullptr), m_subtitleCutter(nullptr), m_cutSubtitles(),
         m_subtitleToCut(), m_keyframeonly(false), m_hasAudio(false), m_sps(-1), m_width(-1),
-        m_height(-1), m_audioDelays(), m_inputTimeCodes()
+        m_height(-1), m_audioDelays(), m_inputTimeCodes(), m_cliCutList(QString()),
+        m_cliCommit(false), m_cliNext(false)
 {
   this->setObjectName("MkvCutter-Main");
   ui.setupUi(this);
@@ -253,10 +255,12 @@ void MkvCutter::setTimecodes(QString timecodeFile)
 
 void MkvCutter::setInterlacedMode(QString interlacedMode)
 {
-  if (interlacedMode == tr("auto")) {
+  if (interlacedMode.compare("auto", Qt::CaseInsensitive) == 0) {
     m_interlaced = m_mediaInfoScanorder;
+    this->addInfo(
+        " " + tr("reset video scan order to the detected value: %1").arg(m_interlaced));
   } else {
-    m_mediaInfoScanorder = interlacedMode;
+    m_interlaced = interlacedMode;
     this->addInfo(" " + tr("changed video scan order to: %1").arg(interlacedMode));
   }
 }
@@ -266,7 +270,8 @@ void MkvCutter::setInterlaced(QString interlaced)
   bool mbaff = interlaced == "MBAFF";
   m_interlaced = (mbaff) ? "tff" : interlaced;
   m_paff = interlaced != "progressive" && !mbaff;
-  m_mediaInfoScanorder = interlaced;
+  // gemappten Wert merken, damit "auto" im Viewer genau die Erkennung wiederherstellt
+  m_mediaInfoScanorder = m_interlaced;
   this->addInfo(" " + tr("video scan order: %1").arg(interlaced));
 }
 
@@ -1086,29 +1091,15 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   QString base = QApplication::applicationDirPath() + QDir::separator();
   bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
       || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
+  // New x264 from Hybrid supports both 8-bit and 10-bit in a single binary
   QString x264 = base;
 #ifdef Q_OS_WIN32
-  if (high10) {
-    x264 += "x264-10bit.exe";
-  } else {
-    x264 += "x264.exe";
-  }
+  x264 += "x264.exe";
 #else
-  if (high10) {
-    x264 += "x264-10bit";
-  } else {
-    x264 += "x264";
-  }
+  x264 += "x264";
 #endif
   x264 = QDir::toNativeSeparators(x264);
   QStringList call;
-  if (high10) {
-    QString avs2yuv = base + "avs2yuv.exe";
-    call << "\"" + QDir::toNativeSeparators(avs2yuv) + "\"";
-    call << "-raw \"" + avisynthFile + "\"";
-    call << "-o -";
-    call << "|";
-  }
   QString tmp;
   tmp = "\"" + x264 + "\"";
   call << tmp;
@@ -1199,12 +1190,11 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << "--thread-input";
   call << "--crf 19";
   if (high10) {
-    call << "--demuxer raw";
+    // New x264 supports 10-bit via --input-depth; feed avisynth file directly
     call << "--input-depth 10";
     call << "--input-res " + QString::number(m_width) + "x" + QString::number(m_height);
-  } else {
-    call << "--demuxer avs";
   }
+  call << "--demuxer avs";
   call << "--fps " + Globals::decimalToFractionConvert(m_fps);
   QString par = QString::number(m_aspectRatio);
   par = adjustParDotToColon(par);
@@ -1217,12 +1207,8 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   m_reencodedVideoFiles << tmp;
   tmp = "-o \"" + tmp + "\"";
   call << tmp;
-  if (high10) {
-    call << "-";
-  } else {
-    tmp = "\"" + avisynthFile + "\"";
-    call << tmp;
-  }
+  tmp = "\"" + avisynthFile + "\"";
+  call << tmp;
   tmp = call.join(" ");
   this->addInfo(" -> " + tr("x264 call: %1").arg(tmp));
   m_videoEncodingCalls << tmp;
@@ -1700,6 +1686,26 @@ void MkvCutter::startViewer()
   ui.mainStackedWidget->setCurrentIndex(1);
   ui.infoLabel->setText(tr("- Cut View -"));
   m_viewer->init();
+  // init() kann fehlschlagen und ueber finished(<0) einen reset() ausloesen; initTools()
+  // loescht den Viewer dann und setzt m_viewer auf nullptr.
+  if (m_viewer == nullptr) {
+    return;
+  }
+  if (!m_cliCutList.isEmpty()) {
+    const QString path = m_cliCutList;
+    m_cliCutList.clear();
+    this->addInfo(QString("CLI: loadCutList(%1)").arg(path));
+    if (!m_viewer->loadCutList(path)) {
+      this->addInfo("CLI: cut list is empty or unreadable -> not committing");
+      m_cliCommit = false;
+      m_cliNext = false;
+    }
+  }
+  if (m_cliCommit) {
+    m_cliCommit = false;
+    this->addInfo("CLI: commit()");
+    m_viewer->commitCuts();
+  }
 }
 
 void MkvCutter::ffIndexerFinished(int exitstate)
@@ -1781,6 +1787,11 @@ void MkvCutter::avsViewerFinished(int state)
   this->buildTrimAndPartsList();
   ui.infoLabel->setText(tr("Set output base file and temp folder,.."));
   ui.mainStackedWidget->setCurrentIndex(2);
+  if (m_cliNext) {
+    m_cliNext = false;
+    this->addInfo("CLI: next() (deferred)");
+    this->on_nextPushButton_clicked();
+  }
 }
 
 void MkvCutter::on_outputPushButton_clicked()
@@ -1876,6 +1887,13 @@ void MkvCutter::setKeyFrames(QStringList list)
 {
   ui.infoLabel->setText(tr("Got key frame list from mkvinfo analyzer."));
   int count = list.count();
+  if (count == 0) {
+    // Division durch Null vermeiden, wenn mkvinfo keine I-Frames fand
+    this->addInfo(" " + tr("Warning: no keyframes detected in video stream!"));
+    m_keyframes = list;
+    m_averageKeyDistance = 0;
+    return;
+  }
   int dist = m_frameCount / count;
   m_keyframes = list;
   m_averageKeyDistance = dist;
@@ -2042,4 +2060,96 @@ void MkvCutter::myconnect(const QObject * sender, const char * signal, const QOb
 void MkvCutter::setSps(int sps)
 {
   m_sps = sps;
+}
+
+// ---------------------------------------------------------------------------
+// CLI control methods (called from main.cpp via --clinput)
+// ---------------------------------------------------------------------------
+
+void MkvCutter::cliOpen(const QString &path)
+{
+  this->addInfo(QString("CLI: open(%1)").arg(path));
+  this->setInput(path);
+}
+
+void MkvCutter::cliSetOutput(const QString &path)
+{
+  this->addInfo(QString("CLI: setOutput(%1)").arg(path));
+  QFileInfo fi(path);
+  QString out = QDir::toNativeSeparators(path);
+  ui.outputLabel->setText(out);
+  m_currentOutput = out;
+  // If output is inside a temp folder, auto-set it
+  if (m_tempFolder.isEmpty() && fi.isAbsolute()) {
+    QString dir = fi.absolutePath();
+    if (QDir(dir).exists()) {
+      m_tempFolder = dir;
+      ui.tempFolderLabel->setText(dir);
+    }
+  }
+}
+
+void MkvCutter::cliSetTemp(const QString &path)
+{
+  this->addInfo(QString("CLI: setTemp(%1)").arg(path));
+  QString dir = QDir::toNativeSeparators(path);
+  if (!QDir(dir).exists()) {
+    this->addInfo(QString("CLI: temp folder does not exist, ignoring: %1").arg(dir));
+    return;
+  }
+  ui.tempFolderLabel->setText(dir);
+  m_tempFolder = dir;
+}
+
+void MkvCutter::cliSetKeepIntermediate(bool keep)
+{
+  this->addInfo(QString("CLI: setKeepIntermediate(%1)").arg(keep ? "true" : "false"));
+  ui.keepIntermediateCheckBox->setChecked(keep);
+}
+
+void MkvCutter::cliNext()
+{
+  // Auf Seite 2 (Ausgabe/Temp gesetzt, Schnittliste steht) sofort ausloesen, sonst bis
+  // nach dem Commit des Viewers aufheben -- beim Abarbeiten von --clinput laeuft die
+  // Analyse noch und es gibt weder Schnittliste noch mkvmerge-Parts.
+  if (ui.mainStackedWidget->currentIndex() == 2) {
+    this->addInfo("CLI: next()");
+    this->on_nextPushButton_clicked();
+    return;
+  }
+  this->addInfo("CLI: next() deferred until the cut view has been committed");
+  m_cliNext = true;
+}
+
+void MkvCutter::cliLoadCutList(const QString &path)
+{
+  if (!QFile::exists(path)) {
+    this->addInfo(QString("CLI: cut list does not exist, ignoring: %1").arg(path));
+    return;
+  }
+  const QString file = QDir::toNativeSeparators(path);
+  if (m_viewer != nullptr && ui.mainStackedWidget->currentIndex() == 1) {
+    this->addInfo(QString("CLI: loadCutList(%1)").arg(file));
+    m_viewer->loadCutList(file);
+    return;
+  }
+  this->addInfo(QString("CLI: loadCutList(%1) deferred until the cut view is up").arg(file));
+  m_cliCutList = file;
+}
+
+void MkvCutter::cliCommit()
+{
+  if (m_viewer != nullptr && ui.mainStackedWidget->currentIndex() == 1) {
+    this->addInfo("CLI: commit()");
+    m_viewer->commitCuts();
+    return;
+  }
+  this->addInfo("CLI: commit() deferred until the cut view is up");
+  m_cliCommit = true;
+}
+
+void MkvCutter::cliSetScanOrder(const QString &mode)
+{
+  this->addInfo(QString("CLI: setScanOrder(%1)").arg(mode));
+  this->setInterlacedMode(mode);
 }

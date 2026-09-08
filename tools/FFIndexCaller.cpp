@@ -58,7 +58,7 @@ void FFIndexCaller::index(QString inputFile, QString cacheFile)
   enableGui(false);
   emit
   sendInfos(tr("FFIndex call: %1").arg(tmp));
-  m_process->start(tmp);
+  m_process->startCommand(tmp);
 }
 
 void FFIndexCaller::handleIndexerOutput()

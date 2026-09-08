@@ -30,7 +30,7 @@ void MediaInfoAnalyser::analyse(QString input)
   call << "\"" + input + "\"";
   emit enableGui(false);
   emit sendInfos(tr("MediaInfo call: %1").arg(call.join(" ")));
-  m_process->start(call.join(" "));
+  m_process->startCommand(call.join(" "));
 }
 
 void removeInnerWhiteSpace(QString &line)

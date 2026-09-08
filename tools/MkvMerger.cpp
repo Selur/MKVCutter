@@ -74,11 +74,7 @@ void MkvMerger::call(QString call)
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this,
       SLOT(handleMkvmergeOutput()));
   QObject::connect(m_process, SIGNAL(readyReadStandardError()), this, SLOT(handleMkvmergeOutput()));
-  m_process->start(call);
-}
-QString MkvMerger::doubleBackSlash(QString text)
-{
-  return text.replace("\\", "\\\\");
+  m_process->startCommand(call);
 }
 
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
@@ -96,7 +92,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
   call = "\"" + QDir::toNativeSeparators(appFolder + QDir::separator() + call) + "\"";
   QStringList options;
   options << "-o";
-  options << doubleBackSlash(m_output);
+  options << m_output;
   QStringList files;
   options << "--clusters-in-meta-seek";
   options << "--engage";
@@ -113,7 +109,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
   QStringList append;
   if (splitfileCount == 1 && splitFiles.at(0).endsWith(".mkv")) {
     file = splitFiles.at(0).trimmed();
-    options << doubleBackSlash(file);
+    options << file;
     optionFile = file;
   } else {
     QString fpsValue = Globals::decimalToFractionConvert(fps);
@@ -135,7 +131,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
       // TIME CODES
       if (i == 0 && !timecodes.isEmpty()) {
         options << "--timecodes";
-        options << "0:"+doubleBackSlash(timecodes);
+        options << "0:"+timecodes;
       }
 
       options << "--forced-track";
@@ -147,11 +143,11 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
       file = splitFiles.at(i);
       if (i == 0) {
         optionFile = file;
-        options << doubleBackSlash(file);
+        options << file;
       } else {
         options << "+";
         options << "(";
-        options << doubleBackSlash(file);
+        options << file;
         options << ")";
         append << QString::number(i) + ":0:" + QString::number(i - 1) + ":0";
       }
@@ -182,7 +178,7 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
       options << i.key()+ ":" +i.value();
     }
 
-    options << doubleBackSlash(file);
+    options << file;
   }
   QString lang;
 // SUBTITLE FILES
@@ -209,13 +205,13 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     }
     options << "--compression";
     options << "-1:none";
-    options << doubleBackSlash(file);
+    options << file;
   }
   if (!append.isEmpty()) {
     options << "--append-to";
     options << append.join(",");
   }
-  if (Globals::saveTextTo(options.join("\n"), optionFile) != 0) {
+  if (Globals::saveTextTo(Globals::optionsToJson(options), optionFile) != 0) {
     emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));
   } else {
     emit sendInfos("  " + tr("Saved mkvoptions file: %1").arg(optionFile));

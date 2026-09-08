@@ -29,7 +29,7 @@ void MkvSubtitleExtractor::call(QString call)
                    SLOT(mkvextractFinished(int, QProcess::ExitStatus)));
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this,
                    SLOT(handleMkvExtractOutput()));
-  m_process->start(call);
+  m_process->startCommand(call);
 }
 
 QString extensionForFormat(QString typ)

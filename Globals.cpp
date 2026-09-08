@@ -6,6 +6,8 @@
  */
 
 #include "Globals.h"
+#include <QJsonArray>
+#include <QJsonDocument>
 #include "Windows.h"
 
 QHash<QString, double> Globals::fractionToDecimal = QHash<QString, double>();
@@ -288,6 +290,23 @@ QString Globals::readAll(const QString fileName, QString type)
   input = stream.readAll();
   file.close();
   return input;
+}
+
+/**
+ * mkvmerge erwartet fuer '@datei' seit MKVToolNix 9 eine JSON-Liste der Argumente und
+ * nicht mehr ein Argument je Zeile; die ausgelieferte mkvmerge v101 lehnt das alte
+ * Format mit einem JSON-Parser-Fehler ab.
+ * QJsonDocument uebernimmt das Escapen der Backslashes -- Pfade duerfen deshalb *nicht*
+ * vorher schon verdoppelt werden.
+ **/
+QString Globals::optionsToJson(const QStringList &options)
+{
+  QJsonArray array;
+  foreach (const QString &option, options)
+  {
+    array.append(option);
+  }
+  return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Indented));
 }
 
 /**

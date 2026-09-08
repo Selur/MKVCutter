@@ -30,7 +30,7 @@ void FFmpegVideoExtractor::call(QString call)
       SLOT(ffmpegFinished(int, QProcess::ExitStatus)));
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this, SLOT(handleFFmpegOutput()));
   this->sendInfos("FFmpeg extractor call: " + call);
-  m_process->start(call);
+  m_process->startCommand(call);
 }
 
 QString FFmpegVideoExtractor::buildCall(QString filename, QString tempFolder)
@@ -46,7 +46,9 @@ QString FFmpegVideoExtractor::buildCall(QString filename, QString tempFolder)
   call << "-vcodec copy";
   call << "-an";
   call << "-sn";
-  call << "-vsync 0";
+  // '-vsync 0' ist in aktuellen ffmpeg-Builds entfernt ("Unrecognized option 'vsync'",
+  // gemessen mit N-125875 / libavcodec 63). Ersatz seit ffmpeg 5.1 ist -fps_mode.
+  call << "-fps_mode passthrough";
   call << "-bsf:v h264_mp4toannexb";
   filename = filename.remove(filename.lastIndexOf("."), filename.length());
   filename += ".264";

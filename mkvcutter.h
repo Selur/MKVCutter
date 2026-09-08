@@ -31,6 +31,16 @@ class MkvCutter : public QWidget
     MkvCutter(QWidget *parent = 0);
     ~MkvCutter();
 
+    // CLI control slots (called from main.cpp via --clinput)
+    void cliOpen(const QString &path);
+    void cliSetOutput(const QString &path);
+    void cliSetTemp(const QString &path);
+    void cliSetKeepIntermediate(bool keep);
+    void cliNext();
+    void cliSetScanOrder(const QString &mode);
+    void cliLoadCutList(const QString &path);
+    void cliCommit();
+
 
   private:
     Ui::MkvCutterClass ui;
@@ -81,6 +91,11 @@ class MkvCutter : public QWidget
     int m_width, m_height;
     QHash<QString,QString> m_audioDelays;
     QStringList m_inputTimeCodes;
+    // --clinput wird komplett vor dem Start der Pipeline abgearbeitet; zu dem Zeitpunkt
+    // gibt es weder Viewer noch Schnittliste. Diese Wuensche werden deshalb gemerkt und
+    // am passenden Meilenstein eingeloest (jeweils genau einmal).
+    QString m_cliCutList;
+    bool m_cliCommit, m_cliNext;
 
     void myconnect(const QObject * sender, const char * signal, const QObject * receiver,
                    const char * method, Qt::ConnectionType type = Qt::AutoConnection);

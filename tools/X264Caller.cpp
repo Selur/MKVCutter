@@ -19,10 +19,10 @@ void X264Caller::start(QString call)
     m_helper = new QProcess(this);
     m_helper->setProcessChannelMode(QProcess::SeparateChannels);
     m_helper->setStandardOutputProcess(m_process);
-    m_helper->start(calls.at(0));
+    m_helper->startCommand(calls.at(0));
     call = calls.at(1);
   }
-  m_process->start(call);
+  m_process->startCommand(call);
 }
 
 void X264Caller::handleX264Output()

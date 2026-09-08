@@ -66,7 +66,6 @@ HEADERS += tools/FFIndexCaller.h \
     tools/subtitlecutters/Cutter.h \
     tools/subtitlecutters/SrtCutter.h \
     tools/analyzer/H264Parser.h \
-    mywindows.h \
     tools/Converter.h \
     tools/MkvSplitCaller.h \
     tools/viewer/AVSViewer.h \
@@ -98,7 +97,7 @@ SOURCES += tools/FFIndexCaller.cpp \
     tools/viewer/AVSViewer.cpp \
     tools/viewer/ImageLabel.cpp \
     tools/viewer/MarkSlider.cpp \
-    tools/viewer/interface.cpp \
+    tools/viewer/avisynth_linkage.cpp \
     tools/analyzer/MkvInfoSourceAnalyser.cpp \
     main.cpp \
     mkvcutter.cpp \
@@ -111,3 +110,12 @@ SOURCES += tools/FFIndexCaller.cpp \
 FORMS += tools/viewer/AVSViewer.ui \
     mkvcutter.ui
 RESOURCES += resources.qrc
+
+win32* {
+    INCLUDEPATH += "C:\Program Files (x86)\AviSynth+\FilterSDK\include"
+    contains(QMAKE_HOST.arch, x86_64) {
+        LIBS += "C:\Program Files (x86)\AviSynth+\FilterSDK\lib\x64\AviSynth.lib"
+    } else {
+        LIBS += "C:\Program Files (x86)\AviSynth+\FilterSDK\lib\x86\AviSynth.lib"
+    }
+}

@@ -8,6 +8,11 @@
 #ifndef AVSVIEWER_H_
 #define AVSVIEWER_H_
 
+// avisynth.h v11 expects an AVS_Linkage* AVS_linkage symbol that the host
+// populates from env->GetAVSLinkage() at runtime. MkvCutter is a host
+// (creates the IScriptEnvironment itself), so we provide the symbol in
+// avisynth_linkage.cpp and init it the first time we have a script
+// environment.
 #include <QWidget>
 #include "ui_AVSViewer.h"
 #include "avisynth.h"
@@ -26,6 +31,11 @@ class AVSViewer : public QWidget
     AVSViewer(QWidget *parent = nullptr, QString path = QString(), double mult = 0, bool cutSupport = false, QStringList keyframes = QStringList());
     ~AVSViewer();
     void init(int start = 0);
+    // Fuer die --clinput-Steuerung: Schnittliste aus einer .cut-Datei laden bzw. den
+    // Commit ausloesen, ohne Datei-Dialog und ohne Button. Liefert true, wenn danach
+    // mindestens ein gueltiger Schnitt in der Liste steht.
+    bool loadCutList(const QString &path);
+    void commitCuts();
 
   private:
     Ui::AVSViewerClass ui;
@@ -57,7 +67,7 @@ class AVSViewer : public QWidget
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);
-    void on_scanOrderComboBox_currentIndexChanged(const QString & text);
+    void on_scanOrderComboBox_currentTextChanged(const QString & text);
     void on_nextPushButton_clicked();
     void on_previousPushButton_clicked();
     void on_frameHorizontalSlider_sliderReleased();

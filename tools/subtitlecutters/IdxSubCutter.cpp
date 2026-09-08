@@ -53,7 +53,7 @@ void IdxSubCutter::cut(const QString &input, const QStringList& cutList, const Q
   call += QDir::toNativeSeparators(tempFolder);
   call += "\"";
   emit sendInfos(tr("IdxSubCutter call: %1").arg(call));
-  m_process->start(call);
+  m_process->startCommand(call);
 }
 
 void IdxSubCutter::idxCutterOutput()

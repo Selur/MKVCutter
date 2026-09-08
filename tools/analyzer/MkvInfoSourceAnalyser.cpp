@@ -52,7 +52,7 @@ void MkvInfoSourceAnalyser::analyse(QString input)
   QString call = buildCall(input);
   emit enableGui(false);
   emit sendInfos(tr("MkvInfoAnalyszer call: %1").arg(call));
-  m_process->start(call);
+  m_process->startCommand(call);
 }
 
 void MkvInfoSourceAnalyser::handleMkvInfoOutput()

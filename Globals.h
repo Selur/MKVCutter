@@ -43,7 +43,9 @@ namespace Globals
   QString shortFileName(QString inputFile);
   QString getDirectory(const QString input);
   QString readAll(const QString fileName, QString type);
-  int saveTextTo(QString fileName, QString to);
+  // Achtung: der erste Parameter ist der Inhalt, nicht ein Dateiname.
+  int saveTextTo(QString text, QString to);
+  QString optionsToJson(const QStringList &options);
   double timeToSeconds(QString value);
   double timeToSeconds(QTime time);
 

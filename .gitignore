@@ -6,3 +6,15 @@
 /Makefile*
 /*.pdb
 /*_plugin_import.cpp
+
+# qmake / Qt Creator
+/.qmake.stash
+/.qtcreator/
+*.pro.user
+*.pro.user.*
+
+# Shadow-Build von Qt Creator
+/build/
+
+# Visual Studio
+/.vs/

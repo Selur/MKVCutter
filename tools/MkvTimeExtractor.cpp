@@ -24,7 +24,7 @@ void MkvTimeExtractor::call(QString call)
  QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this,
                   SLOT(handleMkvExtractOutput()));
  emit enableGui(false);
- m_process->start(call);
+ m_process->startCommand(call);
 }
 
 QString MkvTimeExtractor::buildCall(QString filename, QString track, QString tempFolder)

@@ -96,7 +96,7 @@ void H264Parser::analyse(QString input)
   call << "\"" + h264Parse + "\"";
   call << "\"" + input + "\"";
   emit sendInfo(tr("Analyzing %1 with h264_parse,..").arg(input));
-  m_process->start(call.join(" "));
+  m_process->startCommand(call.join(" "));
 }
 
 void H264Parser::h264ParseFinished(int exitState, QProcess::ExitStatus status)

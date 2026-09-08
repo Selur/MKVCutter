@@ -6,6 +6,7 @@
 #include <QString>
 #include <conio.h>
 #include <iostream>
+#include <new>
 #include <QLibrary>
 #include <QMessageBox>
 #include <QFileDialog>
@@ -155,7 +156,8 @@ void AVSViewer::send(QString message)
   emit sendInfos(message);
 }
 
-void AVSViewer::on_scanOrderComboBox_currentIndexChanged(const QString & text)
+// Qt6 kennt kein currentIndexChanged(const QString&) mehr, deshalb currentTextChanged.
+void AVSViewer::on_scanOrderComboBox_currentTextChanged(const QString & text)
 {
   emit setInterlacedMode(text);
 }
@@ -291,13 +293,23 @@ void AVSViewer::on_loadPushButton_clicked()
   if (input.isEmpty()) {
     return;
   }
-  QFile file(input);
+  this->loadCutList(input);
+}
+
+/**
+ * Liest eine .cut-Datei (je Zeile "START#END") in die Schnittliste ein.
+ * Gemeinsamer Kern von on_loadPushButton_clicked() und der --clinput-Steuerung.
+ **/
+bool AVSViewer::loadCutList(const QString &path)
+{
+  QFile file(path);
   if (!file.open(QIODevice::ReadOnly)) {
-    this->send(tr("Couldn't read content of %1!").arg(input));
-    return;
+    this->send(tr("Couldn't read content of %1!").arg(path));
+    return false;
   }
   ui.cutListWidget->clear();
   QString content = file.readAll();
+  file.close();
   int start, end;
   QStringList lines = content.split("\n"), startEnd;
   foreach(QString line, lines)
@@ -318,6 +330,14 @@ void AVSViewer::on_loadPushButton_clicked()
     }
     this->addCut(start, end);
   }
+  const int count = ui.cutListWidget->count();
+  this->send(tr("Loaded %1 cut(s) from %2").arg(count).arg(path));
+  return count > 0;
+}
+
+void AVSViewer::commitCuts()
+{
+  this->on_commitPushButton_clicked();
 }
 
 //TODO: add cut-edit option
@@ -564,13 +584,54 @@ void AVSViewer::init(int start)
     IScriptEnvironment* (*CreateScriptEnvironment)(
         int version) = (IScriptEnvironment*(*)(int)) avsDLL.resolve("CreateScriptEnvironment"); //resolve CreateScriptEnvironment from the dll
     emit sendInfos(tr("loaded CreateScriptEnvironment definition from dll,.."));
-    m_env = CreateScriptEnvironment(AVISYNTH_INTERFACE_VERSION); //create a new IScriptEnvironment
+    // Die Interface-Version, die der mitgelieferte avisynth.h beschreibt (aktuell 11).
+    // Passt zur ausgelieferten AviSynth+ 3.7.5 (r4289), die v11 unterstuetzt; der Header
+    // stammt aus deren FilterSDK. CreateScriptEnvironment liefert nullptr, wenn die DLL
+    // die Version nicht kann -- dann passt der Header nicht zur DLL.
+    // Achtung: Die frueher hier stehende 8 war *kein* Fix fuer den Import-Absturz.
+    // Messung 2026-09-07: v11 3/4 Abstuerze, v8 2/4 Abstuerze -- die Version ist fuer
+    // den (weiterhin offenen) sporadischen Absturz in Invoke("Import") irrelevant.
+    m_env = CreateScriptEnvironment(AVISYNTH_INTERFACE_VERSION);
     if (!m_env) { //abort if IScriptEnvironment couldn't be created
       this->send(tr("Could not create IScriptenvironment,..."));
       emit
       finished(-4);
       return;
     }
+
+    // avisynth.h v11 routes all VideoInfo/PClip/PVideoFrame/AVSValue method
+    // calls through a runtime data table (AVS_Linkage) that the host must
+    // populate. Old (v5) avisynth.dll doesn't expose GetAVSLinkage, so guard
+    // the call and keep AVS_linkage 0 in that case — the v5 build of
+    // MkvCutter never used the linkage indirection in the first place.
+    if (AVS_linkage == 0) {
+      try {
+        AVS_linkage = m_env->GetAVSLinkage();
+      } catch (...) {
+        this->send(tr("AviSynth build does not expose GetAVSLinkage; falling back to header defaults"));
+        AVS_linkage = 0;
+      }
+    }
+    if (AVS_linkage == 0) {
+      // Ohne Linkage liefert jede AVSValue-/PClip-/VideoInfo-Methode nur noch 0 bzw.
+      // tut gar nichts -- weiterlaufen hiesse garantiert falsche Ergebnisse oder Absturz.
+      this->send(tr("Could not get the AVS_Linkage table from AviSynth -> aborting"));
+      emit finished(-13);
+      return;
+    }
+
+    // m_res und m_clip wurden im AVSViewer-Konstruktor angelegt -- zu dem Zeitpunkt war
+    // AVS_linkage noch 0. Alle AVSValue-/PClip-Konstruktoren sind in avisynth.h
+    // AVS_BakedCode und expandieren dann zu '(void)0', tun also *nichts*: die Member
+    // blieben uninitialisierter Speicher. Die erste Zuweisung (m_res = Invoke("Import"),
+    // m_clip = m_res.AsClip()) interpretiert diesen Muell als bisherigen Inhalt und gibt
+    // ihn frei -> delete[]/Release() auf einen Zufallszeiger. Das war der sporadische
+    // Absturz in Invoke("Import"): je nach Heap-Inhalt mal Treffer, mal nicht.
+    // Jetzt, mit gueltiger Linkage, einmal richtig konstruieren. Placement-new laesst den
+    // Destruktor bewusst aus; bei einem erneuten init() ist das ungefaehrlich, weil
+    // killEnv() m_res und m_clip vorher sauber auf 0 setzt.
+    new (&m_res) AVSValue();
+    new (&m_clip) PClip();
 
     //emit sendInfos(tr("created an IScriptEnvironment,.."));
     this->send(tr("looking for avisynth version,.."));
@@ -590,7 +651,11 @@ void AVSViewer::init(int start)
     }
     emit sendInfos(" " + tr("Importing %1 into environment,..").arg(input));
     input = Globals::shortFileName(input);
-    const char *inputFile = input.toUtf8();
+    // Der QByteArray muss so lange leben wie der Zeiger: 'input.toUtf8()' direkt einem
+    // const char* zuzuweisen liefert einen Zeiger in ein Temporary, das am Ende der
+    // Anweisung zerstoert wird -> AviSynth bekam bisher freigegebenen Speicher.
+    const QByteArray inputFileUtf8 = input.toUtf8();
+    const char *inputFile = inputFileUtf8.constData();
     if (import(inputFile, m_res, m_env) != 0) {
       emit sendInfos("AvsScript:\n" +QFile(input).readAll());
       emit finished(-6);

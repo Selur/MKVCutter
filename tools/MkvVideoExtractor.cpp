@@ -23,7 +23,7 @@ void MkvVideoExtractor::call(QString call)
   QObject::connect(m_process, SIGNAL(readyReadStandardOutput()), this,
                    SLOT(handleMkvExtractOutput()));
   this->sendInfos("Mkv extractor call: " + call);
-  m_process->start(call);
+  m_process->startCommand(call);
 }
 
 QString MkvVideoExtractor::buildCall(QString filename, QString, QString typ, QString tempFolder)

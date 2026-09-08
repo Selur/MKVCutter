@@ -256,12 +256,16 @@ QString Globals::getDirectory(const QString input)
 
 QString Globals::readAll(const QString fileName, QString type)
 {
-  QString input = removeQuotes(fileName);
-  if (input.startsWith("./") || input.startsWith(".\\")) {
-    input = input.remove(0, 1);
-    input = QDir::toNativeSeparators(QDir::currentPath() + input);
+  // Der normalisierte Pfad wurde frueher berechnet, aber nicht benutzt: geoeffnet wurde
+  // 'fileName' im Originalzustand, und 'input' war anschliessend mit dem Dateiinhalt
+  // ueberschrieben. Ein Aufruf mit Anfuehrungszeichen oder mit "./" am Anfang schlug
+  // dadurch fehl, obwohl genau das hier abgefangen werden sollte.
+  QString path = removeQuotes(fileName);
+  if (path.startsWith("./") || path.startsWith(".\\")) {
+    path = path.remove(0, 1);
+    path = QDir::toNativeSeparators(QDir::currentPath() + path);
   }
-  QFile file(fileName);
+  QFile file(path);
   if (!file.exists()) {
     return QString();
   }
@@ -270,9 +274,9 @@ QString Globals::readAll(const QString fileName, QString type)
   }
   QTextStream stream(&file);
   stream.setEncoding(QStringConverter::encodingForName(type.toUtf8()).value_or(QStringConverter::Utf8));
-  input = stream.readAll();
+  const QString content = stream.readAll();
   file.close();
-  return input;
+  return content;
 }
 
 /**

@@ -178,90 +178,54 @@ QString Cutter::readAll(const QString fileName, QString type)
   return input;
 }
 
+/**
+ * hh:mm:ss.mmm -- Grundlage der SRT-Zeitstempel (SrtCutter ersetzt den Punkt durch ein Komma).
+ * In ganzen Millisekunden rechnen: die Zerlegung ueber Ganzzahlen erledigt den Uebertrag,
+ * ein auf 1000 ms gerundeter Rest wandert also in die naechste Sekunde statt als ".1000"
+ * auszukommen. Die Nullzeit lieferte frueher "00:00:00.00" -- zwei Stellen statt drei, im
+ * SRT also ein ungueltiges "00:00:00,00".
+ **/
 QString Cutter::secondsToHMSZZZ(double seconds)
 {
-  if (seconds == 0) {
-    return "00:00:00.00";
+  if (seconds < 0) {
+    seconds = 0;
   }
-  QString time = QString();
-  int hrs = 0;
-  if (seconds >= 3600) { //Stunden
-    hrs = int(seconds) / 3600;
-  } else if (seconds == 3600) {
-    hrs = 1;
-  }
-  time += QString((hrs < 10) ? "0" : QString()) + QString::number(hrs);
-
-  int min = 0;
-  seconds = seconds - 3600 * hrs;
-  if (seconds >= 60) { //Minuten
-    min = int(seconds) / 60;
-  }
-  time += ":" + QString((min < 10) ? "0" : QString()) + QString::number(min);
-
-  int sec = 0;
-  seconds = seconds - 60 * min;
-  if (seconds > 0) { //Sekunden
-    sec = int(seconds);
-  }
-  time += ":";
-  time += QString((sec < 10) ? "0" : QString());
-  time += QString::number(sec);
-  int milliseconds = int(1000 * (seconds - (sec * 1.0)) + 0.5);
-  if (milliseconds == 0) {
-    time += ".000";
-    return time;
-  }
-  time += ".";
-  if (milliseconds < 10) {
-    time += "00";
-  } else if (milliseconds < 100) {
-    time += "0";
-  }
-  time += QString::number(milliseconds);
-  return time;
+  qint64 total = qint64(seconds * 1000.0 + 0.5);
+  const qint64 milliseconds = total % 1000;
+  total /= 1000;
+  const qint64 sec = total % 60;
+  total /= 60;
+  const qint64 min = total % 60;
+  const qint64 hrs = total / 60;
+  return QString("%1:%2:%3.%4")
+      .arg(hrs, 2, 10, QLatin1Char('0'))
+      .arg(min, 2, 10, QLatin1Char('0'))
+      .arg(sec, 2, 10, QLatin1Char('0'))
+      .arg(milliseconds, 3, 10, QLatin1Char('0'));
 }
 
+/**
+ * h:mm:ss.cc fuer ASS/SSA -- dort ist die Stunde einstellig, das bleibt so.
+ * Gleiches Uebertragsproblem wie oben, nur in Hundertstelsekunden: ein auf 100 gerundeter
+ * Rest ergab frueher ".100" statt einer Sekunde mehr.
+ **/
 QString Cutter::secondsToHMSZZ(double seconds)
 {
-  if (seconds == 0) {
-    return "0:00:00.00";
+  if (seconds < 0) {
+    seconds = 0;
   }
-
-  int hrs = 0;
-  if (seconds >= 3600) { //Stunden
-    hrs = int(seconds) / 3600;
-  } else if (seconds == 3600) {
-    hrs = 1;
-  }
-  QString time = QString::number(hrs);
-
-  int min = 0;
-  seconds = seconds - 3600 * hrs;
-  if (seconds >= 60) { //Minuten
-    min = int(seconds) / 60;
-  }
-  time += ":" + QString((min < 10) ? "0" : QString()) + QString::number(min);
-
-  int sec = 0;
-  seconds = seconds - 60 * min;
-  if (seconds > 0) { //Sekunden
-    sec = int(seconds);
-  }
-  time += ":";
-  time += QString((sec < 10) ? "0" : QString());
-  time += QString::number(sec);
-  int milliseconds = int(100 * (seconds - (sec * 1.0)) + 0.5);
-  if (milliseconds == 0) {
-    time += ".00";
-    return time;
-  }
-  time += ".";
-  if (milliseconds < 10) {
-    time += "0";
-  }
-  time += QString::number(milliseconds);
-  return time;
+  qint64 total = qint64(seconds * 100.0 + 0.5);
+  const qint64 hundredths = total % 100;
+  total /= 100;
+  const qint64 sec = total % 60;
+  total /= 60;
+  const qint64 min = total % 60;
+  const qint64 hrs = total / 60;
+  return QString("%1:%2:%3.%4")
+      .arg(hrs)
+      .arg(min, 2, 10, QLatin1Char('0'))
+      .arg(sec, 2, 10, QLatin1Char('0'))
+      .arg(hundredths, 2, 10, QLatin1Char('0'));
 }
 
 double Cutter::timeToSeconds(QTime time)

@@ -434,7 +434,11 @@ bool MkvCutter::createAVS()
   call += ", ";
   call += "cachefile=\"" +  m_indexFile + "\"";
   call += ", threads=1";
-  call += ").ConvertToYv12()";
+  // ConvertToYV12() lehnt Quellen mit mehr als 8 Bit ab ("only 8 bit sources allowed"),
+  // eine High10-Quelle scheiterte hier also schon in der Vorschau. ConvertBits(8) davor
+  // ist bei 8-Bit-Quellen ein No-Op und deckt neben 10 auch 12/16 Bit ab. Fuer die
+  // Vorschau genuegen 8 Bit; der Re-Encode-Pfad bekommt die Quelle davon unberuehrt.
+  call += ").ConvertBits(8).ConvertToYv12()";
   script << call;
   QString audio = QString("A = FFAudioSource(\"%1\", cache=false).ConvertToMono").arg(shortName);
   script << audio;
@@ -1091,7 +1095,10 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   QString base = QApplication::applicationDirPath() + QDir::separator();
   bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
       || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
-  // New x264 from Hybrid supports both 8-bit and 10-bit in a single binary
+  // x264 deckt 8 und 10 Bit in einer Binary ab; sein AviSynth-Demuxer kann aber nur
+  // 8 Bit ("avs [error]: not supported pixel type: YUV420P10", gemessen 2026-09-08 mit
+  // High10.mkv). Fuer 10-Bit-Quellen muss deshalb weiterhin avs2yuv das Script in
+  // Rohdaten wandeln und in x264 pipen; x264 liest dann --demuxer raw von stdin.
   QString x264 = base;
 #ifdef Q_OS_WIN32
   x264 += "x264.exe";
@@ -1101,6 +1108,25 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   x264 = QDir::toNativeSeparators(x264);
   QStringList call;
   QString tmp;
+  if (high10) {
+    // 64-Bit-Build bevorzugen, wie FFIndexCaller es mit ffmsindex64.exe auch macht.
+    QString avs2yuv = QDir::toNativeSeparators(base + "avs2yuv64.exe");
+    if (!QFile::exists(avs2yuv)) {
+      avs2yuv = QDir::toNativeSeparators(base + "avs2yuv.exe");
+    }
+    if (!QFile::exists(avs2yuv)) {
+      this->addInfo(
+          " " + tr("ERROR: neither avs2yuv64.exe nor avs2yuv.exe found -- 10 bit sources "
+                   "cannot be re-encoded."));
+      QMessageBox::critical(this, tr("Error"),
+          tr("Couldn't find avs2yuv64.exe/avs2yuv.exe, which is required for 10 bit sources."));
+      return;
+    }
+    call << "\"" + avs2yuv + "\"";
+    call << "-raw \"" + avisynthFile + "\"";
+    call << "-o -";
+    call << "|";
+  }
   tmp = "\"" + x264 + "\"";
   call << tmp;
   tmp = "--profile ";
@@ -1190,11 +1216,17 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << "--thread-input";
   call << "--crf 19";
   if (high10) {
-    // New x264 supports 10-bit via --input-depth; feed avisynth file directly
+    // Rohdaten aus der avs2yuv-Pipe, siehe oben.
+    call << "--demuxer raw";
     call << "--input-depth 10";
     call << "--input-res " + QString::number(m_width) + "x" + QString::number(m_height);
+    // --input-depth beschreibt nur die Eingabe. Ohne --output-depth encodiert x264 trotz
+    // "--profile high10" nach 8 Bit -- gemessen 2026-09-08: aus einer 10-Bit-Quelle kam
+    // eine 8-Bit-Ausgabe (High@L5.1 statt High 10@L5.1).
+    call << "--output-depth 10";
+  } else {
+    call << "--demuxer avs";
   }
-  call << "--demuxer avs";
   call << "--fps " + Globals::decimalToFractionConvert(m_fps);
   QString par = QString::number(m_aspectRatio);
   par = adjustParDotToColon(par);
@@ -1207,8 +1239,12 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   m_reencodedVideoFiles << tmp;
   tmp = "-o \"" + tmp + "\"";
   call << tmp;
-  tmp = "\"" + avisynthFile + "\"";
-  call << tmp;
+  if (high10) {
+    call << "-"; // Eingabe kommt aus der Pipe
+  } else {
+    tmp = "\"" + avisynthFile + "\"";
+    call << tmp;
+  }
   tmp = call.join(" ");
   this->addInfo(" -> " + tr("x264 call: %1").arg(tmp));
   m_videoEncodingCalls << tmp;

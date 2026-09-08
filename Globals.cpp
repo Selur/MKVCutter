@@ -100,44 +100,27 @@ QString Globals::milliSecondsToHMS(int milli)
 
 QString Globals::secondsToHMSZZZ(double seconds)
 {
-  if (seconds == 0) {
-    return "00:00:00";
+  if (seconds < 0) {
+    seconds = 0;
   }
-  QString time = QString();
-  int hrs = 0;
-  if (seconds >= 3600) { //Stunden
-    hrs = int(seconds) / 3600;
-  } else if (seconds == 3600) {
-    hrs = 1;
-  }
-  time += QString((hrs < 10) ? "0" : QString()) + QString::number(hrs);
-  int min = 0;
-  seconds = seconds - 3600 * hrs;
-  if (seconds >= 60) { //Minuten
-    min = int(seconds) / 60;
-  }
-  time += ":" + QString((min < 10) ? "0" : QString()) + QString::number(min);
-  int sec = 0;
-  seconds = seconds - 60 * min;
-  if (seconds > 0) { //Sekunden
-    sec = int(seconds);
-  }
-  time += ":";
-  time += QString((sec < 10) ? "0" : QString());
-  time += QString::number(sec);
-  int milliseconds = int(1000 * (seconds - (sec * 1.0)));
-  if (milliseconds == 0) {
-    time += ".000";
-    return time;
-  }
-  time += ".";
-  if (milliseconds < 10) {
-    time += "00";
-  } else if (milliseconds < 100) {
-    time += "0";
-  }
-  time += QString::number(milliseconds);
-  return time;
+  // In ganzen Millisekunden rechnen und dabei runden statt abzuschneiden: das frueher
+  // benutzte int(1000 * (seconds - sec)) lieferte fuer 538.539 s nur 538 ms, weil der Rest
+  // als 0.53899... ankam. Die Zerlegung ueber Ganzzahlen erledigt nebenbei den Uebertrag --
+  // ein Rest, der auf 1000 ms rundet, wandert korrekt in die naechste Sekunde statt als
+  // ".1000" ausgegeben zu werden. Nullzeit ergibt jetzt "00:00:00.000" statt "00:00:00",
+  // also durchgaengig dasselbe Format.
+  qint64 totalMs = qint64(seconds * 1000.0 + 0.5);
+  const qint64 milliseconds = totalMs % 1000;
+  totalMs /= 1000;
+  const qint64 sec = totalMs % 60;
+  totalMs /= 60;
+  const qint64 min = totalMs % 60;
+  const qint64 hrs = totalMs / 60;
+  return QString("%1:%2:%3.%4")
+      .arg(hrs, 2, 10, QLatin1Char('0'))
+      .arg(min, 2, 10, QLatin1Char('0'))
+      .arg(sec, 2, 10, QLatin1Char('0'))
+      .arg(milliseconds, 3, 10, QLatin1Char('0'));
 }
 
 QString Globals::secondsToHMS(double seconds)

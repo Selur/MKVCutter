@@ -353,8 +353,18 @@ QString Globals::frameToTime(const int& number, const double& fps, const QString
     double seconds = int(number / fps * 1000 + 0.5)/1000.0;
     return secondsToHMSZZZ(seconds);
   }
-  double offset = inputTimeCodeList->at(1).toDouble();
-  return secondsToHMSZZZ((inputTimeCodeList->at(number).toDouble()-offset)/1000.0);
+  // Zeile 0 der v2-Timecode-Datei ist der Header, Zeile 1 gehoert zu Frame 0 -- der
+  // Zeitstempel von Frame N steht also bei Index N+1. Das frueher benutzte at(number)
+  // lieferte durchgaengig den Stempel von Frame number-1, also ein Frame zu frueh
+  // (gemessen an der Testquelle: Frame 11765 -> 490657 statt 490699 ms). Audio- und
+  // Untertitelschnitte lagen dadurch konstant ein Frame vor dem Video.
+  const int index = number + 1;
+  if (index < 1 || index >= inputTimeCodeList->size()) {
+    // Ausserhalb der Liste lieber ueber die Bildrate rechnen als at() ungueltig aufrufen.
+    return secondsToHMSZZZ(int(number / fps * 1000 + 0.5) / 1000.0);
+  }
+  const double offset = inputTimeCodeList->at(1).toDouble();
+  return secondsToHMSZZZ((inputTimeCodeList->at(index).toDouble() - offset) / 1000.0);
 }
 
 double Globals::timeToSeconds(QTime time)

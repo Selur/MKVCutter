@@ -27,8 +27,8 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
         m_mkvSubtitleExtractor(nullptr), m_subtitleCutter(nullptr), m_cutSubtitles(),
         m_subtitleToCut(), m_keyframeonly(false), m_hasAudio(false), m_sps(-1), m_width(-1),
-        m_height(-1), m_audioDelays(), m_inputTimeCodes(), m_cliCutList(QString()),
-        m_cliCommit(false), m_cliNext(false)
+        m_height(-1), m_audioDelays(), m_inputTimeCodes(), m_ffindexCaller(nullptr),
+        m_cliCutList(QString()), m_cliCommit(false), m_cliNext(false)
 {
   this->setObjectName("MkvCutter-Main");
   ui.setupUi(this);
@@ -180,6 +180,14 @@ void MkvCutter::initTools()
   tmp += QDir::separator();
   tmp += "LSMASHSource.dll";
   tmp = QDir::toNativeSeparators(tmp);
+  // Wie bei allen anderen Werkzeugen: erst weg, dann ggf. neu. Frueher wurde der Zeiger nur
+  // im Nicht-LSMASH-Fall gesetzt und sonst nie -- er behielt dann den alten Wert (beim
+  // ersten Aufruf uninitialisierter Speicher). 'm_ffindexCaller == nullptr' ist aber genau
+  // die Abfrage, an der ueberall der LWLibav-Weg haengt, und spaeter wurde auf dem Zeiger
+  // index() gerufen. Mit LSMASHSource.dll neben der EXE stuerzte die Anwendung deshalb
+  // reproduzierbar nach der Timecode-Extraktion ab.
+  delete m_ffindexCaller;
+  m_ffindexCaller = nullptr;
   if (!QFile::exists(tmp)) {
     cout << "  init ffmindexCaller" << endl;
     m_ffindexCaller = new FFIndexCaller(this);
@@ -395,7 +403,11 @@ bool MkvCutter::createLibAVSourceAVS()
     call += ", format=\"YUV420P8\"";
   }
   call += ", cache=false";
-  call += ").ConvertToYv12()";
+  // ConvertBits(8) auch hier, aus demselben Grund wie im FFMS2-Zweig: ConvertToYV12()
+  // lehnt mehr als 8 Bit ab. Bei erkanntem High10 liefert die Quelle oben bereits
+  // YUV420P8, dann ist es ein No-Op -- es deckt aber die Faelle ab, in denen die Bittiefe
+  // nicht am Profilstring zu erkennen ist (12/16 Bit, High 4:2:2).
+  call += ").ConvertBits(8).ConvertToYv12()";
   script << call;
 
   QString audio = QString("A = LWLibavAudioSource(\"%1\", cache=false).ConvertToMono").arg(shortName);
@@ -465,11 +477,20 @@ void MkvCutter::mkvAnalysefinished()
     return;
   }
 
-  if (m_ffindexCaller == nullptr && !this->createLibAVSourceAVS()) {
-    this->reset();
-    return;
+  // Genau *ein* Vorschau-Script erzeugen. Liegt LSMASHSource.dll neben der EXE, gibt es
+  // keinen FFIndexCaller und damit auch kein .ffindex -- dann muss der LWLibav-Weg her.
+  // Vorher lief createAVS() unbedingt und ueberschrieb m_tempAvs auch dann, wenn
+  // createLibAVSourceAVS() gerade ein LWLibav-Script geschrieben hatte: die Vorschau
+  // verwies anschliessend auf eine .ffindex-Datei, die mangels FFIndexCaller nie jemand
+  // erzeugt hat.
+  bool avsCreated = false;
+  if (m_ffindexCaller == nullptr) {
+    this->addInfo(tr("LSMASHSource.dll found -> using LWLibavVideoSource for the preview"));
+    avsCreated = this->createLibAVSourceAVS();
+  } else {
+    avsCreated = this->createAVS();
   }
-  if (!this->createAVS()) {
+  if (!avsCreated) {
     this->reset();
     return;
   }

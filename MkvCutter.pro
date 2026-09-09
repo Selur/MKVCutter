@@ -79,7 +79,6 @@ HEADERS += tools/FFIndexCaller.h \
     tools/analyzer/MediaInfoAnalyser.h \
     tools/MkvMerger.h \
     tools/X264Caller.h \
-    tools/MkvVideoExtractor.h \
     DropPushButton.h \
     tools/MkvTimeExtractor.h
 SOURCES += tools/FFIndexCaller.cpp \
@@ -104,7 +103,6 @@ SOURCES += tools/FFIndexCaller.cpp \
     tools/analyzer/MediaInfoAnalyser.cpp \
     tools/MkvMerger.cpp \
     tools/X264Caller.cpp \
-    tools/MkvVideoExtractor.cpp \
     DropPushButton.cpp \
     tools/MkvTimeExtractor.cpp
 FORMS += tools/viewer/AVSViewer.ui \

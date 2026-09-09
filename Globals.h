@@ -18,11 +18,6 @@ struct cutTyp1
     int prevKey, nextKey;
     cutTyp cut;
 };
-struct cutTyp2
-{
-    int prevKey, nextKey;
-    QList<cutTyp> cuts;
-};
 
 namespace Globals
 {

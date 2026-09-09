@@ -116,6 +116,16 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
   QStringList append;
   if (splitfileCount == 1 && splitFiles.at(0).endsWith(".mkv")) {
     file = splitFiles.at(0).trimmed();
+    // Diese Datei hat mkvmerge selbst aus 'parts-frames:A-B,+C-D' zusammengesetzt. An jeder
+    // Naht bekommt das letzte Frame des vorigen Teils dabei eine zu kurze Dauer: gemessen an
+    // einem reinen Keyframe-Schnitt (664 Frames, 23,976 fps) standen zwischen den Teilen 21
+    // bzw. 14 ms statt 42, die Ausgabe war 27,645 s statt 27,694 s und MediaInfo meldete
+    // 24,000 fps. Die geschnittene Zeitstempeldatei kennt die richtigen Dauern -- frueher
+    // wurde sie in genau diesem Zweig nie angewendet.
+    if (!timecodes.isEmpty()) {
+      options << "--timecodes";
+      options << "0:" + timecodes;
+    }
     options << file;
     optionFile = file;
   } else {

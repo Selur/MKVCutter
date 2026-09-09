@@ -14,7 +14,6 @@
 #include "tools/MkvSplitCaller.h"
 #include "tools/X264Caller.h"
 #include "tools/MkvMerger.h"
-#include "tools/MkvVideoExtractor.h"
 #include "tools/MkvTimeExtractor.h"
 #include "tools/MkvSubtitleExtractor.h"
 #include "tools/SubtitleCutter.h"
@@ -69,7 +68,6 @@ class MkvCutter : public QWidget
     int m_averageBitrate;
     QStringList m_audioSplitFiles, m_extractionFiles, m_toDelete;
     int m_videoTrackID;
-    //MkvVideoExtractor *m_extractor;
     FFmpegVideoExtractor *m_extractor;
     MkvTimeExtractor *m_timeextractor;
     double m_aspectRatio;

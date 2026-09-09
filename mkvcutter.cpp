@@ -135,7 +135,7 @@ void MkvCutter::initTools()
   this->myconnect(m_x264, SIGNAL(progress(int)), this, SLOT(x264Progress(int)));
   cout << "  init video extractor" << endl;
   delete m_extractor;
-  m_extractor = new FFmpegVideoExtractor(this); //new MkvVideoExtractor
+  m_extractor = new FFmpegVideoExtractor(this);
   this->myconnect(m_extractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_extractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_extractor, SIGNAL(finished(int)), this, SLOT(mkvExtractorFinished(int)));

@@ -143,7 +143,12 @@ QString MkvSplitCaller::buildCall()
   options << QDir::toNativeSeparators(m_output);
   if (m_audio) {
     options << "--split";
-    options << "parts:" + m_splitParts.join(",+");
+    // Ohne '+' schreibt mkvmerge je Bereich eine eigene Datei. Frueher stand hier ",+",
+    // mkvmerge haengte die Stuecke also selbst aneinander -- und weil es verlustfrei nur
+    // auf Frame-Grenzen des Tonformats schneiden kann, summierten sich die dabei
+    // entstehenden Laengenfehler auf (B16). Zusammengesetzt wird jetzt beim Muxen, dort
+    // bekommt jedes Stueck seinen eigenen Versatz.
+    options << "parts:" + m_splitParts.join(",");
     options << "--no-video";
     options << "--no-subtitles";
   } else {
@@ -152,8 +157,10 @@ QString MkvSplitCaller::buildCall()
       options << "parts-frames:" + m_splitParts.join(",+");
     } else {
       options << "parts-frames:" + m_splitParts.join(",");
-      options << "--no-audio";
     }
+    // Der Ton wird in beiden Pfaden getrennt geschnitten (siehe oben); frueher lief er im
+    // Keyframe-Pfad hier mit und wurde dabei ohne Versatz aneinandergehaengt.
+    options << "--no-audio";
     options << "--no-subtitles";
     options << "--no-buttons";
     options << "--no-track-tags";

@@ -63,12 +63,14 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 
 void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles,
     QString outputFile, const double fps, const bool interlaced, const bool paff,
-    const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays, const QString& timecodes, const bool keepIntermediate)
+    const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays,
+    const QStringList& audioSyncOffsets, const QString& timecodes, const bool keepIntermediate)
 {
   m_output = outputFile;
   m_keepIntermediate = keepIntermediate;
   this->call(
-      this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles, audioDelays, timecodes));
+      this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles,
+          audioDelays, audioSyncOffsets, timecodes));
 }
 
 void MkvMerger::call(QString call)
@@ -87,7 +89,7 @@ void MkvMerger::call(QString call)
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     QStringList subtitleFiles, double fps, const bool interlaced, const bool paff,
     const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays,
-                             const QString& timecodes)
+                             const QStringList& audioSyncOffsets, const QString& timecodes)
 {
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -113,7 +115,6 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
   int splitfileCount = splitFiles.count();
   splitFiles.sort();
   QString optionFile, file;
-  QStringList append;
   if (splitfileCount == 1 && splitFiles.at(0).endsWith(".mkv")) {
     file = splitFiles.at(0).trimmed();
     // Diese Datei hat mkvmerge selbst aus 'parts-frames:A-B,+C-D' zusammengesetzt. An jeder
@@ -166,7 +167,6 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
         options << "(";
         options << file;
         options << ")";
-        append << QString::number(i) + ":0:" + QString::number(i - 1) + ":0";
       }
     }
   }
@@ -180,22 +180,45 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
   optionFile += "_mkvOptions.txt";
 
 // AUDIO FILES
-  foreach (QString file, audioFiles)
-  {
+  // Die Tonstuecke kommen einzeln aus dem Splitter und werden hier aneinandergehaengt.
+  // Jedes Stueck bekommt seinen eigenen Versatz, weil mkvmerge verlustfrei nur auf
+  // Frame-Grenzen des Tonformats schneiden kann und die Stuecke dadurch bis zu ein Frame
+  // kuerzer oder laenger ausfallen als angefordert -- ohne Versatz summiert sich das auf
+  // und der Ton laeuft dem Bild davon (B16). Der Versatz steht in audioSyncOffsets und
+  // gehoert jeweils zum Stueck, vor dem er wirken soll.
+  //
+  // Eine ausdrueckliche '--append-to'-Zuordnung gibt es hier nicht mehr. Sie beschrieb nur
+  // das, was mkvmerge ohnehin als Standard nimmt (Spur n an Spur n der Vorgaengerdatei) --
+  // und sobald eine Quelle mehrere Tonspuren hat, war sie unvollstaendig: mkvmerge bricht
+  // dann mit "Only partial append mappings were given" ab (gemessen an High10.mkv mit zwei
+  // DTS-Spuren).
+  for (int i = 0, audioCount = audioFiles.count(); i < audioCount; ++i) {
     options << "--no-video";
     options << "--no-global-tags";
     options << "--no-chapters";
     options << "--no-subtitles";
     options << "--no-track-tags";
     options << "--no-buttons";
-    QHashIterator<QString, QString> i(audioDelays);
-    while (i.hasNext()) {
-      i.next();
-      options << "--sync";
-      options << i.key()+ ":" +i.value();
+    if (i == 0) {
+      QHashIterator<QString, QString> delay(audioDelays);
+      while (delay.hasNext()) {
+        delay.next();
+        options << "--sync";
+        options << delay.key() + ":" + delay.value();
+      }
+      options << audioFiles.at(i);
+      continue;
     }
-
-    options << file;
+    if (i < audioSyncOffsets.count() && audioSyncOffsets.at(i).toInt() != 0) {
+      // -1 heisst "alle Spuren dieser Datei": eine Quelle kann mehrere Tonspuren haben,
+      // und die muessen alle gleich weit verschoben werden.
+      options << "--sync";
+      options << "-1:" + audioSyncOffsets.at(i);
+    }
+    options << "+";
+    options << "(";
+    options << audioFiles.at(i);
+    options << ")";
   }
   QString lang;
 // SUBTITLE FILES
@@ -223,10 +246,6 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     options << "--compression";
     options << "-1:none";
     options << file;
-  }
-  if (!append.isEmpty()) {
-    options << "--append-to";
-    options << append.join(",");
   }
   if (Globals::saveTextTo(Globals::optionsToJson(options), optionFile) != 0) {
     emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));

@@ -19,7 +19,8 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_mediaInfoAnalyser(nullptr), m_viewer(nullptr), m_mkvVideoSplitCaller(nullptr),
         m_mkvAudioCutCaller(nullptr), m_mkvMerger(nullptr), m_x264(nullptr), m_mkvVideoParts(),
         m_mkvAudioAndSubtitleParts(), m_audioFile(QString()), m_averageBitrate(-1),
-        m_audioSplitFiles(), m_extractionFiles(), m_toDelete(), m_videoTrackID(-1),
+        m_audioSplitFiles(), m_audioSyncOffsets(), m_extractionFiles(), m_toDelete(),
+        m_videoTrackID(-1),
         m_extractor(nullptr), m_timeextractor(nullptr), m_aspectRatio(1),
         m_interlaced("progressive"), m_mediaInfoScanorder(), m_scanType(), m_chroma("4:2:0"),
         m_bitDepth(8), m_vfr(false), m_timecodes(QString()),
@@ -1407,14 +1408,10 @@ void MkvCutter::startVideoReencoding()
 {
   if (m_videoEncodingCalls.isEmpty()) { //encodings finished
     this->addInfo(tr("Finished all the video reencoding,..."));
-    if (m_keyframeonly) {
-      if (!m_subtitles.isEmpty()) {
-        m_mkvSubtitleExtractor->startExtraction(m_currentInput, m_subtitles, m_tempFolder);
-        return;
-      }
-      this->cleanUpAndMerge();
-      return;
-    }
+    // Frueher lief der Keyframe-Pfad hier direkt weiter, weil der Ton beim Videoschnitt
+    // mitgeschnitten wurde -- ohne die Moeglichkeit, die Stuecke einzeln zu versetzen
+    // (B16). Er wird jetzt wie im Re-Encode-Pfad getrennt geschnitten; den Fall ohne Ton
+    // behandelt cutAudio() genauso, wie es dieser Zweig getan hat.
     this->cutAudio();
     return;
   }
@@ -1466,7 +1463,8 @@ void MkvCutter::cleanUpAndMerge()
       }
       this->addInfo(" " + tr("Muxing content,.."));
       m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
-          m_fps, m_interlaced != "progressive", m_paff, m_subtitles, m_audioDelays, m_timecodes, ui.keepIntermediateCheckBox->isChecked());
+          m_fps, m_interlaced != "progressive", m_paff, m_subtitles, m_audioDelays,
+      m_audioSyncOffsets, m_timecodes, ui.keepIntermediateCheckBox->isChecked());
     }
     return;
   }
@@ -1474,7 +1472,8 @@ void MkvCutter::cleanUpAndMerge()
   // generate mkvmerge calls to join all parts
   this->addInfo(" " + tr("Muxing audio&video(2),.."));
   m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
-      m_fps, m_interlaced != "progressive", m_paff, m_subtitles, m_audioDelays, m_timecodes, ui.keepIntermediateCheckBox->isChecked());
+      m_fps, m_interlaced != "progressive", m_paff, m_subtitles, m_audioDelays,
+      m_audioSyncOffsets, m_timecodes, ui.keepIntermediateCheckBox->isChecked());
 }
 
 void MkvCutter::x264Finished(int exitstate)
@@ -1694,6 +1693,7 @@ void MkvCutter::mkvAudioCutFinished(int exitstate)
     this->reset();
     return;
   }
+  this->computeAudioSyncOffsets();
   if (!m_subtitles.isEmpty()) {
     m_mkvSubtitleExtractor->startExtraction(m_currentInput, m_subtitles, m_tempFolder);
     return;
@@ -2197,6 +2197,54 @@ void MkvCutter::cutAudio()
       m_tempFolder, true);
 }
 
+/**
+ * Bestimmt, um wie viel jedes Tonstueck beim Muxen verschoben werden muss.
+ *
+ * mkvmerge kann verlustfrei nur auf Frame-Grenzen des Tonformats schneiden -- bei AC-3
+ * sind das 32 ms. Ein Stueck faellt dadurch bis zu ein Frame kuerzer oder laenger aus als
+ * angefordert. Werden die Stuecke einfach aneinandergehaengt, summieren sich diese Fehler
+ * auf und der Ton laeuft dem Bild davon (B16; gemessen: nach drei Schnitten 55 ms).
+ *
+ * Soll jedes Stueck dort beginnen, wo sein Videostueck beginnt, dann ist der noetige
+ * Versatz genau die Differenz aus Soll- und Ist-Laenge des *Vorgaengers* -- die Fehler
+ * addieren sich dann nicht mehr, sondern bleiben je Stueck unter einem Tonframe.
+ */
+void MkvCutter::computeAudioSyncOffsets()
+{
+  m_audioSyncOffsets.clear();
+  m_audioSplitFiles.sort(); // mkvmerge nummeriert die Stuecke, die Reihenfolge zaehlt
+  const int count = m_audioSplitFiles.count();
+  if (count < 2) {
+    return; // ein einzelnes Stueck kann nicht auseinanderlaufen
+  }
+  if (m_mkvAudioAndSubtitleParts.count() != count) {
+    this->addInfo(
+        " " + tr("%1 audio parts but %2 requested ranges -> no sync offsets").arg(count).arg(
+            m_mkvAudioAndSubtitleParts.count()));
+    return;
+  }
+  this->addInfo(tr("measuring the audio parts,.."));
+  m_audioSyncOffsets << "0"; // das erste Stueck beginnt bei null
+  QStringList elems;
+  for (int i = 1; i < count; ++i) {
+    elems = m_mkvAudioAndSubtitleParts.at(i - 1).split("-");
+    const double got = Globals::mkvDurationInMs(m_audioSplitFiles.at(i - 1));
+    if (elems.count() != 2 || got < 0) {
+      this->addInfo(
+          "  " + tr("couldn't measure %1 -> no offset").arg(m_audioSplitFiles.at(i - 1)));
+      m_audioSyncOffsets << "0";
+      continue;
+    }
+    const double wanted = (Globals::timeToSeconds(elems.at(1))
+        - Globals::timeToSeconds(elems.at(0))) * 1000.0;
+    const int offset = qRound(wanted - got);
+    this->addInfo(
+        "  " + tr("part %1: %2 ms wanted, %3 ms delivered -> shifting the next part by %4 ms")
+            .arg(i).arg(qRound(wanted)).arg(qRound(got)).arg(offset));
+    m_audioSyncOffsets << QString::number(offset);
+  }
+}
+
 void MkvCutter::setKeyFrames(QStringList list)
 {
   ui.infoLabel->setText(tr("Got key frame list from mkvinfo analyzer."));
@@ -2300,6 +2348,7 @@ void MkvCutter::reset(bool andInit)
   m_audioFile = QString();
   m_averageBitrate = -1;
   m_audioSplitFiles.clear();
+  m_audioSyncOffsets.clear();
   m_extractionFiles.clear();
   m_toDelete.clear();
   m_videoTrackID = 0;

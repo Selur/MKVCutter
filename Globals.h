@@ -22,6 +22,10 @@ struct cutTyp1
 namespace Globals
 {
 
+  // Laufzeit einer Matroska-Datei in Millisekunden, oder -1, wenn sie sich nicht
+  // ermitteln laesst. Fragt mkvmerge synchron per '-J' -- der Aufruf ist ein reines
+  // Identify und braucht keine nennenswerte Zeit.
+  double mkvDurationInMs(const QString &file);
   QString cutTypToString(cutTyp cut);
   QString cutTyp1ToString(cutTyp1 cut);
   QString cutTyp1ListToString(QList<cutTyp> elems);

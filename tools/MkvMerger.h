@@ -13,7 +13,7 @@ class MkvMerger : public QObject
   Q_OBJECT
   public:
     MkvMerger(QObject *parent = 0);
-    void start(QStringList toMerge, QStringList audioFile2, QStringList subtitleFiles, QString outputFile, const double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays, const QString& timecodes, const bool keepIntermediate);
+    void start(QStringList toMerge, QStringList audioFile2, QStringList subtitleFiles, QString outputFile, const double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays, const QStringList& audioSyncOffsets, const QString& timecodes, const bool keepIntermediate);
 
   private:
     QProcess *m_process;
@@ -21,7 +21,7 @@ class MkvMerger : public QObject
     QString m_optionsFile;
     bool m_keepIntermediate;
     void call(QString call);
-    QString buildCall(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles, double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays, const QString& timecodes);
+    QString buildCall(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles, double fps, const bool interlaced, const bool paff, const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays, const QStringList& audioSyncOffsets, const QString& timecodes);
 
   private slots:
     void handleMkvmergeOutput();

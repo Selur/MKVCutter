@@ -6,12 +6,43 @@
  */
 
 #include "Globals.h"
+#include <QCoreApplication>
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QProcess>
 #include "Windows.h"
 
 QHash<QString, double> Globals::fractionToDecimal = QHash<QString, double>();
 QHash<QString, QString> Globals::decimalToFraction = QHash<QString, QString>();
+
+double Globals::mkvDurationInMs(const QString &file)
+{
+#ifdef Q_OS_WIN32
+  const QString name = "mkvmerge.exe";
+#else
+  const QString name = "mkvmerge";
+#endif
+  const QString tool = QDir::toNativeSeparators(
+      QCoreApplication::applicationDirPath() + QDir::separator() + name);
+  QProcess probe;
+  probe.start(tool, QStringList() << "-J" << file);
+  if (!probe.waitForFinished(15000)) {
+    probe.kill();
+    return -1;
+  }
+  const QJsonDocument doc = QJsonDocument::fromJson(probe.readAllStandardOutput());
+  if (!doc.isObject()) {
+    return -1;
+  }
+  const QJsonValue duration = doc.object().value("container").toObject().value("properties")
+      .toObject().value("duration");
+  if (!duration.isDouble()) {
+    return -1;
+  }
+  return duration.toDouble() / 1000000.0; // Nanosekunden -> Millisekunden
+}
 
 QString Globals::cutTypToString(cutTyp cut)
 {

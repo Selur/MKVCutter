@@ -99,8 +99,17 @@ void MkvInfoSourceAnalyser::checkMediaInfo(QString medaiInfo)
     }
     index = line.indexOf(", language");
     if (index != -1) {
-      language = line;
-      language = language.remove(0, index +12).trimmed();
+      // Je nach mkvinfo-Version steht dort ", language: en" oder
+      // ", language (IETF BCP 47): en". Die frueher feste Laenge (index + 12) passte nur
+      // auf die erste Form und lieferte sonst "IETF BCP 47): en" -- das ging als
+      // '--language 0:...' an mkvmerge, das den Merge daraufhin abbrach. Deshalb ab dem
+      // Doppelpunkt hinter "language" schneiden.
+      const int colon = line.indexOf(':', index);
+      language = (colon == -1) ? QString() : line.mid(colon + 1).trimmed();
+      const int comma = language.indexOf(',');
+      if (comma != -1) { // falls noch weitere Felder folgen
+        language = language.left(comma).trimmed();
+      }
       line = line.remove(index, line.size());
     } else {
       language=QString();

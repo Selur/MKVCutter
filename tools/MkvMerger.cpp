@@ -29,7 +29,7 @@ void MkvMerger::handleMkvmergeOutput()
       continue;
     }
   }
-  QString err = m_process->readAllStandardOutput().data();
+  QString err = m_process->readAllStandardError().data();
   if (!err.isEmpty()) {
     emit sendInfos("MkvMerge err: " + err.trimmed());
   }
@@ -38,10 +38,17 @@ void MkvMerger::handleMkvmergeOutput()
 void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 {
   emit sendInfos("MkvMerge finished");
-  if (exitCode < 0) {
-    emit sendInfos(tr("ExitCode: %1, ExitStatus: %2").arg(exitCode).arg(exitStatus));
+  // mkvmerge: 0 = ok, 1 = Warnungen, 2 = Fehler. Geprueft wurde frueher nur auf
+  // exitCode < 0, ein abgebrochener Merge galt also als Erfolg -- die Pipeline meldete
+  // "fertig", obwohl gar keine Ausgabedatei entstanden war.
+  if (exitStatus != QProcess::NormalExit || exitCode < 0 || exitCode >= 2) {
+    emit sendInfos(
+        tr("ERROR: mkvmerge failed. ExitCode: %1, ExitStatus: %2").arg(exitCode).arg(exitStatus));
     emit finished(-1);
     return;
+  }
+  if (exitCode == 1) {
+    emit sendInfos(tr("mkvmerge reported warnings (exit code 1)"));
   }
   if (!m_keepIntermediate) {
     if (QFile::remove(m_optionsFile)) {

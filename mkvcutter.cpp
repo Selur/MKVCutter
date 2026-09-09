@@ -419,12 +419,17 @@ bool MkvCutter::createLibAVSourceAVS()
   call += ").ConvertBits(8).ConvertToYv12()";
   script << call;
 
-  QString audio = QString("A = LWLibavAudioSource(\"%1\", cache=false).ConvertToMono").arg(shortName);
-  script << audio;
+  // Audiospur nur anhaengen, wenn es eine gibt -- siehe die gleiche Stelle in createAVS().
+  if (m_hasAudio) {
+    script << QString("A = LWLibavAudioSource(\"%1\", cache=false).ConvertToMono").arg(shortName);
+  }
   QString resizer = "V = V.BicubicResize(Ceil(V.Width*" + QString::number(m_aspectRatio) +  ")-(Ceil(V.Width*" + QString::number(m_aspectRatio) + ")) % 4, V.Height)";
   script << resizer;
-  QString merge = QString("AudioDub(V,A).WaveForm(window=1, height=m4(V.Height/8.0)).ConvertToYv12()");
-  script << merge;
+  if (m_hasAudio) {
+    script << QString("AudioDub(V,A).WaveForm(window=1, height=m4(V.Height/8.0)).ConvertToYv12()");
+  } else {
+    script << "V.ConvertToYv12()";
+  }
   return Globals::saveTextTo(script.join("\n"), m_tempAvs) == 0;
 }
 
@@ -461,13 +466,20 @@ bool MkvCutter::createAVS()
   // Vorschau genuegen 8 Bit; der Re-Encode-Pfad bekommt die Quelle davon unberuehrt.
   call += ").ConvertBits(8).ConvertToYv12()";
   script << call;
-  QString audio = QString("A = FFAudioSource(\"%1\", cache=false).ConvertToMono").arg(shortName);
-  script << audio;
+  // Die Audiospur nur anhaengen, wenn es ueberhaupt eine gibt. Sonst bricht die Vorschau
+  // schon beim Import ab ("FFAudioSource: No audio track found") -- m_hasAudio steht zu
+  // diesem Zeitpunkt aus der mkvinfo-Analyse laengst fest.
+  if (m_hasAudio) {
+    script << QString("A = FFAudioSource(\"%1\", cache=false).ConvertToMono").arg(shortName);
+  }
   QString resizer = "V = V.BicubicResize(Ceil(V.Width*" + QString::number(m_aspectRatio)
       + ")-(Ceil(V.Width*" + QString::number(m_aspectRatio) + ")) % 4, V.Height)";
   script << resizer;
-  QString merge = QString("AudioDub(V,A).WaveForm(window=1, height=m4(V.Height/8.0))");
-  script << merge;
+  if (m_hasAudio) {
+    script << QString("AudioDub(V,A).WaveForm(window=1, height=m4(V.Height/8.0))");
+  } else {
+    script << "V";
+  }
   return Globals::saveTextTo(script.join("\n"), m_tempAvs) == 0;
 }
 

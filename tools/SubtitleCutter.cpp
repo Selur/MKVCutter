@@ -1,5 +1,6 @@
 #include "SubtitleCutter.h"
 #include "Globals.h"
+#include <QFile>
 
 SubtitleCutter::SubtitleCutter(QObject *parent)
     : QObject(parent), m_cutSubtitles(), m_tempFolder(QString()), m_idxSubtitle()
@@ -26,8 +27,10 @@ QString SubtitleCutter::cutPGSSubtitle(const QString &input, const QString &outp
   Q_UNUSED(output);
   Q_UNUSED(cutList);
   //QString out = output;
-  emit sendInfos(" ignored subtitles since pgs cutting is not implemented");
-  //TODO: implement cutPGSSubtitle
+  // TODO: PGS/SUP schneiden. Bis dahin faellt die Spur weg -- ein leerer Name ist das
+  // Signal dafuer, und start() gibt nur weiter, was auch wirklich auf der Platte liegt.
+  emit sendInfos(
+      tr("PGS/SUP subtitles can't be cut yet -- dropping this track."));
   return QString(); //out;
 }
 
@@ -91,7 +94,10 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
     outputName = outputName.insert(outputName.lastIndexOf("."), "_cut");
     outputName = outputName.trimmed();
     emit sendInfos(" output name: " + outputName);
-    if (outputName.endsWith("pgs", Qt::CaseInsensitive)) {
+    // MkvSubtitleExtractor schreibt PGS-Spuren als ".sup" -- die Pruefung auf "pgs"
+    // allein traf deshalb nie zu, und cutPGSSubtitle() war unerreichbar (B17).
+    if (outputName.endsWith("pgs", Qt::CaseInsensitive)
+        || outputName.endsWith("sup", Qt::CaseInsensitive)) {
       emit sendInfos(" cutting pgs subtitle");
       outputName = this->cutPGSSubtitle(subtitle, outputName, cutList);
     } else if (outputName.endsWith("srt", Qt::CaseInsensitive)) {
@@ -106,11 +112,26 @@ void SubtitleCutter::cutSubtitles(QStringList elements, QStringList cutList, QSt
       continue;
     } else {
       emit sendInfos(tr("Ignoring %1 since I don't know it's format.").arg(outputName));
+      outputName = QString();
     }
-    if (!outputName.trimmed().isEmpty()) {
-      emit sendInfos(tr("Finished cutting %1, output: %2").arg(subtitle).arg(outputName));
-      m_cutSubtitles << outputName;
+    // Weitergegeben wird nur, was auch wirklich geschrieben wurde. Frueher genuegte der
+    // *Name*: der else-Zweig liess ihn stehen, und so landete eine nie erzeugte Datei in
+    // der Liste fuer den finalen mkvmerge. Der brach dann mit Exit-Code 2 ab ("could not
+    // be opened for reading") -- nachdem alles encodiert war, und ohne Ausgabedatei (B17).
+    // Die Pruefung auf QFile::exists() deckt auch einen fehlgeschlagenen SRT- oder
+    // ASS-Schnitt ab; cutSrtSubtitle() und cutAssSubtitle() liefern den Namen ungeprueft
+    // zurueck.
+    if (outputName.trimmed().isEmpty()) {
+      emit sendInfos(tr("Dropping the subtitle track of %1.").arg(subtitle));
+      continue;
     }
+    if (!QFile::exists(outputName)) {
+      emit sendInfos(
+          tr("Dropping %1: the cut subtitle %2 wasn't written.").arg(subtitle).arg(outputName));
+      continue;
+    }
+    emit sendInfos(tr("Finished cutting %1, output: %2").arg(subtitle).arg(outputName));
+    m_cutSubtitles << outputName;
   }
   if (m_idxSubtitle.isEmpty()) {
     emit finished(0);

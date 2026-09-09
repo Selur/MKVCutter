@@ -111,7 +111,7 @@ MkvCutter.exe --clinput=open:in.mkv --clinput=output:out.mkv --clinput=temp:C:\t
 | Video | H.264 in Matroska, 8 and 10 bit, 4:2:0 / 4:2:2 / 4:4:4, progressive, MBAFF and PAFF |
 | Frame rate | constant and variable (the timestamp file is cut along) |
 | Audio | copied through, cut on frame boundaries, several tracks per file |
-| Subtitles | SRT, ASS/SSA and VobSub are cut; other formats are passed over |
+| Subtitles | SRT, ASS/SSA and VobSub are cut |
 | Fast path | if every cut already sits on a key frame, nothing is re-encoded at all |
 
 ## Limitations
@@ -120,7 +120,8 @@ MkvCutter.exe --clinput=open:in.mkv --clinput=output:out.mkv --clinput=temp:C:\t
 - The **user interface is ugly** and has no bells and whistles.
 - **x264 is driven crudely** — the settings follow the source, but quality is always
   `--crf 19` and there is no way to choose.
-- **PGS subtitles are not cut** and are dropped from the output.
+- **PGS subtitles are not cut** and are dropped from the output, as is any other subtitle
+  format the cutter does not know. The log says which tracks were dropped.
 - **Chapters, attachments and global tags are dropped.**
 - **Audio is not re-encoded**, so a cut can only land on an audio frame boundary. The offset
   correction keeps that below one frame per part instead of letting it accumulate.

@@ -26,6 +26,9 @@ namespace Globals
   // ermitteln laesst. Fragt mkvmerge synchron per '-J' -- der Aufruf ist ein reines
   // Identify und braucht keine nennenswerte Zeit.
   double mkvDurationInMs(const QString &file);
+  // Kapitel einer Matroska-Datei im einfachen Format (CHAPTERnn / CHAPTERnnNAME), leer
+  // wenn die Datei keine hat. Fragt mkvextract synchron.
+  QString mkvChaptersSimple(const QString &file);
   QString cutTypToString(cutTyp cut);
   QString cutTyp1ToString(cutTyp1 cut);
   QString cutTyp1ListToString(QList<cutTyp> elems);

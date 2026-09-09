@@ -70,6 +70,8 @@ class MkvCutter : public QWidget
     // Versatz je Tonstueck in Millisekunden, gleiche Reihenfolge wie m_audioSplitFiles.
     // Siehe computeAudioSyncOffsets() und B16.
     QStringList m_audioSyncOffsets;
+    // Umgerechnete Kapitel im einfachen Format; leer, wenn die Quelle keine hat.
+    QString m_chapterFile;
     int m_videoTrackID;
     FFmpegVideoExtractor *m_extractor;
     MkvTimeExtractor *m_timeextractor;
@@ -118,6 +120,7 @@ class MkvCutter : public QWidget
     void buildCutList();
     void cutAudio();
     void computeAudioSyncOffsets();
+    void buildChapterFile();
     void startExtraction();
     QString getSmallest();
     cutTyp1 findCutForFrame(int frame, const bool start);

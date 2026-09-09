@@ -19,7 +19,8 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_mediaInfoAnalyser(nullptr), m_viewer(nullptr), m_mkvVideoSplitCaller(nullptr),
         m_mkvAudioCutCaller(nullptr), m_mkvMerger(nullptr), m_x264(nullptr), m_mkvVideoParts(),
         m_mkvAudioAndSubtitleParts(), m_audioFile(QString()), m_averageBitrate(-1),
-        m_audioSplitFiles(), m_audioSyncOffsets(), m_extractionFiles(), m_toDelete(),
+        m_audioSplitFiles(), m_audioSyncOffsets(), m_chapterFile(QString()),
+        m_extractionFiles(), m_toDelete(),
         m_videoTrackID(-1),
         m_extractor(nullptr), m_timeextractor(nullptr), m_aspectRatio(1),
         m_interlaced("progressive"), m_mediaInfoScanorder(), m_scanType(), m_chroma("4:2:0"),
@@ -1422,6 +1423,7 @@ void MkvCutter::startVideoReencoding()
 void MkvCutter::cleanUpAndMerge()
 {
   this->addInfo(tr("cleanUpAndMerge,..."));
+  this->buildChapterFile();
   int videoFileCount = m_reencodedVideoFiles.count();
   int audioFileCount = m_audioSplitFiles.count();
   int subtitleCount = m_cutSubtitles.count();
@@ -1464,7 +1466,8 @@ void MkvCutter::cleanUpAndMerge()
       this->addInfo(" " + tr("Muxing content,.."));
       m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
           m_fps, m_interlaced != "progressive", m_paff, m_subtitles, m_audioDelays,
-      m_audioSyncOffsets, m_timecodes, ui.keepIntermediateCheckBox->isChecked());
+      m_audioSyncOffsets, m_timecodes, m_currentInput, m_chapterFile,
+      ui.keepIntermediateCheckBox->isChecked());
     }
     return;
   }
@@ -1473,7 +1476,8 @@ void MkvCutter::cleanUpAndMerge()
   this->addInfo(" " + tr("Muxing audio&video(2),.."));
   m_mkvMerger->start(m_reencodedVideoFiles, m_audioSplitFiles, m_cutSubtitles, m_currentOutput,
       m_fps, m_interlaced != "progressive", m_paff, m_subtitles, m_audioDelays,
-      m_audioSyncOffsets, m_timecodes, ui.keepIntermediateCheckBox->isChecked());
+      m_audioSyncOffsets, m_timecodes, m_currentInput, m_chapterFile,
+      ui.keepIntermediateCheckBox->isChecked());
 }
 
 void MkvCutter::x264Finished(int exitstate)
@@ -2245,6 +2249,124 @@ void MkvCutter::computeAudioSyncOffsets()
   }
 }
 
+/**
+ * Rechnet die Kapitel der Quelle auf die geschnittene Zeitachse um.
+ *
+ * Saemtliche mkvmerge-Aufrufe schalten Kapitel ab, die Ausgabe hatte deshalb nie welche
+ * (B18). Nach einem Schnitt stimmen die Zeiten der Quelle aber auch nicht mehr -- ein
+ * Kapitel muss dorthin, wo sein Anfang in der Ausgabe landet.
+ *
+ * Regel: liegt der Kapitelanfang in einem behaltenen Bereich, wandert er an die
+ * entsprechende Stelle der Ausgabe. Liegt er in einem weggeschnittenen Bereich, rutscht er
+ * an den Anfang des naechsten behaltenen Bereichs -- und fallen dabei mehrere Kapitel auf
+ * dieselbe Stelle, bleibt das letzte stehen, denn das ist das Kapitel, das an dieser Naht
+ * gerade laeuft. Was hinter dem letzten behaltenen Bereich liegt, faellt weg.
+ */
+void MkvCutter::buildChapterFile()
+{
+  m_chapterFile = QString();
+  if (m_mkvAudioAndSubtitleParts.isEmpty()) {
+    return;
+  }
+  const QString chapters = Globals::mkvChaptersSimple(m_currentInput);
+  if (chapters.trimmed().isEmpty()) {
+    return;
+  }
+  // behaltene Bereiche samt ihrer Position in der Ausgabe
+  QList<double> starts, ends, offsets;
+  double offset = 0;
+  QStringList elems;
+  foreach(QString part, m_mkvAudioAndSubtitleParts)
+  {
+    elems = part.split("-");
+    if (elems.count() != 2) {
+      continue;
+    }
+    const double from = Globals::timeToSeconds(elems.at(0));
+    const double to = Globals::timeToSeconds(elems.at(1));
+    starts << from;
+    ends << to;
+    offsets << offset;
+    offset += to - from;
+  }
+  if (starts.isEmpty()) {
+    return;
+  }
+  // CHAPTERnn=HH:MM:SS.mmm / CHAPTERnnNAME=<Titel>
+  QHash<QString, QString> times, names;
+  foreach(QString line, chapters.split("\n"))
+  {
+    line = line.trimmed();
+    const int equals = line.indexOf("=");
+    if (!line.startsWith("CHAPTER", Qt::CaseInsensitive) || equals < 0) {
+      continue;
+    }
+    QString key = line.left(equals);
+    const QString value = line.mid(equals + 1);
+    if (key.endsWith("NAME", Qt::CaseInsensitive)) {
+      key = key.left(key.size() - 4);
+      names.insert(key, value);
+    } else {
+      times.insert(key, value);
+    }
+  }
+  QStringList keys = times.keys();
+  keys.sort();
+  QStringList outTimes, outNames;
+  foreach(QString key, keys)
+  {
+    const double at = Globals::timeToSeconds(times.value(key));
+    double mapped = -1;
+    for (int i = 0, c = starts.count(); i < c; ++i) {
+      if (at >= starts.at(i) && at < ends.at(i)) {
+        mapped = offsets.at(i) + (at - starts.at(i));
+        break;
+      }
+      if (at < starts.at(i)) { // im weggeschnittenen Bereich davor
+        mapped = offsets.at(i);
+        break;
+      }
+    }
+    if (mapped < 0) {
+      this->addInfo(
+          "  " + tr("chapter %1 (%2) is behind the last kept part -> dropped").arg(
+              names.value(key, key)).arg(times.value(key)));
+      continue;
+    }
+    const QString stamp = Globals::secondsToHMSZZZ(mapped);
+    if (!outTimes.isEmpty() && outTimes.last() == stamp) {
+      outTimes.removeLast(); // an einer Naht gewinnt das zuletzt begonnene Kapitel
+      outNames.removeLast();
+    }
+    outTimes << stamp;
+    outNames << names.value(key, key);
+  }
+  if (outTimes.isEmpty()) {
+    this->addInfo(" " + tr("no chapter survived the cut"));
+    return;
+  }
+  QStringList lines;
+  for (int i = 0, c = outTimes.count(); i < c; ++i) {
+    const QString number = QString("%1").arg(i + 1, 2, 10, QLatin1Char('0'));
+    lines << "CHAPTER" + number + "=" + outTimes.at(i);
+    lines << "CHAPTER" + number + "NAME=" + outNames.at(i);
+  }
+  QString file = m_tempFolder + QDir::separator()
+      + Globals::getFileName(m_currentOutput) + "_chapters.txt";
+  file = QDir::toNativeSeparators(file);
+  if (Globals::saveTextTo(lines.join("\r\n"), file) != 0) {
+    this->addInfo(" " + tr("couldn't save the chapters to %1").arg(file));
+    return;
+  }
+  m_chapterFile = file;
+  m_toDelete << file;
+  this->addInfo(
+      " " + tr("kept %1 of %2 chapters:").arg(outTimes.count()).arg(keys.count()));
+  for (int i = 0, c = outTimes.count(); i < c; ++i) {
+    this->addInfo("  " + outTimes.at(i) + "  " + outNames.at(i));
+  }
+}
+
 void MkvCutter::setKeyFrames(QStringList list)
 {
   ui.infoLabel->setText(tr("Got key frame list from mkvinfo analyzer."));
@@ -2349,6 +2471,7 @@ void MkvCutter::reset(bool andInit)
   m_averageBitrate = -1;
   m_audioSplitFiles.clear();
   m_audioSyncOffsets.clear();
+  m_chapterFile = QString();
   m_extractionFiles.clear();
   m_toDelete.clear();
   m_videoTrackID = 0;

@@ -64,13 +64,14 @@ void MkvMerger::mkvmergeFinished(int exitCode, QProcess::ExitStatus exitStatus)
 void MkvMerger::start(QStringList splitFiles, QStringList audioFiles, QStringList subtitleFiles,
     QString outputFile, const double fps, const bool interlaced, const bool paff,
     const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays,
-    const QStringList& audioSyncOffsets, const QString& timecodes, const bool keepIntermediate)
+    const QStringList& audioSyncOffsets, const QString& timecodes, const QString& sourceFile,
+    const QString& chapterFile, const bool keepIntermediate)
 {
   m_output = outputFile;
   m_keepIntermediate = keepIntermediate;
   this->call(
       this->buildCall(splitFiles, audioFiles, subtitleFiles, fps, interlaced, paff, subtitles,
-          audioDelays, audioSyncOffsets, timecodes));
+          audioDelays, audioSyncOffsets, timecodes, sourceFile, chapterFile));
 }
 
 void MkvMerger::call(QString call)
@@ -89,7 +90,8 @@ void MkvMerger::call(QString call)
 QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     QStringList subtitleFiles, double fps, const bool interlaced, const bool paff,
     const QList<SubtitleTrack>& subtitles, const QHash<QString, QString>& audioDelays,
-                             const QStringList& audioSyncOffsets, const QString& timecodes)
+                             const QStringList& audioSyncOffsets, const QString& timecodes,
+                             const QString& sourceFile, const QString& chapterFile)
 {
   QString appFolder = QApplication::applicationDirPath();
   QString call;
@@ -246,6 +248,28 @@ QString MkvMerger::buildCall(QStringList splitFiles, QStringList audioFiles,
     options << "--compression";
     options << "-1:none";
     options << file;
+  }
+  // ATTACHMENTS, GLOBALE TAGS UND KAPITEL
+  // Der Videoschnitt streift beides ab, und die neu codierten Teile sind rohe .264-Streams
+  // ohne jede Containerinformation -- die Ausgabe hatte deshalb nie Attachments oder Tags
+  // (B18). Beides kommt jetzt direkt aus der Quelle: eine Zusatzeingabe, bei der alle
+  // Spuren abgeschaltet sind. mkvmerge liest davon nur die Kopfdaten, das kostet auch bei
+  // einer 1,6-GB-Quelle keine 0,2 Sekunden.
+  //
+  // Die Kapitel der Quelle bleiben dabei aussen vor ('--no-chapters'): ihre Zeiten gelten
+  // fuer die ungeschnittene Fassung. Die umgerechneten kommen ueber '--chapters'.
+  if (!sourceFile.isEmpty()) {
+    options << "--no-video";
+    options << "--no-audio";
+    options << "--no-subtitles";
+    options << "--no-chapters";
+    options << "--no-track-tags";
+    options << "--no-buttons";
+    options << sourceFile;
+  }
+  if (!chapterFile.isEmpty()) {
+    options << "--chapters";
+    options << chapterFile;
   }
   if (Globals::saveTextTo(Globals::optionsToJson(options), optionFile) != 0) {
     emit sendInfos(tr("ERROR: Couldn't save %1!").arg(optionFile));

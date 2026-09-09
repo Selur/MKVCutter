@@ -44,6 +44,24 @@ double Globals::mkvDurationInMs(const QString &file)
   return duration.toDouble() / 1000000.0; // Nanosekunden -> Millisekunden
 }
 
+QString Globals::mkvChaptersSimple(const QString &file)
+{
+#ifdef Q_OS_WIN32
+  const QString name = "mkvextract.exe";
+#else
+  const QString name = "mkvextract";
+#endif
+  const QString tool = QDir::toNativeSeparators(
+      QCoreApplication::applicationDirPath() + QDir::separator() + name);
+  QProcess extract;
+  extract.start(tool, QStringList() << "chapters" << file << "-s");
+  if (!extract.waitForFinished(15000)) {
+    extract.kill();
+    return QString();
+  }
+  return QString::fromUtf8(extract.readAllStandardOutput());
+}
+
 QString Globals::cutTypToString(cutTyp cut)
 {
   return QString::number(cut.start) + "-" + QString::number(cut.end);

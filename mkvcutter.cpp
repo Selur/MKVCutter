@@ -21,7 +21,8 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_mkvAudioAndSubtitleParts(), m_audioFile(QString()), m_averageBitrate(-1),
         m_audioSplitFiles(), m_extractionFiles(), m_toDelete(), m_videoTrackID(-1),
         m_extractor(nullptr), m_timeextractor(nullptr), m_aspectRatio(1),
-        m_interlaced("progressive"), m_mediaInfoScanorder(), m_scanType(), m_vfr(false), m_timecodes(QString()),
+        m_interlaced("progressive"), m_mediaInfoScanorder(), m_scanType(), m_chroma("4:2:0"),
+        m_bitDepth(8), m_vfr(false), m_timecodes(QString()),
         m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
         m_maxKey(QString()), m_h264Parser(nullptr), m_weightedP(0), m_weightedB(0), m_bframes(0),
         m_qpMin(0), m_chromaOffset(0), m_toAnalyse(QString()), m_subtitles(),
@@ -89,6 +90,9 @@ void MkvCutter::initTools()
       SLOT(setInterlaced(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(scanType(QString)), this,
       SLOT(setScanType(QString)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(bitDepth(int)), this, SLOT(setBitDepth(int)));
+  this->myconnect(m_mediaInfoAnalyser, SIGNAL(chromaSubsampling(QString)), this,
+      SLOT(setChromaSubsampling(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(audioFormat(QString)), this,
       SLOT(setAudioFormat(QString)));
   this->myconnect(m_mediaInfoAnalyser, SIGNAL(minKeyInt(QString)), this,
@@ -292,6 +296,19 @@ void MkvCutter::setScanType(QString type)
   this->addInfo(" " + tr("video scan type: %1").arg(type.isEmpty() ? "-" : type));
 }
 
+void MkvCutter::setBitDepth(int bits)
+{
+  // Fallback auf 8, falls MediaInfo nichts liefert.
+  m_bitDepth = (bits > 0) ? bits : 8;
+  this->addInfo(" " + tr("video bit depth: %1").arg(m_bitDepth));
+}
+
+void MkvCutter::setChromaSubsampling(QString chroma)
+{
+  m_chroma = chroma.trimmed().isEmpty() ? QString("4:2:0") : chroma.trimmed();
+  this->addInfo(" " + tr("chroma subsampling: %1").arg(m_chroma));
+}
+
 void MkvCutter::setVideoTrackID(int id)
 {
   m_videoTrackID = id;
@@ -406,9 +423,9 @@ bool MkvCutter::createLibAVSourceAVS()
   script << "LoadPlugin(\"" + apath + "\")";
   script << "function m4(float x) {return(x<16?16:int(round(x/4.0)*4))}";
   QString call = "V = LWLibavVideoSource(\"" + shortName + "\"";
-  bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
-      || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
-  if (high10) {
+  // Fuer die Vorschau reichen 8 Bit, also die Quelle gleich so anfordern statt spaeter
+  // umzurechnen. Bittiefe kommt aus MediaInfo, nicht aus dem Profilnamen.
+  if (m_bitDepth > 8) {
     call += ", format=\"YUV420P8\"";
   }
   call += ", cache=false";
@@ -571,10 +588,14 @@ bool MkvCutter::createAvisynthSkript(QString filename, QString trim)
     if (bff || tff) {
       tmp += ", threads=1";
     }
-    bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
-        || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
-    if (high10) {
-      tmp += ", format=\"YUV420P10\"";
+    // Format nur bei mehr als 8 Bit erzwingen, und dann mit der *echten* Unterabtastung.
+    // Frueher stand hier fest "YUV420P10" -- bei einer 4:4:4- oder 4:2:2-Quelle waere das
+    // eine verlustbehaftete Herunterrechnung gewesen, bevor x264 sie ueberhaupt sieht.
+    if (m_bitDepth > 8) {
+      QString format = m_chroma.contains("4:4:4") ? "YUV444P"
+          : (m_chroma.contains("4:2:2") ? "YUV422P" : "YUV420P");
+      format += QString::number(m_bitDepth);
+      tmp += ", format=\"" + format + "\"";
     }
     //QString tmpFps = Globals::decimalToFractionConvert(m_fps);
     //QStringList fps = tmpFps.split("/");
@@ -1142,12 +1163,18 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
 {
   this->addInfo(" " + tr("creating x264 reencode call for: %1").arg(avisynthFile));
   QString base = QApplication::applicationDirPath() + QDir::separator();
-  bool high10 = m_avcProfileLevel.contains("High10", Qt::CaseInsensitive)
-      || m_avcProfileLevel.contains("High 10", Qt::CaseInsensitive);
+  // Bittiefe und Chroma kommen aus MediaInfo, nicht mehr aus dem Profilnamen. Die alte
+  // Abfrage auf "High10"/"High 10" verfehlte z.B. "High 4:4:4 Predictive" mit 10 Bit:
+  // die Quelle galt als 8 Bit, x264 bekam --demuxer avs und scheiterte an
+  // "avs [error]: not supported pixel type: YUV444P10".
+  const bool highBitDepth = m_bitDepth > 8;
+  const bool is444 = m_chroma.contains("4:4:4");
+  const bool is422 = m_chroma.contains("4:2:2");
   // x264 deckt 8 und 10 Bit in einer Binary ab; sein AviSynth-Demuxer kann aber nur
-  // 8 Bit ("avs [error]: not supported pixel type: YUV420P10", gemessen 2026-09-08 mit
-  // High10.mkv). Fuer 10-Bit-Quellen muss deshalb weiterhin avs2yuv das Script in
-  // Rohdaten wandeln und in x264 pipen; x264 liest dann --demuxer raw von stdin.
+  // 8 Bit (gemessen 2026-09-08/09 mit YUV420P10 und YUV444P10). Ab 10 Bit wandelt deshalb
+  // avs2yuv das Script in Rohdaten und pipet sie in x264, das mit --demuxer raw von stdin
+  // liest. 8-Bit-Quellen -- auch 4:2:2 und 4:4:4 -- liest x264 direkt ueber --demuxer avs.
+  const bool usePipe = highBitDepth;
   QString x264 = base;
 #ifdef Q_OS_WIN32
   x264 += "x264.exe";
@@ -1157,7 +1184,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   x264 = QDir::toNativeSeparators(x264);
   QStringList call;
   QString tmp;
-  if (high10) {
+  if (usePipe) {
     // 64-Bit-Build bevorzugen, wie FFIndexCaller es mit ffmsindex64.exe auch macht.
     QString avs2yuv = QDir::toNativeSeparators(base + "avs2yuv64.exe");
     if (!QFile::exists(avs2yuv)) {
@@ -1165,10 +1192,11 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
     }
     if (!QFile::exists(avs2yuv)) {
       this->addInfo(
-          " " + tr("ERROR: neither avs2yuv64.exe nor avs2yuv.exe found -- 10 bit sources "
-                   "cannot be re-encoded."));
+          " " + tr("ERROR: neither avs2yuv64.exe nor avs2yuv.exe found -- sources with more "
+                   "than 8 bit cannot be re-encoded."));
       QMessageBox::critical(this, tr("Error"),
-          tr("Couldn't find avs2yuv64.exe/avs2yuv.exe, which is required for 10 bit sources."));
+          tr("Couldn't find avs2yuv64.exe/avs2yuv.exe, which is required for sources with "
+             "more than 8 bit."));
       return;
     }
     call << "\"" + avs2yuv + "\"";
@@ -1179,7 +1207,13 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   tmp = "\"" + x264 + "\"";
   call << tmp;
   tmp = "--profile ";
-  if (high10) {
+  // 4:4:4 und 4:2:2 brauchen ihr eigenes Profil -- frueher stand hier fuer beide "high",
+  // weil m_avcProfileLevel "High 4:4:4 Predictive" enthaelt und auf "High" geprueft wurde.
+  if (is444) {
+    tmp += "high444";
+  } else if (is422) {
+    tmp += "high422";
+  } else if (highBitDepth) {
     tmp += "high10";
   } else if (m_avcProfileLevel.contains("High", Qt::CaseInsensitive)
       || m_avcProfileLevel.isEmpty()) {
@@ -1264,17 +1298,29 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   call << "--non-deterministic";
   call << "--thread-input";
   call << "--crf 19";
-  if (high10) {
-    // Rohdaten aus der avs2yuv-Pipe, siehe oben.
+  if (usePipe) {
+    // Rohdaten aus der avs2yuv-Pipe, siehe oben. avs2yuv schreibt die Ebenen unveraendert,
+    // x264 muss also wissen, wie sie zu lesen sind -- ohne --input-csp nimmt der
+    // Raw-Demuxer 4:2:0 an und wuerde 4:2:2/4:4:4 falsch interpretieren.
     call << "--demuxer raw";
-    call << "--input-depth 10";
+    call << "--input-depth " + QString::number(m_bitDepth);
     call << "--input-res " + QString::number(m_width) + "x" + QString::number(m_height);
+    call << QString("--input-csp ") + (is444 ? "i444" : (is422 ? "i422" : "i420"));
     // --input-depth beschreibt nur die Eingabe. Ohne --output-depth encodiert x264 trotz
     // "--profile high10" nach 8 Bit -- gemessen 2026-09-08: aus einer 10-Bit-Quelle kam
-    // eine 8-Bit-Ausgabe (High@L5.1 statt High 10@L5.1).
+    // eine 8-Bit-Ausgabe (High@L5.1 statt High 10@L5.1). x264 kann als Ausgabe nur 8 oder
+    // 10 Bit, tiefere Quellen werden also auf 10 gebracht.
     call << "--output-depth 10";
   } else {
     call << "--demuxer avs";
+  }
+  // Gegenstueck zu --output-depth: x264 schreibt sonst i420, egal was hereinkam. Gemessen
+  // 2026-09-09: aus einer 4:4:4-Quelle kam trotz --profile high444 und --input-csp i444
+  // eine 4:2:0-Datei ("High 10@L5" statt "High 4:4:4 Predictive").
+  if (is444) {
+    call << "--output-csp i444";
+  } else if (is422) {
+    call << "--output-csp i422";
   }
   call << "--fps " + Globals::decimalToFractionConvert(m_fps);
   QString par = QString::number(m_aspectRatio);
@@ -1288,7 +1334,7 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   m_reencodedVideoFiles << tmp;
   tmp = "-o \"" + tmp + "\"";
   call << tmp;
-  if (high10) {
+  if (usePipe) {
     call << "-"; // Eingabe kommt aus der Pipe
   } else {
     tmp = "\"" + avisynthFile + "\"";
@@ -1410,6 +1456,8 @@ void MkvCutter::createReencodeCalls()
   }
   detected << "     SPS: " + QString::number(m_sps);
   detected << "     FPS: " + QString::number(m_fps);
+  detected << "     Bit depth: " + QString::number(m_bitDepth);
+  detected << "     Chroma subsampling: " + m_chroma;
   this->addInfo(detected.join("\n"));
   foreach(QString avsSkript, m_tempReencodeAvs)
   {
@@ -2152,6 +2200,8 @@ void MkvCutter::reset(bool andInit)
   m_interlaced = "progressive";
   m_mediaInfoScanorder = QString();
   m_scanType = QString();
+  m_chroma = "4:2:0";
+  m_bitDepth = 8;
   m_paff = false;
   m_vfr = false;
   m_x264Settings = QString();

@@ -63,7 +63,8 @@ void MediaInfoAnalyser::mediainfoOutput()
   if (!out.isEmpty()) {
     bool audio = false;
     QStringList lines = out.split("\n");
-    QString scanorder = "progressive", scantype, tmp;
+    QString scanorder = "progressive", scantype, chroma, tmp;
+    int bits = 0;
     bool vfr = false;
     foreach(QString line, lines) {
       line = line.trimmed();
@@ -137,6 +138,20 @@ void MediaInfoAnalyser::mediainfoOutput()
           tmp = line;
           removeStartOfLine(tmp);
           scantype = tmp.trimmed();
+          continue;
+        }
+        // Bittiefe und Chroma-Unterabtastung nicht aus dem Profilnamen raten, sondern
+        // direkt lesen. MediaInfo --Full gibt beide Zeilen doppelt aus, erst roh ("10"),
+        // dann formatiert ("10 bits") -- deshalb nur den ersten Treffer nehmen und beim
+        // Zahlenwert das erste Feld auswerten, damit beide Schreibweisen passen.
+        if (line.startsWith("Bit depth") && bits == 0) {
+          removeStartOfLine(line);
+          bits = line.section(' ', 0, 0).toInt();
+          continue;
+        }
+        if (line.startsWith("Chroma subsampling") && chroma.isEmpty()) {
+          removeStartOfLine(line);
+          chroma = line.trimmed();
           continue;
         }
         if (line.startsWith("Scan order")) {
@@ -228,6 +243,8 @@ void MediaInfoAnalyser::mediainfoOutput()
     }
     emit interlaced(scanorder);
     emit scanType(scantype);
+    emit bitDepth(bits);
+    emit chromaSubsampling(chroma);
   }
   emit theAudioDelays(audioDelays);
   QString err = m_process->readAllStandardOutput().data();

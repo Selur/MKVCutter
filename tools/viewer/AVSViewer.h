@@ -28,7 +28,12 @@ class AVSViewer : public QWidget
 {
   Q_OBJECT
   public:
-    AVSViewer(QWidget *parent = nullptr, QString path = QString(), double mult = 0, bool cutSupport = false, QStringList keyframes = QStringList());
+    // containerFrameCount ist die Laenge, die mkvinfo fuer die Quelle zaehlt. Bei
+    // feldcodierten (PAFF) Quellen zaehlt der Container Felder, der AviSynth-Clip aber
+    // Frames -- Keyframeliste und Schnittliste stehen dann in unterschiedlichen
+    // Einheiten (siehe B14). Der Faktor wird aus dem Verhaeltnis beider Laengen
+    // gemessen statt aus MediaInfo geraten.
+    AVSViewer(QWidget *parent = nullptr, QString path = QString(), double mult = 0, bool cutSupport = false, QStringList keyframes = QStringList(), int containerFrameCount = -1);
     ~AVSViewer();
     void init(int start = 0);
     // Fuer die --clinput-Steuerung: Schnittliste aus einer .cut-Datei laden bzw. den
@@ -51,6 +56,7 @@ class AVSViewer : public QWidget
     QStringList m_keyFrames;
     QString m_scanOrder;
     int m_displayWidth, m_displayHeight;
+    int m_containerFrameCount, m_frameScale;
     void showFrame(int frame);
     int import(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
     int invokeImportInternal(const char *inputFile, AVSValue &res, IScriptEnvironment* env);
@@ -64,6 +70,7 @@ class AVSViewer : public QWidget
     void setButtonImages();
     bool isValid(int position);
     void setDisplay();
+    void measureFrameScale();
 
   private slots:
     void on_frameHorizontalSlider_valueChanged(int value);
@@ -88,6 +95,8 @@ class AVSViewer : public QWidget
     void finished(int state);
     void sendInfos(QString info);
     void cuts(QStringList cuts);
+    // Container-Einheiten je AviSynth-Frame: 1 bei frame-codierten, 2 bei feldcodierten Quellen.
+    void frameScale(int scale);
     void setInterlacedMode(QString mode);
 };
 

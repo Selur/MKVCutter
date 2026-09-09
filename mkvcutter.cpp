@@ -13,7 +13,7 @@ using namespace std;
 MkvCutter::MkvCutter(QWidget *parent)
     : QWidget(parent), m_currentInput(QString()), m_tempAvs(QString()), m_currentOutput(QString()),
         m_tempFolder(QString()), m_avcProfileLevel(QString("High@L4.1")), m_audioFormat(QString()),
-        m_avcCabac(true), m_avcRefFrames(1), m_enabled(0), m_frameCount(0), m_keyframes(), m_cuts(),
+        m_avcCabac(true), m_avcRefFrames(1), m_enabled(0), m_frameCount(0), m_frameScale(1), m_keyframes(), m_cuts(),
         m_splitFiles(), m_tempReencodeAvs(), m_videoEncodingCalls(), m_reencodedVideoFiles(),
         m_fps(-1), m_trimming(), m_cutList(), m_mkvmergeIntSplitList(), m_mkvinfoAnalyser(nullptr),
         m_mediaInfoAnalyser(nullptr), m_viewer(nullptr), m_mkvVideoSplitCaller(nullptr),
@@ -826,6 +826,35 @@ void MkvCutter::buildCutList()
           + QString::number(videoLength));
 }
 
+// Trim() arbeitet auf dem AviSynth-Clip, die Schnittliste und die Keyframes von mkvinfo
+// dagegen in Container-Einheiten. Bei feldcodierten (PAFF) Quellen sind das zwei Einheiten
+// je Frame -- die fertigen Trim-Angaben werden deshalb zurueckgerechnet (siehe B14).
+static QString scaleTrimToClipUnits(const QString &trim, const int scale)
+{
+  if (scale <= 1 || !trim.startsWith("Trim(")) {
+    return trim;
+  }
+  QStringList scaled;
+  foreach(QString piece, trim.split("+"))
+  {
+    const int open = piece.indexOf("(");
+    const int comma = piece.indexOf(",", open);
+    const int equal = piece.indexOf("=", comma);
+    const int close = piece.lastIndexOf(")");
+    if (open < 0 || comma < 0 || equal < 0 || close < 0) {
+      scaled << piece;
+      continue;
+    }
+    const int offset = piece.mid(open + 1, comma - open - 1).toInt() / scale;
+    int length = piece.mid(equal + 1, close - equal - 1).toInt() / scale;
+    if (length < 1) { // ein Schnitt ueber ein einzelnes Feld bleibt ein ganzes Frame
+      length = 1;
+    }
+    scaled << "Trim(" + QString::number(offset) + ",length=" + QString::number(length) + ")";
+  }
+  return scaled.join("+");
+}
+
 void MkvCutter::buildTrimAndPartsList()
 {
   this->addInfo("building trim and video parts,...");
@@ -1043,6 +1072,14 @@ void MkvCutter::buildTrimAndPartsList()
   if (mkvparts.count() == 1) {
     if (mkvparts.first().trimmed() == "-") {
       mkvparts.clear();
+    }
+  }
+  if (m_frameScale > 1) {
+    foreach(QString trimName, m_trimming.keys())
+    {
+      const QString clipTrim = scaleTrimToClipUnits(m_trimming.value(trimName), m_frameScale);
+      m_trimming.insert(trimName, clipTrim);
+      this->addInfo("  " + tr("trim in clip units: %1 <> %2").arg(trimName).arg(clipTrim));
     }
   }
   m_mkvVideoParts = mkvparts;
@@ -1341,7 +1378,9 @@ void MkvCutter::createVideoReencodeCall(QString avisynthFile)
   } else if (is422) {
     call << "--output-csp i422";
   }
-  call << "--fps " + Globals::decimalToFractionConvert(m_fps);
+  // m_fps kommt von mkvinfo und zaehlt bei feldcodierten Quellen Felder je Sekunde;
+  // x264 bekommt hier aber den AviSynth-Clip, der Frames zaehlt (siehe B14).
+  call << "--fps " + Globals::decimalToFractionConvert(m_fps / m_frameScale);
   QString par = QString::number(m_aspectRatio);
   par = adjustParDotToColon(par);
   if (par != "1:1") {
@@ -1876,8 +1915,9 @@ void MkvCutter::startViewer()
     key = key.remove(key.indexOf(","), key.size());
     keyframes << key;
   }
-  m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, keyframes);
+  m_viewer = new AVSViewer(this, m_tempAvs, m_aspectRatio, true, keyframes, m_frameCount);
   this->myconnect(m_viewer, SIGNAL(finished(int)), this, SLOT(avsViewerFinished(int)));
+  this->myconnect(m_viewer, SIGNAL(frameScale(int)), this, SLOT(setFrameScale(int)));
   this->myconnect(m_viewer, SIGNAL(cuts(QStringList)), this, SLOT(setCutList(QStringList)));
   this->myconnect(m_viewer, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_viewer, SIGNAL(setInterlacedMode(QString)), this, SLOT(setInterlacedMode(QString)));
@@ -1923,19 +1963,36 @@ void MkvCutter::ffIndexerFinished(int exitstate)
   this->startViewer();
 }
 
-QString MkvCutter::cutTimecodes(QString timecodes)
+// Welcher Teil wird kopiert und welcher neu codiert? handleSplitFiles() ordnet den
+// Teildateien "<Ausgabe>-NNN.mkv" die Trim-Angabe "<Quelle>_cut_NNN.mkv" zu, und
+// m_mkvVideoParts steht in derselben Reihenfolge. Bleibt am Ende nur ein Trim uebrig,
+// hat buildTrimAndPartsList() ihn auf m_currentInput umgeschluesselt.
+QString MkvCutter::trimForPart(const int index) const
+{
+  if (m_trimming.isEmpty()) {
+    return "KEEP";
+  }
+  if (m_trimming.count() == 1) {
+    return m_trimming.constBegin().value();
+  }
+  const QString name = Globals::getFileName(m_currentInput) + "_cut_"
+      + numberToLength3String(index + 1) + ".mkv";
+  return m_trimming.value(name, "KEEP");
+}
+
+QString MkvCutter::cutTimecodes()
 {
   this->addInfo(tr("Cutting time codes,..."));
-  QStringList timeCodeList = timecodes.split("\n");
-  // Zeile 0 ist der Header, Zeile f+1 gehoert zu Frame f. Abschliessende Leerzeilen (der
-  // Zeilenumbruch am Dateiende) sind keine Zeitstempel. Die Datei ist CRLF-codiert, die
-  // Eintraege enden also auf '\r' -- deshalb trimmed().
+  // Zeile 0 ist der Header, Zeile u+1 gehoert zur Container-Einheit u. Abschliessende
+  // Leerzeilen (der Zeilenumbruch am Dateiende) sind keine Zeitstempel. Die Datei ist
+  // CRLF-codiert, die Eintraege enden also auf '\r' -- deshalb trimmed().
+  const QStringList &timeCodeList = m_inputTimeCodes;
   int lastStamp = timeCodeList.size() - 1;
   while (lastStamp > 0 && timeCodeList.at(lastStamp).trimmed().isEmpty()) {
     --lastStamp;
   }
-  auto stampOfFrame = [&timeCodeList, lastStamp](int frame) -> double {
-    int index = frame + 1;
+  auto stampOfUnit = [&timeCodeList, lastStamp](int unit) -> double {
+    int index = unit + 1;
     if (index < 1) {
       index = 1;
     } else if (index > lastStamp) {
@@ -1944,37 +2001,66 @@ QString MkvCutter::cutTimecodes(QString timecodes)
     return timeCodeList.at(index).trimmed().toDouble();
   };
 
-  QStringList outputTimeCodes, tCuts;
-  QString cut;
-  // 'previousIndex == 0' taugte nicht als "erster Durchlauf"-Merker, weil 0 eine gueltige
-  // Framenummer ist: bei einem Schnitt ab Frame 0 setzte 'previousIndex = i' den Merker
-  // wieder auf 0, und Frame 0 wie Frame 1 bekamen den Zeitstempel 0. Deshalb ein Flag.
-  bool firstFrame = true;
-  int previousFrame = 0;
+  // Die Ausgabe enthaelt nicht je Frame genau einen Block: kopierte Teile einer
+  // feldcodierten Quelle behalten ihre Feldbloecke (zwei je Frame), neu codierte Teile
+  // kommen als Frames aus x264 (einer je Frame). Eine Stempelliste je Container-Einheit
+  // war deshalb bei PAFF zu lang -- mkvmerge nahm die ersten n Stempel und die Ausgabe
+  // lief zu kurz (gemessen: 350 Bloecke bekamen 400 Stempel a 20 ms -> 7,0 s statt
+  // 8,0 s). Deshalb wird hier je *Block* ein Stempel geschrieben; bei m_frameScale == 1,
+  // also bei allen frame-codierten Quellen, ist das unveraendert einer je Frame.
+  QStringList outputTimeCodes, range, pieces;
   double timestamp = 0.0;
-  for (int c = 0; c < m_cuts.count(); ++c) {
-    cut = m_cuts.at(c);
-    std::cerr << qPrintable(tr("adding time codes for cut: %1").arg(cut)) << std::endl;
-    tCuts = cut.split("-");
-    const int start = tCuts.at(0).toInt();
-    const int end = tCuts.at(1).toInt();
-    for (int i = start; i < end; ++i) {
-      if (firstFrame) {
-        timestamp = 0.0;
-        firstFrame = false;
-      } else {
-        // Dauer des zuletzt ausgegebenen Frames. Frueher wurde hier um eins daneben
-        // gegriffen und damit die Dauer des Frames *davor* genommen (gleiches Muster wie
-        // B2). Ungerundet aufsummieren, sonst summiert sich der Abschneidefehler ueber den
-        // ganzen Schnitt auf.
-        timestamp += stampOfFrame(previousFrame + 1) - stampOfFrame(previousFrame);
+  for (int i = 0, c = m_mkvVideoParts.count(); i < c; ++i) {
+    range = m_mkvVideoParts.at(i).split("-");
+    if (range.count() != 2) {
+      continue;
+    }
+    const int partStart = range.at(0).toInt();
+    const int partEnd = range.at(1).toInt(); // exklusiv
+    const QString trim = this->trimForPart(i);
+    std::cerr
+        << qPrintable(
+            tr("adding time codes for part %1 (%2): %3").arg(i + 1).arg(
+                m_mkvVideoParts.at(i)).arg(trim)) << std::endl;
+    if (trim == "KEEP" || trim.isEmpty()) {
+      for (int unit = partStart; unit < partEnd; ++unit) {
+        outputTimeCodes << QString::number(qRound(timestamp));
+        timestamp += stampOfUnit(unit + 1) - stampOfUnit(unit);
       }
-      previousFrame = i;
-      outputTimeCodes << QString::number(qRound(timestamp));
+      continue;
+    }
+    // Trim(a,length=n)[+Trim(b,length=m)...]; Offsets und Laengen zaehlen Clip-Frames.
+    pieces = trim.split("+");
+    foreach(QString piece, pieces)
+    {
+      const int open = piece.indexOf("(");
+      const int comma = piece.indexOf(",", open);
+      const int equal = piece.indexOf("=", comma);
+      const int close = piece.lastIndexOf(")");
+      if (open < 0 || comma < 0 || equal < 0 || close < 0) {
+        continue;
+      }
+      const int offset = piece.mid(open + 1, comma - open - 1).toInt();
+      const int length = piece.mid(equal + 1, close - equal - 1).toInt();
+      for (int frame = 0; frame < length; ++frame) {
+        const int unit = partStart + (offset + frame) * m_frameScale;
+        outputTimeCodes << QString::number(qRound(timestamp));
+        // Ungerundet aufsummieren, sonst summiert sich der Abschneidefehler ueber den
+        // ganzen Schnitt auf.
+        timestamp += stampOfUnit(unit + m_frameScale) - stampOfUnit(unit);
+      }
     }
   }
-  std::cerr << " output time code count " << outputTimeCodes.count() << std::endl;
-  this->addInfo(tr("Finished cutting time codes, count: %1").arg(outputTimeCodes.count()));
+  // Ein Stempel mehr als Bloecke: mkvmerge leitet die Dauer des letzten Blocks aus der
+  // Differenz zum naechsten Stempel ab und rateet sie sonst. Ohne diese Zeile bekam ein
+  // abschliessendes neu codiertes Frame 20 statt 40 ms -- die Ausgabe war 7,980 s statt
+  // 8,000 s lang. Ein zusaetzlicher Block entsteht dadurch nicht.
+  if (!outputTimeCodes.isEmpty()) {
+    outputTimeCodes << QString::number(qRound(timestamp));
+  }
+  std::cerr << " output time code count " << (outputTimeCodes.count() - 1) << std::endl;
+  this->addInfo(
+      tr("Finished cutting time codes, count: %1").arg(outputTimeCodes.count() - 1));
   outputTimeCodes.insert(0, "# timecode format v2");
   return outputTimeCodes.join("\r\n");
 }
@@ -1992,22 +2078,27 @@ void MkvCutter::avsViewerFinished(int state)
     return;
   }
   ui.infoLabel->setText(tr("Cut-View finished,.."));
-  if (!m_timecodes.isEmpty()) {
-    QString text = Globals::readAll(m_timecodes, "auto");
-    m_inputTimeCodes = text.split("\n");
-    text = this->cutTimecodes(text);
-    if (!ui.keepIntermediateCheckBox->isChecked()) {
-      QFile::remove(m_timecodes);
-    }
-    m_timecodes = m_timecodes.insert(m_timecodes.lastIndexOf("."),"_cut");
-    if (Globals::saveTextTo(text, m_timecodes) == 0) {
-      this->addInfo(tr("Successfully cut and saved timecodes, to: %1").arg(m_timecodes));
-    }
-  } else {
+  // Die Zeitstempel der Quelle braucht schon buildCutList(), um die Audio- und
+  // Untertitelschnitte auszurechnen.
+  if (m_timecodes.isEmpty()) {
     m_inputTimeCodes.clear();
+  } else {
+    m_inputTimeCodes = Globals::readAll(m_timecodes, "auto").split("\n");
   }
   this->buildCutList();
   this->buildTrimAndPartsList();
+  // Erst jetzt steht fest, welche Teile kopiert und welche neu codiert werden -- und damit,
+  // wie viele Bloecke die Ausgabe je Frame bekommt. Genau das braucht cutTimecodes() (B14).
+  if (!m_timecodes.isEmpty()) {
+    const QString text = this->cutTimecodes();
+    if (!ui.keepIntermediateCheckBox->isChecked()) {
+      QFile::remove(m_timecodes);
+    }
+    m_timecodes = m_timecodes.insert(m_timecodes.lastIndexOf("."), "_cut");
+    if (Globals::saveTextTo(text, m_timecodes) == 0) {
+      this->addInfo(tr("Successfully cut and saved timecodes, to: %1").arg(m_timecodes));
+    }
+  }
   ui.infoLabel->setText(tr("Set output base file and temp folder,.."));
   ui.mainStackedWidget->setCurrentIndex(2);
   if (m_cliNext) {
@@ -2193,6 +2284,7 @@ void MkvCutter::reset(bool andInit)
   m_avcRefFrames = 1;
   m_enabled = 0;
   m_frameCount = -1;
+  m_frameScale = 1;
   m_keyframes.clear();
   m_cuts.clear();
   m_splitFiles.clear();
@@ -2239,9 +2331,41 @@ void MkvCutter::reset(bool andInit)
   }
 }
 
+void MkvCutter::setFrameScale(int scale)
+{
+  m_frameScale = (scale < 1) ? 1 : scale;
+  if (m_frameScale != 1) {
+    this->addInfo(
+        " " + tr("source is field coded: %1 container unit(s) per frame").arg(m_frameScale));
+  }
+}
+
 void MkvCutter::setCutList(QStringList cuts)
 {
-  m_cuts = cuts;
+  // Der Viewer zaehlt AviSynth-Frames, alles danach -- Keyframeliste, m_frameCount,
+  // 'mkvmerge --split parts-frames:', die Zeitstempeldatei und m_fps -- zaehlt
+  // Container-Einheiten. Bei feldcodierten Quellen sind das zwei je Frame, deshalb wird
+  // die Schnittliste hier einmal umgerechnet; nur die Trim()-Werte im AviSynth-Script
+  // muessen in buildTrimAndPartsList() wieder zurueck (siehe B14).
+  if (m_frameScale == 1) {
+    m_cuts = cuts;
+    return;
+  }
+  m_cuts.clear();
+  QStringList elems;
+  foreach(QString cut, cuts)
+  {
+    elems = cut.split("-");
+    if (elems.count() != 2) {
+      m_cuts << cut;
+      continue;
+    }
+    m_cuts
+        << QString::number(elems.at(0).toInt() * m_frameScale) + "-"
+            + QString::number(elems.at(1).toInt() * m_frameScale);
+  }
+  this->addInfo(
+      " " + tr("cut list in container units: %1").arg(m_cuts.join(", ")));
 }
 
 void MkvCutter::setFrameCount(int count)

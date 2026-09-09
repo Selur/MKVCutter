@@ -48,6 +48,9 @@ class MkvCutter : public QWidget
     QString m_avcProfileLevel, m_audioFormat;
     bool m_avcCabac;
     int m_avcRefFrames, m_enabled, m_frameCount;
+    // Container-Einheiten je AviSynth-Frame (1 oder 2). Der Viewer misst den Wert aus
+    // Clip- und Containerlaenge; siehe B14 und AVSViewer::measureFrameScale().
+    int m_frameScale;
     QStringList m_keyframes, m_cuts, m_splitFiles, m_tempReencodeAvs, m_videoEncodingCalls;
     QStringList m_reencodedVideoFiles;
     double m_fps;
@@ -117,7 +120,8 @@ class MkvCutter : public QWidget
     QString getSmallest();
     cutTyp1 findCutForFrame(int frame, const bool start);
     void extractTimeCodes();
-    QString cutTimecodes(QString timecodes);
+    QString cutTimecodes();
+    QString trimForPart(const int index) const;
     void startViewer();
     void addAudioAndSubtitleCuts(const int &start, const int &end);
     void addVideoCut(const int &start, const int &end);
@@ -141,6 +145,7 @@ class MkvCutter : public QWidget
     void ffIndexerFinished(int state);
     void avsViewerFinished(int state);
     void setCutList(QStringList cuts);
+    void setFrameScale(int scale);
     void ffindexProgress(int percent);
     void setFPS(double framerate);
     void mkvSplitFinished(int exitstate);

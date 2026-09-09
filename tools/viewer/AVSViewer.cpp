@@ -21,11 +21,12 @@
 using namespace std;
 
 AVSViewer::AVSViewer(QWidget *parent, QString path, double mult, bool cutSupport,
-    QStringList keyFrames)
+    QStringList keyFrames, int containerFrameCount)
     : QWidget(parent), m_env(0), m_inf(), m_clip(), m_frameCount(100), m_current(-1),
         m_currentInput(path), m_version(QString()), m_avsModified(QString()), m_res(0),
         m_mult(mult), m_currentImage(), m_cutSupport(cutSupport), m_keyFrames(keyFrames),
-        m_displayWidth(-1), m_displayHeight(-1)
+        m_displayWidth(-1), m_displayHeight(-1), m_containerFrameCount(containerFrameCount),
+        m_frameScale(1)
 {
   ui.setupUi(this);
   this->setDisplay();
@@ -716,6 +717,7 @@ void AVSViewer::init(int start)
 
     //emit sendInfos("  " + tr("grabbing clip length,.."));
     m_frameCount = m_inf.num_frames; //get frame count
+    this->measureFrameScale();
     ui.jumpToSpinBox->setMaximum(m_frameCount);
     //emit   sendInfos("  -> " + tr("clip contains %1 frames,..").arg(m_frameCount));
     emit sendInfos(" " + tr("adjusting slider to frame count,.."));
@@ -731,6 +733,44 @@ void AVSViewer::init(int start)
     this->send("-> " + tr("Unknown error"));
   }
 }
+/**
+ * Bestimmt, wie viele Container-Einheiten auf ein AviSynth-Frame kommen.
+ *
+ * Bei feldcodierten (PAFF) H.264-Quellen zaehlt Matroska jedes Feld als eigenen Block:
+ * mkvinfo meldet dann rund doppelt so viele Einheiten, wie der AviSynth-Clip Frames hat,
+ * und die Keyframeliste steht in Feldern. Ohne Umrechnung landen die Schnitte an der
+ * halben Stelle des Clips (gemessen: 973 Einheiten <> 487 Frames, ein Teilstueck von 30
+ * Einheiten liefert 15 AviSynth-Frames, Trim(10,length=20) davon nur 5).
+ *
+ * Der Faktor wird gemessen statt aus MediaInfo geraten; MBAFF-Quellen sind frame-codiert
+ * und liefern hier korrekt 1.
+ **/
+void AVSViewer::measureFrameScale()
+{
+  m_frameScale = 1;
+  if (m_containerFrameCount > 0 && m_frameCount > 0) {
+    const double ratio = double(m_containerFrameCount) / double(m_frameCount);
+    if (ratio > 1.9 && ratio < 2.1) {
+      m_frameScale = 2;
+    }
+    this->send(
+        " " + tr("clip has %1 frames, container counts %2 units -> %3 unit(s) per frame").arg(
+            m_frameCount).arg(m_containerFrameCount).arg(m_frameScale));
+  }
+  emit frameScale(m_frameScale);
+  if (m_frameScale == 1) {
+    return;
+  }
+  // Die Keyframeliste kommt von mkvinfo, also in Container-Einheiten. Der Viewer navigiert
+  // im Clip, deshalb hier auf AviSynth-Frames herunterrechnen.
+  QStringList scaled;
+  foreach (QString key, m_keyFrames)
+  {
+    scaled << QString::number(key.toInt() / m_frameScale);
+  }
+  m_keyFrames = scaled;
+}
+
 /**
  * adjusts frame-index and frame to slider position
  **/

@@ -730,18 +730,24 @@ void MkvCutter::addVideoCut(const int &start, const int &end)
   }
 
   // B: start&end frame are in different GOPs
+  // Achtung Konvention: cutTyp::end ist -- wie das Ende in der Schnittliste, wie
+  // 'mkvmerge --split parts-frames:A-B' und wie Trim(a,length=n) -- *exklusiv*. A1/A2/B3/B4
+  // haben das immer so gehandhabt, B1 und B2 setzten dagegen '<keyframe> - 1', also den
+  // letzten enthaltenen Frame. buildTrimAndPartsList() rechnet aber durchgehend
+  // 'cutLength = cutEnd - cutStart' -- B1 lieferte dadurch eine um eins zu kurze Laenge und
+  // verlor das letzte Frame der Start-GOP.
   // start cut
   tempCut.cut.start = start;
-  tempCut.cut.end = (startCut.nextKey - 1);
+  tempCut.cut.end = startCut.nextKey;
   tempCut.prevKey = startCut.prevKey;
   tempCut.nextKey = startCut.nextKey;
   this->addInfo(
       "   " + tr("B1: adding startCut to cuts: %1").arg(Globals::cutTyp1ToString(tempCut)));
   m_cutList.append(tempCut);
 
-  // middle cut
+  // middle cut -- ebenfalls exklusiv, siehe oben
   tempCut.cut.start = startCut.nextKey;
-  tempCut.cut.end = (endCut.prevKey - 1);
+  tempCut.cut.end = endCut.prevKey;
   tempCut.prevKey = (startCut.nextKey);
   tempCut.nextKey = (endCut.prevKey);
   this->addInfo(
@@ -749,13 +755,14 @@ void MkvCutter::addVideoCut(const int &start, const int &end)
   m_cutList.append(tempCut);
 
   if (end == endCut.prevKey) {
-    tempCut.cut.end = (endCut.prevKey);
     this->addInfo(" " + tr("no end cut needed, middle cut ends with end"));
     return;
   }
 
-  // middle&end cut
-  if (end == endCut.nextKey - 1) {
+  // middle&end cut -- baut denselben Eintrag wie B4 weiter unten, die Unterscheidung dient
+  // nur der Logzeile. Bedingung ebenfalls exklusiv gelesen: der Schnitt endet genau am Ende
+  // der End-GOP.
+  if (end == endCut.nextKey) {
     tempCut.cut.start = endCut.prevKey;
     tempCut.cut.end = end;
     tempCut.prevKey = endCut.prevKey;
@@ -844,7 +851,11 @@ void MkvCutter::buildTrimAndPartsList()
     prevKey = cut.prevKey;
     nextKey = cut.nextKey;
 
-    if (cutStart == prevKey && cutEnd == nextKey - 1) {
+    // KEEP heisst: der Schnitt deckt die GOP-Gruppe vollstaendig ab. Mit dem exklusiven
+    // Ende ist das 'cutEnd == nextKey'; die frühere Prüfung auf 'nextKey - 1' liess einen
+    // Schnitt, der einen Frame vor der naechsten GOP endet, als KEEP durchgehen und nahm
+    // dieses Frame faelschlich mit.
+    if (cutStart == prevKey && cutEnd == nextKey) {
       trim = "KEEP";
       if (!mkvparts.isEmpty()) {
         part = mkvparts.last();
@@ -951,13 +962,21 @@ void MkvCutter::buildTrimAndPartsList()
     //now: cutStart > prevKey/clipStart
     if (append) {
       trim = m_trimming.value(name) + "+Trim(";
+      // Das Ersetzen des alten "-1)"-Platzhalters ist gegenstandslos, seit ueberall
+      // length= geschrieben wird; die Zeile bleibt nur als Absicherung fuer Trim-Werte,
+      // die noch aus einem aelteren Lauf stammen koennten.
       trim = trim.replace(",-1)", "," + negReplace + ")");
     } else {
       trim = "Trim(";
     }
     trim += QString::number(cutStart - prevKey) + ",";
+    // Frueher stand hier "-1)", gemeint als "bis zum Ende des Teils". AviSynth liest ein
+    // negatives zweites Argument aber als *Anzahl* Frames: Trim(82,-1) liefert genau ein
+    // Frame, nicht den Rest. Aufgefallen ist das erst, als B13 diesen Zweig ueberhaupt
+    // erreichbar machte -- der Schnitt verlor dadurch 35 von 36 Frames.
+    // 'cutLength' ist ohnehin immer die richtige Anzahl, also durchgaengig length= nutzen.
     if (cutEnd == nextKey || cutEnd == clipEnd) {
-      trim += "-1)";
+      trim += "length=" + QString::number(cutLength) + ")";
       this->addInfo(
           "  " + tr("adding(3) %1 <> %2 for %3-%4").arg(name).arg(trim).arg(cutStart).arg(cutEnd));
       m_trimming.insert(name, trim);

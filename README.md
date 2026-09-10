@@ -68,8 +68,19 @@ picture.
    - repeat for every section you want to keep
    - **Save** writes the list to a `.cut` file, **Load** reads one back
 5. Press **Commit Cut-List**.
-6. Set **Output** (file) and **Temp folder**.
+6. Set **Output** (file) and **Temp folder**. **Check the cut afterwards** turns on the
+   verification described below.
 7. Press **Next** and wait for the *Finished!* pop-up.
+
+### Checking the cut
+
+The cut can be verified against the source: both are decoded, hashed frame by frame and
+compared position by position. Frames that were re-encoded will not match, so the report says
+how many are identical and — the point of the exercise — whether the output matches the
+source better at a constant shift, which means the cut sits in the wrong place.
+
+It is off by default because it costs a full decode of the source. Turn it on with the
+checkbox before starting, or press **Check the cut** in the finished dialog.
 
 ### Cut list format
 
@@ -99,6 +110,7 @@ MkvCutter.exe --clinput=open:in.mkv --clinput=output:out.mkv --clinput=temp:C:\t
 | `commit` | commit the cut list |
 | `next` | start the processing |
 | `scanorder:<auto\|bff\|tff>` | override the detected field order |
+| `verify:<on\|off>` | check the cut against the source afterwards |
 | `keepIntermediate:<on\|off>` | keep the temporary files |
 | `quit` | close the application |
 

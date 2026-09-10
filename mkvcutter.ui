@@ -195,6 +195,22 @@
          </property>
         </spacer>
        </item>
+       <item row="2" column="0">
+        <widget class="QCheckBox" name="verifyCheckBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="toolTip">
+          <string>Decodes the output and the requested source frames and compares them. Reliable, but it takes a while.</string>
+         </property>
+         <property name="text">
+          <string>Check the cut afterwards (slow)</string>
+         </property>
+        </widget>
+       </item>
        <item row="2" column="1">
         <widget class="QCheckBox" name="keepIntermediateCheckBox">
          <property name="sizePolicy">

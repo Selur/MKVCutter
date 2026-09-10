@@ -59,6 +59,7 @@ win32-msvc* {
 HEADERS += tools/FFIndexCaller.h \
     tools/Subtitletrack.h \
     tools/FFmpegVideoExtractor.h \
+    tools/FrameHashVerifier.h \
     tools/subtitlecutters/IdxSubCutter.h \
     tools/MkvSubtitleExtractor.h \
     tools/SubtitleCutter.h \
@@ -83,6 +84,7 @@ HEADERS += tools/FFIndexCaller.h \
     tools/MkvTimeExtractor.h
 SOURCES += tools/FFIndexCaller.cpp \
     tools/FFmpegVideoExtractor.cpp \
+    tools/FrameHashVerifier.cpp \
     tools/subtitlecutters/IdxSubCutter.cpp \
     tools/MkvSubtitleExtractor.cpp \
     tools/SubtitleCutter.cpp \

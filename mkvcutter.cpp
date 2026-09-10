@@ -22,7 +22,8 @@ MkvCutter::MkvCutter(QWidget *parent)
         m_audioSplitFiles(), m_audioSyncOffsets(), m_chapterFile(QString()),
         m_extractionFiles(), m_toDelete(),
         m_videoTrackID(-1),
-        m_extractor(nullptr), m_timeextractor(nullptr), m_aspectRatio(1),
+        m_extractor(nullptr), m_verifier(nullptr), m_verified(false),
+        m_timeextractor(nullptr), m_aspectRatio(1),
         m_interlaced("progressive"), m_mediaInfoScanorder(), m_scanType(), m_chroma("4:2:0"),
         m_bitDepth(8), m_vfr(false), m_timecodes(QString()),
         m_x264Settings(QString()), m_averageKeyDistance(0), m_paff(false), m_minKey(QString()),
@@ -138,6 +139,12 @@ void MkvCutter::initTools()
   cout << "  init video extractor" << endl;
   delete m_extractor;
   m_extractor = new FFmpegVideoExtractor(this);
+  cout << "  init m_verifier" << endl;
+  delete m_verifier;
+  m_verifier = new FrameHashVerifier(this);
+  this->myconnect(m_verifier, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
+  this->myconnect(m_verifier, SIGNAL(finished(QString, bool)), this,
+      SLOT(verificationFinished(QString, bool)));
   this->myconnect(m_extractor, SIGNAL(enableGui(bool)), this, SLOT(enableGui(bool)));
   this->myconnect(m_extractor, SIGNAL(sendInfos(QString)), this, SLOT(addInfo(QString)));
   this->myconnect(m_extractor, SIGNAL(finished(int)), this, SLOT(mkvExtractorFinished(int)));
@@ -1650,13 +1657,75 @@ void MkvCutter::mkvMergerFinished(int exitstate)
     this->reset();
     return;
   }
-  if (ui.keepIntermediateCheckBox->isChecked()) {
-    QMessageBox::information(this, tr("Finished!"), tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
-    this->reset();
+  if (!ui.keepIntermediateCheckBox->isChecked()) {
+    this->deleteFiles();
+  }
+  if (ui.verifyCheckBox->isChecked()) {
+    this->startVerification();
     return;
   }
-  this->deleteFiles();
-  QMessageBox::information(this, tr("Finished!"), tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
+  this->showFinished();
+}
+
+/**
+ * Schlussmeldung -- mit einem Knopf, der den Schnitt nachtraeglich prueft.
+ *
+ * Die Pruefung laeuft nicht automatisch, weil sie die Ausgabe und die angeforderten
+ * Quellframes decodieren muss; bei einem langen Film dauert das. Wer sie immer haben will,
+ * setzt den Haken auf der Ausgabeseite.
+ */
+void MkvCutter::showFinished()
+{
+  QMessageBox box(this);
+  box.setIcon(QMessageBox::Information);
+  box.setWindowTitle(tr("Finished!"));
+  box.setText(tr("Finished, hopefully %1 was created.").arg(m_currentOutput));
+  QPushButton *check = nullptr;
+  if (!m_verified && !m_cuts.isEmpty() && QFile::exists(m_currentOutput)) {
+    check = box.addButton(tr("Check the cut"), QMessageBox::ActionRole);
+  }
+  box.addButton(QMessageBox::Ok);
+  box.exec();
+  if (check != nullptr && box.clickedButton() == check) {
+    this->startVerification();
+    return;
+  }
+  this->reset();
+}
+
+void MkvCutter::startVerification()
+{
+  m_verified = true;
+  if (m_cuts.isEmpty() || !QFile::exists(m_currentOutput)) {
+    this->showFinished();
+    return;
+  }
+  // Die Schnittliste steht in Container-Einheiten; verglichen werden decodierte Frames.
+  QStringList ranges;
+  QStringList elems;
+  foreach(QString cut, m_cuts)
+  {
+    elems = cut.split("-");
+    if (elems.count() != 2) {
+      continue;
+    }
+    ranges
+        << QString::number(elems.at(0).toInt() / m_frameScale) + "-"
+            + QString::number(elems.at(1).toInt() / m_frameScale);
+  }
+  ui.infoLabel->setText(tr("Checking the cut,.."));
+  this->addInfo(tr("Checking the cut against the source,.."));
+  m_verifier->start(m_currentInput, m_currentOutput, ranges, m_tempFolder);
+}
+
+void MkvCutter::verificationFinished(QString summary, bool suspicious)
+{
+  this->addInfo(summary);
+  if (suspicious) {
+    QMessageBox::warning(this, tr("Check the cut"), summary);
+  } else {
+    QMessageBox::information(this, tr("Check the cut"), summary);
+  }
   this->reset();
 }
 
@@ -2637,6 +2706,7 @@ void MkvCutter::reset(bool andInit)
   m_audioSplitFiles.clear();
   m_audioSyncOffsets.clear();
   m_chapterFile = QString();
+  m_verified = false;
   m_extractionFiles.clear();
   m_toDelete.clear();
   m_videoTrackID = 0;
@@ -2792,6 +2862,12 @@ void MkvCutter::cliSetKeepIntermediate(bool keep)
 {
   this->addInfo(QString("CLI: setKeepIntermediate(%1)").arg(keep ? "true" : "false"));
   ui.keepIntermediateCheckBox->setChecked(keep);
+}
+
+void MkvCutter::cliSetVerify(bool verify)
+{
+  this->addInfo(QString("CLI: setVerify(%1)").arg(verify ? "true" : "false"));
+  ui.verifyCheckBox->setChecked(verify);
 }
 
 void MkvCutter::cliNext()

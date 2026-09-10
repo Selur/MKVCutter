@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
   //   open:<path>           load a .mkv file (same as File->Open + Select)
   //   output:<path>         set the output file
   //   temp:<path>           set the temp folder
+  //   verify:<on|off>       check the cut against the source afterwards
   //   keepIntermediate:on   turn the keepIntermediate checkbox on
   //   keepIntermediate:off  turn it off
   //   cutlist:<path>        load a .cut file into the cut view
@@ -67,6 +68,8 @@ int main(int argc, char *argv[])
       }
     } else if (name == "keepIntermediate") {
       w.cliSetKeepIntermediate(arg == "on" || arg == "1" || arg == "true");
+    } else if (name == "verify") {
+      w.cliSetVerify(arg == "on" || arg == "1" || arg == "true");
     } else if (name == "cutlist") {
       if (!arg.isEmpty()) {
         w.cliLoadCutList(arg);

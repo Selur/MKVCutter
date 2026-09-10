@@ -18,6 +18,7 @@
 #include "tools/MkvSubtitleExtractor.h"
 #include "tools/SubtitleCutter.h"
 #include "tools/FFmpegVideoExtractor.h"
+#include "tools/FrameHashVerifier.h"
 
 #include "ui_mkvcutter.h"
 
@@ -35,6 +36,7 @@ class MkvCutter : public QWidget
     void cliSetOutput(const QString &path);
     void cliSetTemp(const QString &path);
     void cliSetKeepIntermediate(bool keep);
+    void cliSetVerify(bool verify);
     void cliNext();
     void cliSetScanOrder(const QString &mode);
     void cliLoadCutList(const QString &path);
@@ -74,6 +76,10 @@ class MkvCutter : public QWidget
     QString m_chapterFile;
     int m_videoTrackID;
     FFmpegVideoExtractor *m_extractor;
+    FrameHashVerifier *m_verifier;
+    // true, sobald der Schnitt einmal geprueft wurde -- das Popup bietet es dann
+    // nicht noch einmal an.
+    bool m_verified;
     MkvTimeExtractor *m_timeextractor;
     double m_aspectRatio;
     QString m_interlaced, m_mediaInfoScanorder, m_scanType, m_chroma;
@@ -122,6 +128,8 @@ class MkvCutter : public QWidget
     void computeAudioSyncOffsets();
     void buildChapterFile();
     void verifyAndCorrectParts();
+    void startVerification();
+    void showFinished();
     void startExtraction();
     QString getSmallest();
     cutTyp1 findCutForFrame(int frame, const bool start);
@@ -151,6 +159,7 @@ class MkvCutter : public QWidget
     void ffIndexerFinished(int state);
     void avsViewerFinished(int state);
     void setCutList(QStringList cuts);
+    void verificationFinished(QString summary, bool suspicious);
     void setFrameScale(int scale);
     void ffindexProgress(int percent);
     void setFPS(double framerate);

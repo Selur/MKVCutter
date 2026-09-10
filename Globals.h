@@ -29,6 +29,9 @@ namespace Globals
   // Kapitel einer Matroska-Datei im einfachen Format (CHAPTERnn / CHAPTERnnNAME), leer
   // wenn die Datei keine hat. Fragt mkvextract synchron.
   QString mkvChaptersSimple(const QString &file);
+  // Zahl der Bloecke einer Matroska-Datei, oder -1. 'mkvinfo -s' gibt je Block eine Zeile
+  // aus und dekodiert dabei nichts -- gemessen 0,32 s fuer 2033 Frames in 49 MB.
+  int mkvFrameCount(const QString &file);
   QString cutTypToString(cutTyp cut);
   QString cutTyp1ToString(cutTyp1 cut);
   QString cutTyp1ListToString(QList<cutTyp> elems);

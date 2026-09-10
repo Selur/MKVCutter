@@ -121,6 +121,7 @@ class MkvCutter : public QWidget
     void cutAudio();
     void computeAudioSyncOffsets();
     void buildChapterFile();
+    void verifyAndCorrectParts();
     void startExtraction();
     QString getSmallest();
     cutTyp1 findCutForFrame(int frame, const bool start);

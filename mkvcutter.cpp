@@ -1705,11 +1705,176 @@ void MkvCutter::mkvAudioCutFinished(int exitstate)
   this->cleanUpAndMerge();
 }
 
+/**
+ * Prueft, ob die Teile das enthalten, was 'parts-frames:' versprochen hat -- und zieht die
+ * Trim-Werte nach, wenn nicht.
+ *
+ * mkvmerge legt Teilgrenzen selbst auf Keyframes und haelt sich dabei nicht immer an die
+ * angeforderte Framenummer (B19). Gemessen an einer Quelle mit zwei benachbarten I-Frames:
+ * 'parts-frames:40-58' lieferte 17 statt 18 Bloecke, '58-65' dafuer 8 statt 7 -- die Naht lag
+ * ein Frame zu frueh. Der Plan stimmte, die Ausfuehrung nicht, und die Ausgabe verlor ein
+ * Frame, ohne dass irgendetwas Alarm schlug.
+ *
+ * Nachgerechnet statt vorhergesagt: die Sollaenge steht in m_mkvVideoParts, die Istlaenge
+ * wird gemessen. Stimmen alle Teile, bleibt alles unveraendert -- der eingespielte Weg wird
+ * also nicht angefasst. Weicht einer ab, werden die tatsaechlichen Grenzen bestimmt und die
+ * Trim-Werte daraus neu gebildet.
+ */
+void MkvCutter::verifyAndCorrectParts()
+{
+  if (m_mkvVideoParts.isEmpty() || m_splitFiles.isEmpty() || m_cuts.isEmpty()) {
+    return;
+  }
+  QStringList files = m_splitFiles;
+  files.sort();
+  QList<int> wanted;
+  QStringList elems;
+  foreach(QString part, m_mkvVideoParts)
+  {
+    elems = part.split("-");
+    wanted << ((elems.count() == 2) ? (elems.at(1).toInt() - elems.at(0).toInt()) : -1);
+  }
+  if (wanted.contains(-1)) {
+    return;
+  }
+  this->addInfo(tr("checking the video parts,.."));
+  // Im Keyframe-Pfad haengt mkvmerge alle Teile in eine Datei -- dort laesst sich nur die
+  // Summe pruefen. Zu korrigieren gibt es da ohnehin nichts, alle Teile sind KEEP.
+  if (files.count() != m_mkvVideoParts.count()) {
+    if (files.count() != 1) {
+      return;
+    }
+    int total = 0;
+    foreach(int count, wanted)
+    {
+      total += count;
+    }
+    const int got = Globals::mkvFrameCount(files.first());
+    if (got < 0) {
+      return;
+    }
+    if (got != total) {
+      this->addInfo(
+          " " + tr("WARNING: the parts should hold %1 frames, mkvmerge delivered %2").arg(
+              total).arg(got));
+    }
+    return;
+  }
+
+  QList<int> actual;
+  bool deviates = false;
+  for (int i = 0, c = files.count(); i < c; ++i) {
+    const int got = Globals::mkvFrameCount(files.at(i));
+    if (got < 0) {
+      this->addInfo(
+          " " + tr("couldn't measure %1 -> leaving the trim values alone").arg(files.at(i)));
+      return;
+    }
+    actual << got;
+    if (got != wanted.at(i)) {
+      deviates = true;
+      this->addInfo(
+          " " + tr("part %1 (%2): %3 frames wanted, %4 delivered").arg(i + 1).arg(
+              m_mkvVideoParts.at(i)).arg(wanted.at(i)).arg(got));
+    }
+  }
+  if (!deviates) {
+    this->addInfo(" " + tr("all parts hold what was asked for"));
+    return;
+  }
+  this->addInfo(
+      tr("WARNING: mkvmerge moved part boundaries -- recomputing the trim values,.."));
+
+  // Tatsaechliche Grenzen: ein Teil beginnt dort, wo er angefordert wurde, ausser er
+  // schliesst unmittelbar an seinen Vorgaenger an -- dann beginnt er hinter dessen echtem
+  // Ende. Genau dort verschiebt sich die Naht.
+  QList<int> starts;
+  for (int i = 0, c = m_mkvVideoParts.count(); i < c; ++i) {
+    elems = m_mkvVideoParts.at(i).split("-");
+    const int askedStart = elems.at(0).toInt();
+    if (i == 0) {
+      starts << askedStart;
+      continue;
+    }
+    const QString previous = m_mkvVideoParts.at(i - 1);
+    const int previousEnd = previous.section("-", 1, 1).toInt();
+    starts << ((askedStart == previousEnd) ? (starts.at(i - 1) + actual.at(i - 1)) : askedStart);
+  }
+
+  // Schnittbereiche in Container-Einheiten
+  QList<int> cutFrom, cutTo;
+  foreach(QString cut, m_cuts)
+  {
+    elems = cut.split("-");
+    if (elems.count() != 2) {
+      continue;
+    }
+    cutFrom << elems.at(0).toInt();
+    cutTo << elems.at(1).toInt();
+  }
+
+  QStringList parts;
+  QHash<QString, QString> trimming;
+  QString name;
+  for (int i = 0, c = starts.count(); i < c; ++i) {
+    const int from = starts.at(i);
+    const int to = from + actual.at(i);
+    parts << QString::number(from) + "-" + QString::number(to);
+    QStringList pieces;
+    int covered = 0;
+    for (int k = 0, kc = cutFrom.count(); k < kc; ++k) {
+      const int start = qMax(cutFrom.at(k), from);
+      const int end = qMin(cutTo.at(k), to);
+      if (start >= end) {
+        continue;
+      }
+      covered += end - start;
+      int length = (end - start) / m_frameScale;
+      if (length < 1) {
+        length = 1;
+      }
+      pieces
+          << QString("Trim(%1,length=%2)").arg((start - from) / m_frameScale).arg(length);
+    }
+    name = Globals::getFileName(m_currentInput) + "_cut_" + numberToLength3String(i + 1)
+        + ".mkv";
+    const QString trim = (covered == to - from) ? QString("KEEP") : pieces.join("+");
+    if (pieces.isEmpty() && covered == 0) {
+      this->addInfo(
+          " " + tr("part %1 holds nothing that was asked for -- keeping it whole").arg(i + 1));
+      trimming.insert(name, "KEEP");
+      continue;
+    }
+    this->addInfo("  " + tr("part %1 (%2) <> %3").arg(i + 1).arg(parts.last()).arg(trim));
+    trimming.insert(name, trim);
+  }
+  // Bleibt nur ein Teil uebrig, laeuft er unter dem Namen der Quelle -- so wie es
+  // buildTrimAndPartsList() am Ende auch macht.
+  if (trimming.count() == 1) {
+    const QString trim = trimming.constBegin().value();
+    trimming.clear();
+    trimming.insert(m_currentInput, trim);
+  }
+  m_mkvVideoParts = parts;
+  m_trimming = trimming;
+  m_keyframeonly = false;
+  // Die Zeitstempeldatei wurde aus dem alten Plan gebaut und zaehlt jetzt falsch.
+  if (!m_timecodes.isEmpty()) {
+    const QString text = this->cutTimecodes();
+    if (Globals::saveTextTo(text, m_timecodes) == 0) {
+      this->addInfo(" " + tr("rewrote the time codes for the corrected parts"));
+    }
+  }
+}
+
 void MkvCutter::handleSplitFiles()
 {
   m_reencodedVideoFiles.clear();
   m_extractionFiles.clear();
   m_toDelete.clear();
+  // Vor dem Verzweigen: im Keyframe-Pfad gibt es zwar nichts zu korrigieren, aber genau
+  // dort faellt ein verlorenes Frame sonst niemandem auf.
+  this->verifyAndCorrectParts();
   if (m_keyframeonly) {
     foreach (QString file, m_splitFiles)
     {

@@ -62,6 +62,36 @@ QString Globals::mkvChaptersSimple(const QString &file)
   return QString::fromUtf8(extract.readAllStandardOutput());
 }
 
+int Globals::mkvFrameCount(const QString &file)
+{
+#ifdef Q_OS_WIN32
+  const QString name = "mkvinfo.exe";
+#else
+  const QString name = "mkvinfo";
+#endif
+  const QString tool = QDir::toNativeSeparators(
+      QCoreApplication::applicationDirPath() + QDir::separator() + name);
+  QProcess info;
+  info.start(tool, QStringList() << "--ui-language" << "en" << "-s" << file);
+  if (!info.waitForFinished(120000)) {
+    info.kill();
+    return -1;
+  }
+  const QString out = QString::fromUtf8(info.readAllStandardOutput());
+  if (out.trimmed().isEmpty()) {
+    return -1;
+  }
+  int count = 0;
+  const QStringList lines = out.split("\n");
+  foreach(const QString &line, lines)
+  {
+    if (line.contains(" frame, track ")) {
+      ++count;
+    }
+  }
+  return count;
+}
+
 QString Globals::cutTypToString(cutTyp cut)
 {
   return QString::number(cut.start) + "-" + QString::number(cut.end);
